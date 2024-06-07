@@ -177,7 +177,7 @@ namespace UCommon
 		{
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
-				V[i] *= B.V[i];
+				V[i] *= B;
 			}
 			return *this;
 		}

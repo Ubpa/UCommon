@@ -79,16 +79,13 @@ namespace UCommon
 			static constexpr float Func(float x, float y, float z) { return 0.54627424f * (x * x - y * y); }
 		};
 
-		template<int MaxSHBasis, int Index>
-		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int, Index>)
-		{
-			V[Index] = SH<SHIndexToL<Index>, SHIndexToM<Index>>(X, Y, Z);
-		}
+		template<int MaxSHBasis>
+		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int>) {}
 
 		template<int MaxSHBasis, int FirstIndex, int... LeftIndices>
 		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int, FirstIndex, LeftIndices...>)
 		{
-			SHs(V, X, Y, Z, std::integer_sequence<int, FirstIndex>());
+			V[FirstIndex] = SH<SHIndexToL<FirstIndex>, SHIndexToM<FirstIndex>>(X, Y, Z);
 			SHs(V, X, Y, Z, std::integer_sequence<int, LeftIndices...>());
 		}
 
