@@ -31,124 +31,158 @@ SOFTWARE.
 #include <type_traits>
 #include <random>
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op) \
+#define UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+	template<typename T> using TVector2 = UCommon::TVector2<T>; \
+	template<typename T> using TVector = UCommon::TVector<T>; \
+	template<typename T> using TVector4 = UCommon::TVector4<T>; \
+	using FVector2 = UCommon::FVector2; \
+	using FDoubleVector2 = UCommon::FDoubleVector2; \
+	using FInt64Vector2 = UCommon::FInt64Vector2; \
+	using FInt8Vector2 = UCommon::FInt8Vector2; \
+	using FUint64Vector2 = UCommon::FUint64Vector2; \
+	using FUint8Vector2 = UCommon::FUint8Vector2; \
+	using FVector = UCommon::FVector; \
+	using FDoubleVector = UCommon::FDoubleVector; \
+	using FInt64Vector = UCommon::FInt64Vector; \
+	using FInt8Vector = UCommon::FInt8Vector; \
+	using FUint64Vector = UCommon::FUint64Vector; \
+	using FUint8Vector = UCommon::FUint8Vector; \
+	using FVector4 = UCommon::FVector4; \
+	using FDoubleVector4 = UCommon::FDoubleVector4; \
+	using FInt64Vector4 = UCommon::FInt64Vector4; \
+	using FInt8Vector4 = UCommon::FInt8Vector4; \
+	using FUint64Vector4 = UCommon::FUint64Vector4; \
+	using FUint8Vector4 = UCommon::FUint8Vector4; \
+	template<typename T> using TBox2 = UCommon::FBox2; \
+	template<typename T> using TBox = UCommon::FBox; \
+	template<typename T> using TBox4 = UCommon::FBox4; \
+	using FBox2 = UCommon::FBox2; \
+	using FBox = UCommon::FBox; \
+	using FBox4 = UCommon::FBox4; \
+	template<typename T> using TSpan = UCommon::TSpan<T>; \
+	constexpr float Pi = UCommon::Pi; \
+}
+
+#define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op)        \
 TVector operator Op(const TVector& Other) const   \
 {                                                 \
-	TVector Result;                               \
-	Result.X = X Op Other.X;                      \
-	Result.Y = Y Op Other.Y;                      \
-	Result.Z = Z Op Other.Z;                      \
-	return Result;                                \
+    TVector Result;                               \
+    Result.X = X Op Other.X;                      \
+    Result.Y = Y Op Other.Y;                      \
+    Result.Z = Z Op Other.Z;                      \
+    return Result;                                \
 }                                                 \
 TVector operator Op(const T& K) const             \
 {                                                 \
-	TVector Result;                               \
-	Result.X = X Op K;                            \
-	Result.Y = Y Op K;                            \
-	Result.Z = Z Op K;                            \
-	return Result;                                \
+    TVector Result;                               \
+    Result.X = X Op K;                            \
+    Result.Y = Y Op K;                            \
+    Result.Z = Z Op K;                            \
+    return Result;                                \
 }
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(Op) \
-TVector& operator Op(const TVector& Other)               \
-{                                                        \
-	X Op Other.X;                                        \
-	Y Op Other.Y;                                        \
-	Z Op Other.Z;                                        \
-	return *this;                                        \
-}                                                        \
-TVector& operator Op(const T& K)                         \
-{                                                        \
-	X Op K;                                              \
-	Y Op K;                                              \
-	Z Op K;                                              \
-	return *this;                                        \
+TVector& operator Op(const TVector& Other)        \
+{                                                 \
+    X Op Other.X;                                 \
+    Y Op Other.Y;                                 \
+    Z Op Other.Z;                                 \
+    return *this;                                 \
+}                                                 \
+TVector& operator Op(const T& K)                  \
+{                                                 \
+    X Op K;                                       \
+    Y Op K;                                       \
+    Z Op K;                                       \
+    return *this;                                 \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(Op, BoolOp)         \
+#define UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(Op, BoolOp)                \
 friend bool operator Op (const TVector& Lhs, const TVector& Rhs) noexcept \
 {                                                                         \
-	return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z;    \
+    return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z;    \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP(Op) \
-TVector4 operator Op(const TVector4& Other) const  \
-{                                                  \
-	TVector4 Result;                               \
-	Result.X = X Op Other.X;                       \
-	Result.Y = Y Op Other.Y;                       \
-	Result.Z = Z Op Other.Z;                       \
-	Result.W = W Op Other.W;                       \
-	return Result;                                 \
-}                                                  \
-TVector4 operator Op(const T& K) const             \
-{                                                  \
-	TVector4 Result;                               \
-	Result.X = X Op K;                             \
-	Result.Y = Y Op K;                             \
-	Result.Z = Z Op K;                             \
-	Result.W = W Op K;                             \
-	return Result;                                 \
+#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP(Op)       \
+TVector4 operator Op(const TVector4& Other) const \
+{                                                 \
+    TVector4 Result;                              \
+    Result.X = X Op Other.X;                      \
+    Result.Y = Y Op Other.Y;                      \
+    Result.Z = Z Op Other.Z;                      \
+    Result.W = W Op Other.W;                      \
+    return Result;                                \
+}                                                 \
+TVector4 operator Op(const T& K) const            \
+{                                                 \
+    TVector4 Result;                              \
+    Result.X = X Op K;                            \
+    Result.Y = Y Op K;                            \
+    Result.Z = Z Op K;                            \
+    Result.W = W Op K;                            \
+    return Result;                                \
 }
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(Op) \
-TVector4& operator Op(const TVector4& Other)              \
-{                                                         \
-	X Op Other.X;                                         \
-	Y Op Other.Y;                                         \
-	Z Op Other.Z;                                         \
-	W Op Other.W;                                         \
-	return *this;                                         \
-}                                                         \
-TVector4& operator Op(const T& K)                         \
-{                                                         \
-	X Op K;                                               \
-	Y Op K;                                               \
-	Z Op K;                                               \
-	W Op K;                                               \
-	return *this;                                         \
+TVector4& operator Op(const TVector4& Other)       \
+{                                                  \
+    X Op Other.X;                                  \
+    Y Op Other.Y;                                  \
+    Z Op Other.Z;                                  \
+    W Op Other.W;                                  \
+    return *this;                                  \
+}                                                  \
+TVector4& operator Op(const T& K)                  \
+{                                                  \
+    X Op K;                                        \
+    Y Op K;                                        \
+    Z Op K;                                        \
+    W Op K;                                        \
+    return *this;                                  \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(Op, BoolOp)                           \
+#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(Op, BoolOp)                                  \
 friend bool operator Op (const TVector4& Lhs, const TVector4& Rhs) noexcept                  \
 {                                                                                            \
-	return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z BoolOp Lhs.W Op Rhs.W; \
+    return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z BoolOp Lhs.W Op Rhs.W; \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP(Op) \
-TVector2 operator Op(const TVector2& Other) const  \
-{                                                  \
-	TVector2 Result;                               \
-	Result.X = X Op Other.X;                       \
-	Result.Y = Y Op Other.Y;                       \
-	return Result;                                 \
-}                                                  \
-TVector2 operator Op(const T& K) const             \
-{                                                  \
-	TVector2 Result;                               \
-	Result.X = X Op K;                             \
-	Result.Y = Y Op K;                             \
-	return Result;                                 \
+#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP(Op)       \
+TVector2 operator Op(const TVector2& Other) const \
+{                                                 \
+    TVector2 Result;                              \
+    Result.X = X Op Other.X;                      \
+    Result.Y = Y Op Other.Y;                      \
+    return Result;                                \
+}                                                 \
+TVector2 operator Op(const T& K) const            \
+{                                                 \
+    TVector2 Result;                              \
+    Result.X = X Op K;                            \
+    Result.Y = Y Op K;                            \
+    return Result;                                \
 }
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(Op) \
-TVector2& operator Op(const TVector2& Other)              \
-{                                                         \
-	X Op Other.X;                                         \
-	Y Op Other.Y;                                         \
-	return *this;                                         \
-}                                                         \
-TVector2& operator Op(const T& K)                         \
-{                                                         \
-	X Op K;                                               \
-	Y Op K;                                               \
-	return *this;                                         \
+TVector2& operator Op(const TVector2& Other)       \
+{                                                  \
+    X Op Other.X;                                  \
+    Y Op Other.Y;                                  \
+    return *this;                                  \
+}                                                  \
+TVector2& operator Op(const T& K)                  \
+{                                                  \
+    X Op K;                                        \
+    Y Op K;                                        \
+    return *this;                                  \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(Op, BoolOp)          \
+#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(Op, BoolOp)                 \
 friend bool operator Op (const TVector2& Lhs, const TVector2& Rhs) noexcept \
 {                                                                           \
-	return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y;                            \
+    return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y;                            \
 }
 
 namespace UCommon
@@ -362,6 +396,11 @@ namespace UCommon
 		{
 			return const_cast<TVector2*>(this)->operator[](Index);
 		}
+
+		TVector2 operator-() const noexcept
+		{
+			return { -X,-Y };
+		}
 	};
 
 	using FVector2 = TVector2<float>;
@@ -572,6 +611,11 @@ namespace UCommon
 		{
 			return const_cast<TVector*>(this)->operator[](Index);
 		}
+
+		TVector operator-() const noexcept
+		{
+			return { -X,-Y,-Z };
+		}
 	};
 
 	using FVector = TVector<float>;
@@ -769,6 +813,11 @@ namespace UCommon
 		{
 			return const_cast<TVector4*>(this)->operator[](Index);
 		}
+
+		TVector4 operator-() const noexcept
+		{
+			return { -X,-Y,-Z,-W };
+		}
 	};
 
 	using FVector4 = TVector4<float>;
@@ -826,10 +875,10 @@ namespace UCommon
 	}
 
 	template<typename T>
-	class FSpan
+	class TSpan
 	{
 	public:
-		inline FSpan(T* InPointer, uint64_t InSize) noexcept
+		inline TSpan(T* InPointer, uint64_t InSize) noexcept
 			: Pointer(InPointer)
 			, Size(InSize)
 		{
@@ -837,7 +886,7 @@ namespace UCommon
 		}
 
 		template<uint64_t N>
-		inline FSpan(T(&InPointer)[N]) noexcept : FSpan(InPointer, N) {}
+		inline TSpan(T(&InPointer)[N]) noexcept : TSpan(InPointer, N) {}
 
 		inline T& operator[](uint64_t Index) const noexcept
 		{
@@ -852,7 +901,7 @@ namespace UCommon
 		inline T* begin() const noexcept { return Pointer; }
 		inline T* end() const noexcept { return Pointer + Size; }
 
-		operator FSpan<typename std::add_const<T>::type>() const noexcept { return { Pointer, Size }; }
+		operator TSpan<typename std::add_const<T>::type>() const noexcept { return { Pointer, Size }; }
 
 	private:
 		T* Pointer;
@@ -873,9 +922,9 @@ namespace UCommon
 
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FVector& MinYCoCg, const FVector& MaxYCoCg)
 	{
-		const FVector YCoCg = RGBToYCoCg(RGB.Max(0));
+		const FVector YCoCg = RGBToYCoCg(RGB);
 		const FVector ClampedYCoCg = YCoCg.Clmap(MinYCoCg, MaxYCoCg);
-		return YCoCgToRGB(ClampedYCoCg).Max(0);
+		return YCoCgToRGB(ClampedYCoCg);
 	}
 
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FBox& YCoCgBox)
@@ -901,3 +950,5 @@ namespace UCommon
 		return FVector4(H, PDF);
 	}
 }
+
+UBPA_UCOMMON_UTILS_TO_NAMESPACE(UCommonTest)

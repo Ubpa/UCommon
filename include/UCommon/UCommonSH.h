@@ -27,6 +27,19 @@ SOFTWARE.
 #include "UCommonConfig.h"
 #include "UCommonUtils.h"
 
+#define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+	template<int i> constexpr int SHIndexToL = UCommon::SHIndexToL<i>; \
+	template<int i> constexpr int SHIndexToM = UCommon::SHIndexToM<i>; \
+	template<int Order> using TSHVector = UCommon::TSHVector<Order>; \
+	template<int Order> using TSHVectorRGB = UCommon::TSHVectorRGB<Order>; \
+	using FSHVector2 = UCommon::FSHVector2; \
+	using FSHVector3 = UCommon::FSHVector3; \
+	using FSHVectorRGB2 = UCommon::FSHVectorRGB2; \
+	using FSHVectorRGB3 = UCommon::FSHVectorRGB3; \
+}
+
 namespace UCommon
 {
 	template<int l, int m>
@@ -365,5 +378,7 @@ namespace UCommon
 	using FSHVectorRGB2 = TSHVectorRGB<2>;
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
 } // namespace UCommon
+
+UBPA_UCOMMON_SH_TO_NAMESPACE(UCommonTest)
 
 #include "UCommonSH.inl"
