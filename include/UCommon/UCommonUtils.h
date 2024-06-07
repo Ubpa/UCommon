@@ -908,16 +908,34 @@ namespace UCommon
 		uint64_t Size;
 	};
 
+	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
+	{
+		const float RB = R + B;
+		Y = (2 * G + RB) / 4;
+		Co = (R - B) / 2;
+		Cg = (2 * G - RB) / 4;
+	}
+
 	static inline FVector RGBToYCoCg(const FVector& RGB)
 	{
-		const float RB = RGB.X + RGB.Z;
-		return { (2 * RGB.Y + RB) / 4,(RGB.X - RGB.Z) / 2,(2 * RGB.Y - RB) / 4 };
+		FVector YCoCg;
+		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
+		return YCoCg;
+	}
+
+	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
+	{
+		const float Tmp = Y - Cg;
+		R = Tmp + Co;
+		G = Y + Cg;
+		B = Tmp - Co;
 	}
 
 	static inline FVector YCoCgToRGB(const FVector& YCoCg)
 	{
-		const float Tmp = YCoCg.X - YCoCg.Z;
-		return { Tmp + YCoCg.Y, YCoCg.X + YCoCg.Z, Tmp - YCoCg.Y };
+		FVector RGB;
+		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
+		return RGB;
 	}
 
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FVector& MinYCoCg, const FVector& MaxYCoCg)
@@ -948,6 +966,22 @@ namespace UCommon
 		constexpr float PDF = 1.0f / (4 * Pi);
 
 		return FVector4(H, PDF);
+	}
+
+	constexpr float GlodenRatio = 1.618034f;
+
+	//Reference: https://zhuanlan.zhihu.com/p/25988652?group_id=828963677192491008
+	static inline FVector4 FibonacciSpherePoint(int N, int n)
+	{
+		constexpr float Phi = 2.f * Pi / GlodenRatio;
+		const float Z = (2.f * n + 1.f) / N - 1.f;
+		const float r = std::sqrt(1.f - Z * Z);
+		const float X = r * std::cos(Phi * n);
+		const float Y = r * std::sin(Phi * n);
+
+		constexpr float PDF = 1.0f / (4.f * Pi);
+
+		return FVector4(X, Y, Z, PDF);
 	}
 }
 

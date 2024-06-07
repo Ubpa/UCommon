@@ -371,6 +371,16 @@ namespace UCommon
 		}
 
 		inline FVector operator()(const FVector& Vector) const;
+
+		inline TSHVectorRGB ToYCoCg() const
+		{
+			TSHVectorRGB SHVectorYCoCg;
+			for (int i = 0; i < MaxSHBasis; i++)
+			{
+				RGBToYCoCg(R.V[i], G.V[i], B.V[i], SHVectorYCoCg.R.V[i], SHVectorYCoCg.G.V[i], SHVectorYCoCg.B.V[i]);
+			}
+			return SHVectorYCoCg;
+		}
 	};
 
 	using FSHVector2 = TSHVector<2>;

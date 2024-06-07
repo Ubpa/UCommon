@@ -34,6 +34,8 @@ int main()
 	SHVectorRGB3.R = SHVector;
 	SHVectorRGB3.G = SHVector * 2.f;
 	SHVectorRGB3.B = SHVector;
+
+	SHVectorRGB3.ToYCoCg();
 	
 	return 0;
 }
