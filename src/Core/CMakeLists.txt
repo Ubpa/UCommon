@@ -15,7 +15,7 @@ endif()
 
 Ubpa_AddTarget(
   MODE INTERFACE
-  CXX_STANDARD 14
+  CXX_STANDARD 17
   INC
     "${PROJECT_SOURCE_DIR}/include"
   C_OPTION

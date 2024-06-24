@@ -188,24 +188,6 @@ friend bool operator Op (const TVector2& Lhs, const TVector2& Rhs) noexcept \
 
 namespace UCommon
 {
-	template<typename T>
-	T Clamp(const T& V, const T& VMin, const T& VMax) noexcept
-	{
-		UBPA_UCOMMON_ASSERT(VMin <= VMax);
-		if (V <= VMin)
-		{
-			return VMin;
-		}
-		else if (V >= VMax)
-		{
-			return VMax;
-		}
-		else
-		{
-			return V;
-		}
-	}
-
 	template<typename T> struct TVector2;
 	template<typename T> struct TVector;
 	template<typename T> struct TVector4;
@@ -339,7 +321,7 @@ namespace UCommon
 
 		TVector2 Clmap(T Min, T Max) const noexcept
 		{
-			return TVector2(Clamp(X, Min, Max), Clamp(Y, Min, Max));
+			return TVector2(std::clamp(X, Min, Max), std::clamp(Y, Min, Max));
 		}
 
 		TVector2 Abs() const noexcept
@@ -549,12 +531,12 @@ namespace UCommon
 
 		TVector Clmap(T Min, T Max) const noexcept
 		{
-			return TVector(Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max));
+			return TVector(std::clamp(X, Min, Max), std::clamp(Y, Min, Max), std::clamp(Z, Min, Max));
 		}
 
 		TVector Clmap(TVector Min, TVector Max) const noexcept
 		{
-			return TVector(Clamp(X, Min.X, Max.X), Clamp(Y, Min.Y, Max.Y), Clamp(Z, Min.Z, Max.Z));
+			return TVector(std::clamp(X, Min.X, Max.X), std::clamp(Y, Min.Y, Max.Y), std::clamp(Z, Min.Z, Max.Z));
 		}
 
 		TVector Abs() const noexcept
@@ -756,7 +738,7 @@ namespace UCommon
 
 		TVector4 Clmap(T Min, T Max) const noexcept
 		{
-			return TVector4(Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max), Clamp(W, Min, Max));
+			return TVector4(std::clamp(X, Min, Max), std::clamp(Y, Min, Max), std::clamp(Z, Min, Max), std::clamp(W, Min, Max));
 		}
 
 		TVector4 Abs() const noexcept
@@ -950,8 +932,8 @@ namespace UCommon
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FVector& MinYCoCg, const FVector& MaxYCoCg)
 	{
 		const FVector YCoCg = RGBToYCoCg(RGB);
-		const FVector ClampedYCoCg = YCoCg.Clmap(MinYCoCg, MaxYCoCg);
-		return YCoCgToRGB(ClampedYCoCg);
+		const FVector ClampYCoCg = YCoCg.Clmap(MinYCoCg, MaxYCoCg);
+		return YCoCgToRGB(ClampYCoCg);
 	}
 
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FBox& YCoCgBox)
