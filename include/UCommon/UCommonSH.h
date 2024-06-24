@@ -118,7 +118,7 @@ namespace UCommon
 			TSHVector Result;
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
-				Result.V[i] = A.V[i] * B.V[i];
+				Result.V[i] = A.V[i] + B.V[i];
 			}
 			return Result;
 		}

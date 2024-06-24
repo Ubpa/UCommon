@@ -58,6 +58,7 @@ namespace NameSpace \
 	template<typename T> using TBox2 = UCommon::FBox2; \
 	template<typename T> using TBox = UCommon::FBox; \
 	template<typename T> using TBox4 = UCommon::FBox4; \
+	using FRange = UCommon::FRange; \
 	using FBox2 = UCommon::FBox2; \
 	using FBox = UCommon::FBox; \
 	using FBox4 = UCommon::FBox4; \
@@ -835,6 +836,13 @@ namespace UCommon
 	using FDoubleColor = FDoubleVector4;
 
 	template<typename T>
+	struct TRange
+	{
+		T Min;
+		T Max;
+	};
+
+	template<typename T>
 	struct TBox2
 	{
 		TVector2<T> Min;
@@ -855,6 +863,7 @@ namespace UCommon
 		TVector4<T> Max;
 	};
 
+	using FRange = TRange<float>;
 	using FBox2 = TBox2<float>;
 	using FBox = TBox<float>;
 	using FBox4 = TBox4<float>;
