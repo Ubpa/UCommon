@@ -29,41 +29,59 @@ SOFTWARE.
 #include <stdint.h>
 #include <cmath>
 #include <type_traits>
-#include <random>
+#include <algorithm>
 
 #define UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
-	template<typename T> using TVector2 = UCommon::TVector2<T>; \
-	template<typename T> using TVector = UCommon::TVector<T>; \
-	template<typename T> using TVector4 = UCommon::TVector4<T>; \
-	using FVector2 = UCommon::FVector2; \
-	using FDoubleVector2 = UCommon::FDoubleVector2; \
-	using FInt64Vector2 = UCommon::FInt64Vector2; \
-	using FInt8Vector2 = UCommon::FInt8Vector2; \
-	using FUint64Vector2 = UCommon::FUint64Vector2; \
-	using FUint8Vector2 = UCommon::FUint8Vector2; \
-	using FVector = UCommon::FVector; \
-	using FDoubleVector = UCommon::FDoubleVector; \
-	using FInt64Vector = UCommon::FInt64Vector; \
-	using FInt8Vector = UCommon::FInt8Vector; \
-	using FUint64Vector = UCommon::FUint64Vector; \
-	using FUint8Vector = UCommon::FUint8Vector; \
-	using FVector4 = UCommon::FVector4; \
-	using FDoubleVector4 = UCommon::FDoubleVector4; \
-	using FInt64Vector4 = UCommon::FInt64Vector4; \
-	using FInt8Vector4 = UCommon::FInt8Vector4; \
-	using FUint64Vector4 = UCommon::FUint64Vector4; \
-	using FUint8Vector4 = UCommon::FUint8Vector4; \
-	template<typename T> using TBox2 = UCommon::FBox2; \
-	template<typename T> using TBox = UCommon::FBox; \
-	template<typename T> using TBox4 = UCommon::FBox4; \
-	using FRange = UCommon::FRange; \
-	using FBox2 = UCommon::FBox2; \
-	using FBox = UCommon::FBox; \
-	using FBox4 = UCommon::FBox4; \
-	template<typename T> using TSpan = UCommon::TSpan<T>; \
-	constexpr float Pi = UCommon::Pi; \
+    template<typename T> using TVector2 = UCommon::TVector2<T>; \
+    template<typename T> using TVector = UCommon::TVector<T>; \
+    template<typename T> using TVector4 = UCommon::TVector4<T>; \
+    using FVector2 = UCommon::FVector2; \
+    using FDoubleVector2 = UCommon::FDoubleVector2; \
+    using FInt8Vector2 = UCommon::FInt8Vector2; \
+    using FInt16Vector2 = UCommon::FInt16Vector2; \
+    using FInt32Vector2 = UCommon::FInt32Vector2; \
+    using FInt64Vector2 = UCommon::FInt64Vector2; \
+    using FUint8Vector2 = UCommon::FUint8Vector2; \
+    using FUint16Vector2 = UCommon::FUint16Vector2; \
+    using FUint32Vector2 = UCommon::FUint32Vector2; \
+    using FUint64Vector2 = UCommon::FUint64Vector2; \
+    using FVector = UCommon::FVector; \
+    using FDoubleVector = UCommon::FDoubleVector; \
+    using FInt8Vector = UCommon::FInt8Vector; \
+    using FInt16Vector = UCommon::FInt16Vector; \
+    using FInt32Vector = UCommon::FInt32Vector; \
+    using FInt64Vector = UCommon::FInt64Vector; \
+    using FUint8Vector = UCommon::FUint8Vector; \
+    using FUint16Vector = UCommon::FUint16Vector; \
+    using FUint32Vector = UCommon::FUint32Vector; \
+    using FUint64Vector = UCommon::FUint64Vector; \
+    using FVector4 = UCommon::FVector4; \
+    using FDoubleVector4 = UCommon::FDoubleVector4; \
+    using FInt8Vector4 = UCommon::FInt8Vector4; \
+    using FInt16Vector4 = UCommon::FInt16Vector4; \
+    using FInt32Vector4 = UCommon::FInt32Vector4; \
+    using FInt64Vector4 = UCommon::FInt64Vector4; \
+    using FUint8Vector4 = UCommon::FUint8Vector4; \
+    using FUint16Vector4 = UCommon::FUint16Vector4; \
+    using FUint32Vector4 = UCommon::FUint32Vector4; \
+    using FUint64Vector4 = UCommon::FUint64Vector4; \
+    using FColorRGB = UCommon::FColorRGB; \
+    using FLinearColorRGB = UCommon::FLinearColorRGB; \
+    using FDoubleColorRGB = UCommon::FDoubleColorRGB; \
+    using FColor = UCommon::FColor; \
+    using FLinearColor = UCommon::FLinearColor; \
+    using FDoubleColor = UCommon::FDoubleColor; \
+    template<typename T> using TBox2 = UCommon::FBox2; \
+    template<typename T> using TBox = UCommon::FBox; \
+    template<typename T> using TBox4 = UCommon::FBox4; \
+    using FRange = UCommon::FRange; \
+    using FBox2 = UCommon::FBox2; \
+    using FBox = UCommon::FBox; \
+    using FBox4 = UCommon::FBox4; \
+    template<typename T> using TSpan = UCommon::TSpan<T>; \
+    constexpr float Pi = UCommon::Pi; \
 }
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op)        \
@@ -188,6 +206,13 @@ friend bool operator Op (const TVector2& Lhs, const TVector2& Rhs) noexcept \
 
 namespace UCommon
 {
+	template<typename T>
+	T Clamp(const T& V, const T& VMin, const T& VMax) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(VMin <= VMax);
+		return V <= VMin ? VMin : (V >= VMax ? VMax : V);
+	}
+
 	template<typename T> struct TVector2;
 	template<typename T> struct TVector;
 	template<typename T> struct TVector4;
@@ -195,6 +220,8 @@ namespace UCommon
 	template<typename T>
 	struct TVector2
 	{
+		using value_type = T;
+
 		UBPA_UCOMMON_TVECTOR2_DEFINE
 
 		TVector2() noexcept {} //uninitilaized
@@ -321,7 +348,7 @@ namespace UCommon
 
 		TVector2 Clmap(T Min, T Max) const noexcept
 		{
-			return TVector2(std::clamp(X, Min, Max), std::clamp(Y, Min, Max));
+			return TVector2(Clamp(X, Min, Max), Clamp(Y, Min, Max));
 		}
 
 		TVector2 Abs() const noexcept
@@ -337,6 +364,11 @@ namespace UCommon
 		TVector2 Ceil() const noexcept
 		{
 			return TVector2(std::ceil(X), std::ceil(Y));
+		}
+
+		TVector2 Floor() const noexcept
+		{
+			return TVector(std::floor(X), std::floor(Y));
 		}
 
 		TVector2 Min(T V) const noexcept
@@ -388,14 +420,20 @@ namespace UCommon
 
 	using FVector2 = TVector2<float>;
 	using FDoubleVector2 = TVector2<double>;
-	using FInt64Vector2 = TVector2<int64_t>;
 	using FInt8Vector2 = TVector2<int8_t>;
-	using FUint64Vector2 = TVector2<uint64_t>;
+	using FInt16Vector2 = TVector2<int16_t>;
+	using FInt32Vector2 = TVector2<int32_t>;
+	using FInt64Vector2 = TVector2<int64_t>;
 	using FUint8Vector2 = TVector2<uint8_t>;
+	using FUint16Vector2 = TVector2<uint16_t>;
+	using FUint32Vector2 = TVector2<uint32_t>;
+	using FUint64Vector2 = TVector2<uint64_t>;
 
 	template<typename T>
 	struct TVector
 	{
+		using value_type = T;
+
 		UBPA_UCOMMON_TVECTOR_DEFINE
 
 		TVector() noexcept {} //uninitilaized
@@ -531,12 +569,12 @@ namespace UCommon
 
 		TVector Clmap(T Min, T Max) const noexcept
 		{
-			return TVector(std::clamp(X, Min, Max), std::clamp(Y, Min, Max), std::clamp(Z, Min, Max));
+			return TVector(Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max));
 		}
 
 		TVector Clmap(TVector Min, TVector Max) const noexcept
 		{
-			return TVector(std::clamp(X, Min.X, Max.X), std::clamp(Y, Min.Y, Max.Y), std::clamp(Z, Min.Z, Max.Z));
+			return TVector(Clamp(X, Min.X, Max.X), Clamp(Y, Min.Y, Max.Y), Clamp(Z, Min.Z, Max.Z));
 		}
 
 		TVector Abs() const noexcept
@@ -552,6 +590,11 @@ namespace UCommon
 		TVector Ceil() const noexcept
 		{
 			return TVector(std::ceil(X), std::ceil(Y), std::ceil(Z));
+		}
+
+		TVector Floor() const noexcept
+		{
+			return TVector(std::floor(X), std::floor(Y), std::floor(Z));
 		}
 
 		TVector Min(T V) const noexcept
@@ -603,14 +646,20 @@ namespace UCommon
 
 	using FVector = TVector<float>;
 	using FDoubleVector = TVector<double>;
-	using FInt64Vector = TVector<int64_t>;
 	using FInt8Vector = TVector<int8_t>;
-	using FUint64Vector = TVector<uint64_t>;
+	using FInt16Vector = TVector<int16_t>;
+	using FInt32Vector = TVector<int32_t>;
+	using FInt64Vector = TVector<int64_t>;
 	using FUint8Vector = TVector<uint8_t>;
+	using FUint16Vector = TVector<uint16_t>;
+	using FUint32Vector = TVector<uint32_t>;
+	using FUint64Vector = TVector<uint64_t>;
 
 	template<typename T>
 	struct TVector4
 	{
+		using value_type = T;
+
 		UBPA_UCOMMON_TVECTOR4_DEFINE
 
 		TVector4() noexcept {} //uninitilaized
@@ -738,22 +787,27 @@ namespace UCommon
 
 		TVector4 Clmap(T Min, T Max) const noexcept
 		{
-			return TVector4(std::clamp(X, Min, Max), std::clamp(Y, Min, Max), std::clamp(Z, Min, Max), std::clamp(W, Min, Max));
+			return { Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max), Clamp(W, Min, Max) };
 		}
 
 		TVector4 Abs() const noexcept
 		{
-			return TVector4(std::abs(X), std::abs(Y), std::abs(Z), std::abs(W));
+			return { std::abs(X), std::abs(Y), std::abs(Z), std::abs(W) };
 		}
 
 		TVector4 Round() const noexcept
 		{
-			return TVector4(std::round(X), std::round(Y), std::round(Z), std::round(W));
+			return { std::round(X), std::round(Y), std::round(Z), std::round(W) };
 		}
 
 		TVector4 Ceil() const noexcept
 		{
 			return TVector4(std::ceil(X), std::ceil(Y), std::ceil(Z), std::ceil(W));
+		}
+
+		TVector4 Floor() const noexcept
+		{
+			return TVector(std::floor(X), std::floor(Y), std::floor(Z), std::floor(W));
 		}
 
 		TVector4 Min(T V) const noexcept
@@ -803,12 +857,23 @@ namespace UCommon
 		}
 	};
 
+	template<typename T> struct TIsVector { static constexpr bool value = false; };
+	template<typename T> struct TIsVector<TVector2<T>> { static constexpr bool value = true; };
+	template<typename T> struct TIsVector<TVector<T>> { static constexpr bool value = true; };
+	template<typename T> struct TIsVector<TVector4<T>> { static constexpr bool value = true; };
+	template<typename T>
+	constexpr bool IsVector_v = TIsVector<T>::value;
+
 	using FVector4 = TVector4<float>;
 	using FDoubleVector4 = TVector4<double>;
-	using FInt64Vector4 = TVector4<int64_t>;
 	using FInt8Vector4 = TVector4<int8_t>;
-	using FUint64Vector4 = TVector4<uint64_t>;
+	using FInt16Vector4 = TVector4<int16_t>;
+	using FInt32Vector4 = TVector4<int32_t>;
+	using FInt64Vector4 = TVector4<int64_t>;
 	using FUint8Vector4 = TVector4<uint8_t>;
+	using FUint16Vector4 = TVector4<uint16_t>;
+	using FUint32Vector4 = TVector4<uint32_t>;
+	using FUint64Vector4 = TVector4<uint64_t>;
 
 	using FColorRGB = FUint8Vector;
 	using FLinearColorRGB = FVector;
@@ -820,6 +885,8 @@ namespace UCommon
 	template<typename T>
 	struct TRange
 	{
+		using value_type = T;
+
 		T Min;
 		T Max;
 	};
@@ -827,6 +894,8 @@ namespace UCommon
 	template<typename T>
 	struct TBox2
 	{
+		using value_type = T;
+
 		TVector2<T> Min;
 		TVector2<T> Max;
 	};
@@ -834,6 +903,8 @@ namespace UCommon
 	template<typename T>
 	struct TBox
 	{
+		using value_type = T;
+
 		TVector<T> Min;
 		TVector<T> Max;
 	};
@@ -841,6 +912,8 @@ namespace UCommon
 	template<typename T>
 	struct TBox4
 	{
+		using value_type = T;
+
 		TVector4<T> Min;
 		TVector4<T> Max;
 	};
@@ -869,6 +942,8 @@ namespace UCommon
 	class TSpan
 	{
 	public:
+		using value_type = T;
+
 		inline TSpan(T* InPointer, uint64_t InSize) noexcept
 			: Pointer(InPointer)
 			, Size(InSize)
