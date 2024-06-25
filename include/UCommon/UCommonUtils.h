@@ -346,14 +346,24 @@ namespace UCommon
 			return{ static_cast<U>(X), static_cast<U>(Y) };
 		}
 
-		TVector2 Clmap(T Min, T Max) const noexcept
+		TVector2 Clamp(T Min, T Max) const noexcept
 		{
-			return { Clamp(X, Min, Max), Clamp(Y, Min, Max) };
+			return { UCommon::Clamp(X, Min, Max), UCommon::Clamp(Y, Min, Max) };
+		}
+
+		TVector2 Clamp(const TVector2& Min, const TVector2& Max) const noexcept
+		{
+			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y) };
 		}
 
 		TVector2 Abs() const noexcept
 		{
 			return { std::abs(X), std::abs(Y) };
+		}
+
+		TVector2 Sqrt() const noexcept
+		{
+			return { std::sqrt(X), std::sqrt(Y) };
 		}
 
 		TVector2 Round() const noexcept
@@ -389,6 +399,21 @@ namespace UCommon
 		TVector2 Max(const TVector2& V) const noexcept
 		{
 			return { std::max(X, V.X), std::max(Y, V.Y) };
+		}
+
+		T MinComponent() const noexcept
+		{
+			return std::min(X, Y);
+		}
+
+		T MaxComponent() const noexcept
+		{
+			return std::max(X, Y);
+		}
+
+		T Average() const noexcept
+		{
+			return (X + Y) * static_cast<T>(1. / 2.);
 		}
 
 		T Area() const noexcept
@@ -567,19 +592,24 @@ namespace UCommon
 			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z) };
 		}
 
-		TVector Clmap(T Min, T Max) const noexcept
+		TVector Clamp(T Min, T Max) const noexcept
 		{
-			return { Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max) };
+			return { UCommon::Clamp(X, Min, Max), UCommon::Clamp(Y, Min, Max), UCommon::Clamp(Z, Min, Max) };
 		}
 
-		TVector Clmap(TVector Min, TVector Max) const noexcept
+		TVector Clamp(const TVector& Min, const TVector& Max) const noexcept
 		{
-			return { Clamp(X, Min.X, Max.X), Clamp(Y, Min.Y, Max.Y), Clamp(Z, Min.Z, Max.Z) };
+			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y), UCommon::Clamp(Z, Min.Z, Max.Z) };
 		}
 
 		TVector Abs() const noexcept
 		{
 			return { std::abs(X), std::abs(Y), std::abs(Z) };
+		}
+
+		TVector Sqrt() const noexcept
+		{
+			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z) };
 		}
 
 		TVector Round() const noexcept
@@ -615,6 +645,21 @@ namespace UCommon
 		TVector Max(const TVector& V) const noexcept
 		{
 			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z) };
+		}
+
+		T MinComponent() const noexcept
+		{
+			return std::min(std::min(X, Y), Z);
+		}
+
+		T MaxComponent() const noexcept
+		{
+			return std::max(std::max(X, Y), Z);
+		}
+
+		T Average() const noexcept
+		{
+			return (X + Y + Z) * static_cast<T>(1. / 3.);
 		}
 
 		T Volume() const noexcept
@@ -785,14 +830,24 @@ namespace UCommon
 			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z), static_cast<U>(W) };
 		}
 
-		TVector4 Clmap(T Min, T Max) const noexcept
+		TVector4 Clamp(T Min, T Max) const noexcept
 		{
-			return { Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max), Clamp(W, Min, Max) };
+			return { UCommon::Clamp(X, Min, Max), UCommon::Clamp(Y, Min, Max), UCommon::Clamp(Z, Min, Max), UCommon::Clamp(W, Min, Max) };
+		}
+
+		TVector4 Clamp(const TVector4& Min, const TVector4& Max) const noexcept
+		{
+			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y), UCommon::Clamp(Z, Min.Z, Max.Z), UCommon::Clamp(W, Min.W, Max.W) };
 		}
 
 		TVector4 Abs() const noexcept
 		{
 			return { std::abs(X), std::abs(Y), std::abs(Z), std::abs(W) };
+		}
+
+		TVector4 Sqrt() const noexcept
+		{
+			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z), std::sqrt(W) };
 		}
 
 		TVector4 Round() const noexcept
@@ -828,6 +883,21 @@ namespace UCommon
 		TVector4 Max(const TVector4& V) const noexcept
 		{
 			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z), std::max(W, V.W) };
+		}
+
+		T MaxComponent() const noexcept
+		{
+			return std::max(std::max(X, Y), std::max(Z, W));
+		}
+
+		T MinComponent() const noexcept
+		{
+			return std::min(std::min(X, Y), std::min(Z, W));
+		}
+
+		T Average() const noexcept
+		{
+			return (X + Y + Z + W) * static_cast<T>(1. / 4.);
 		}
 
 		T Volume() const noexcept
@@ -1011,7 +1081,7 @@ namespace UCommon
 	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FVector& MinYCoCg, const FVector& MaxYCoCg)
 	{
 		const FVector YCoCg = RGBToYCoCg(RGB);
-		const FVector ClampYCoCg = YCoCg.Clmap(MinYCoCg, MaxYCoCg);
+		const FVector ClampYCoCg = YCoCg.Clamp(MinYCoCg, MaxYCoCg);
 		return YCoCgToRGB(ClampYCoCg);
 	}
 
