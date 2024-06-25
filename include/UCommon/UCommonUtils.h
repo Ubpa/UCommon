@@ -863,6 +863,10 @@ namespace UCommon
 	template<typename T> struct TIsVector<TVector4<T>> { static constexpr bool value = true; };
 	template<typename T>
 	constexpr bool IsVector_v = TIsVector<T>::value;
+	template<typename T> struct TRemoveVector { using value_type = T; };
+	template<typename T> struct TRemoveVector<TVector2<T>> { using value_type = T; };
+	template<typename T> struct TRemoveVector<TVector<T>> { using value_type = T; };
+	template<typename T> struct TRemoveVector<TVector4<T>> { using value_type = T; };
 
 	using FVector4 = TVector4<float>;
 	using FDoubleVector4 = TVector4<double>;
