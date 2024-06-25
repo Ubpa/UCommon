@@ -343,52 +343,52 @@ namespace UCommon
 		template<typename U>
 		operator TVector2<U>() const noexcept
 		{
-			return TVector2<U>(static_cast<U>(X), static_cast<U>(Y));
+			return{ static_cast<U>(X), static_cast<U>(Y) };
 		}
 
 		TVector2 Clmap(T Min, T Max) const noexcept
 		{
-			return TVector2(Clamp(X, Min, Max), Clamp(Y, Min, Max));
+			return { Clamp(X, Min, Max), Clamp(Y, Min, Max) };
 		}
 
 		TVector2 Abs() const noexcept
 		{
-			return TVector2(std::abs(X), std::abs(Y));
+			return { std::abs(X), std::abs(Y) };
 		}
 
 		TVector2 Round() const noexcept
 		{
-			return TVector2(std::round(X), std::round(Y));
+			return { std::round(X), std::round(Y) };
 		}
 
 		TVector2 Ceil() const noexcept
 		{
-			return TVector2(std::ceil(X), std::ceil(Y));
+			return { std::ceil(X), std::ceil(Y) };
 		}
 
 		TVector2 Floor() const noexcept
 		{
-			return TVector(std::floor(X), std::floor(Y));
+			return { std::floor(X), std::floor(Y) };
 		}
 
 		TVector2 Min(T V) const noexcept
 		{
-			return TVector2(std::min(X, V), std::min(Y, V));
+			return { std::min(X, V), std::min(Y, V) };
 		}
 
 		TVector2 Max(T V) const noexcept
 		{
-			return TVector2(std::max(X, V), std::max(Y, V));
+			return { std::max(X, V), std::max(Y, V) };
 		}
 
 		TVector2 Min(const TVector2& V) const noexcept
 		{
-			return TVector2(std::min(X, V.X), std::min(Y, V.Y));
+			return { std::min(X, V.X), std::min(Y, V.Y) };
 		}
 
 		TVector2 Max(const TVector2& V) const noexcept
 		{
-			return TVector2(std::max(X, V.X), std::max(Y, V.Y));
+			return { std::max(X, V.X), std::max(Y, V.Y) };
 		}
 
 		T Area() const noexcept
@@ -398,7 +398,7 @@ namespace UCommon
 
 		static TVector2 Rand01()
 		{
-			return TVector2{ rand() / static_cast<T>(RAND_MAX),rand() / static_cast<T>(RAND_MAX) };
+			return { rand() / static_cast<T>(RAND_MAX),rand() / static_cast<T>(RAND_MAX) };
 		}
 
 		T& operator[](uint64_t Index) noexcept
@@ -564,57 +564,57 @@ namespace UCommon
 		template<typename U>
 		operator TVector<U>() const noexcept
 		{
-			return TVector<U>(static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z));
+			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z) };
 		}
 
 		TVector Clmap(T Min, T Max) const noexcept
 		{
-			return TVector(Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max));
+			return { Clamp(X, Min, Max), Clamp(Y, Min, Max), Clamp(Z, Min, Max) };
 		}
 
 		TVector Clmap(TVector Min, TVector Max) const noexcept
 		{
-			return TVector(Clamp(X, Min.X, Max.X), Clamp(Y, Min.Y, Max.Y), Clamp(Z, Min.Z, Max.Z));
+			return { Clamp(X, Min.X, Max.X), Clamp(Y, Min.Y, Max.Y), Clamp(Z, Min.Z, Max.Z) };
 		}
 
 		TVector Abs() const noexcept
 		{
-			return TVector(std::abs(X), std::abs(Y), std::abs(Z));
+			return { std::abs(X), std::abs(Y), std::abs(Z) };
 		}
 
 		TVector Round() const noexcept
 		{
-			return TVector(std::round(X), std::round(Y), std::round(Z));
+			return { std::round(X), std::round(Y), std::round(Z) };
 		}
 
 		TVector Ceil() const noexcept
 		{
-			return TVector(std::ceil(X), std::ceil(Y), std::ceil(Z));
+			return { std::ceil(X), std::ceil(Y), std::ceil(Z) };
 		}
 
 		TVector Floor() const noexcept
 		{
-			return TVector(std::floor(X), std::floor(Y), std::floor(Z));
+			return { std::floor(X), std::floor(Y), std::floor(Z) };
 		}
 
 		TVector Min(T V) const noexcept
 		{
-			return TVector(std::min(X, V), std::min(Y, V), std::min(Z, V));
+			return { std::min(X, V), std::min(Y, V), std::min(Z, V) };
 		}
 
 		TVector Max(T V) const noexcept
 		{
-			return TVector(std::max(X, V), std::max(Y, V), std::max(Z, V));
+			return { std::max(X, V), std::max(Y, V), std::max(Z, V) };
 		}
 
 		TVector Min(const TVector& V) const noexcept
 		{
-			return TVector(std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z));
+			return { std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z) };
 		}
 
 		TVector Max(const TVector& V) const noexcept
 		{
-			return TVector(std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z));
+			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z) };
 		}
 
 		T Volume() const noexcept
@@ -758,7 +758,7 @@ namespace UCommon
 			const T SquaredLength = GetSquaredLength();
 			if (SquaredLength < SquaredDelta)
 			{
-				return TVector4(0, 0, 0);
+				return TVector4(0);
 			}
 			const T Length = std::sqrt(SquaredLength);
 
@@ -782,7 +782,7 @@ namespace UCommon
 		template<typename U>
 		operator TVector4<U>() const noexcept
 		{
-			return TVector4<U>(static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z), static_cast<U>(W));
+			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z), static_cast<U>(W) };
 		}
 
 		TVector4 Clmap(T Min, T Max) const noexcept
@@ -802,32 +802,32 @@ namespace UCommon
 
 		TVector4 Ceil() const noexcept
 		{
-			return TVector4(std::ceil(X), std::ceil(Y), std::ceil(Z), std::ceil(W));
+			return { std::ceil(X), std::ceil(Y), std::ceil(Z), std::ceil(W) };
 		}
 
 		TVector4 Floor() const noexcept
 		{
-			return TVector(std::floor(X), std::floor(Y), std::floor(Z), std::floor(W));
+			return { std::floor(X), std::floor(Y), std::floor(Z), std::floor(W) };
 		}
 
 		TVector4 Min(T V) const noexcept
 		{
-			return TVector4(std::min(X, V), std::min(Y, V), std::min(Z, V), std::min(W, V));
+			return { std::min(X, V), std::min(Y, V), std::min(Z, V), std::min(W, V) };
 		}
 
 		TVector4 Max(T V) const noexcept
 		{
-			return TVector4(std::max(X, V), std::max(Y, V), std::max(Z, V), std::max(W, V));
+			return { std::max(X, V), std::max(Y, V), std::max(Z, V), std::max(W, V) };
 		}
 
 		TVector4 Min(const TVector4& V) const noexcept
 		{
-			return TVector4(std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z), std::min(W, V.W));
+			return { std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z), std::min(W, V.W) };
 		}
 
 		TVector4 Max(const TVector4& V) const noexcept
 		{
-			return TVector4(std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z), std::max(W, V.W));
+			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z), std::max(W, V.W) };
 		}
 
 		T Volume() const noexcept
