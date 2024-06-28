@@ -79,20 +79,20 @@ namespace UCommon
 			static constexpr float Func(float x, float y, float z) { return 0.54627424f * (x * x - y * y); }
 		};
 
-		template<int MaxSHBasis>
+		template<int SHIndexOffset, int MaxSHBasis>
 		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int>) {}
 
-		template<int MaxSHBasis, int FirstIndex, int... LeftIndices>
+		template<int SHIndexOffset, int MaxSHBasis, int FirstIndex, int... LeftIndices>
 		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int, FirstIndex, LeftIndices...>)
 		{
-			V[FirstIndex] = SH<SHIndexToL<FirstIndex>, SHIndexToM<FirstIndex>>(X, Y, Z);
-			SHs(V, X, Y, Z, std::integer_sequence<int, LeftIndices...>());
+			V[FirstIndex] = SH<SHIndexToL<SHIndexOffset + FirstIndex>, SHIndexToM<SHIndexOffset + FirstIndex>>(X, Y, Z);
+			SHs<SHIndexOffset>(V, X, Y, Z, std::integer_sequence<int, LeftIndices...>());
 		}
 
-		template<int MaxSHBasis>
+		template<int SHIndexOffset, int MaxSHBasis>
 		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z)
 		{
-			SHs(V, X, Y, Z, std::make_integer_sequence<int, MaxSHBasis>());
+			SHs<SHIndexOffset>(V, X, Y, Z, std::make_integer_sequence<int, MaxSHBasis>());
 		}
 	}
 }
@@ -105,24 +105,25 @@ constexpr float UCommon::SH(float x, float y, float z)
 	return Details::SHImpl<l, m>::Func(x, y, z);
 }
 
-template<int Order>
-UCommon::TSHVector<Order> UCommon::TSHVector<Order>::SHBasisFunction(const FVector& Vector)
+template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
+DerivedType UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::SHBasisFunction(const FVector& Vector)
 {
-	TSHVector Result;
-	Details::SHs(Result.V, Vector.X, Vector.Y, Vector.Z);
+	constexpr int SHIndexOffset = InMaxSHOrder * InMaxSHOrder - InMaxSHBasis;
+	DerivedType Result;
+	Details::SHs<SHIndexOffset>(Result.V, Vector.X, Vector.Y, Vector.Z);
 	return Result;
 }
 
-template<int Order>
-float UCommon::TSHVector<Order>::operator()(const FVector& Vector) const
+template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
+float UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector& Vector) const
 {
-	const TSHVector<Order> SHBasises = TSHVector<Order>::SHBasisFunction(Vector);
-	return Dot(*this, SHBasises);
+	const DerivedType SHBasises = DerivedType::SHBasisFunction(Vector);
+	return Dot(static_cast<const DerivedType&>(*this), SHBasises);
 }
 
-template<int Order>
-UCommon::FVector UCommon::TSHVectorRGB<Order>::operator()(const FVector& Vector) const
+template<typename DerivedType, template<int> typename TElement, int InMaxSHOrder, int InMaxSHBasis>
+UCommon::FVector UCommon::TSHVectorRGBBase<DerivedType, TElement, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector& Vector) const
 {
-	const TSHVector<Order> SHBasises = TSHVector<Order>::SHBasisFunction(Vector);
-	return { TSHVector<Order>::Dot(R, SHBasises), TSHVector<Order>::Dot(G, SHBasises), TSHVector<Order>::Dot(B, SHBasises) };
+	const TElement<MaxSHOrder> SHBasises = TElement<MaxSHOrder>::SHBasisFunction(Vector);
+	return { TElement<MaxSHOrder>::Dot(R, SHBasises), TElement<MaxSHOrder>::Dot(G, SHBasises), TElement<MaxSHOrder>::Dot(B, SHBasises) };
 }

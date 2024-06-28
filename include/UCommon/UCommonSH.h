@@ -32,10 +32,16 @@ namespace NameSpace \
 { \
 	template<int i> constexpr int SHIndexToL = UCommon::SHIndexToL<i>; \
 	template<int i> constexpr int SHIndexToM = UCommon::SHIndexToM<i>; \
+	template<int Order> using TSHBandVector = UCommon::TSHBandVector<Order>; \
+	template<int Order> using TSHBandVectorRGB = UCommon::TSHBandVectorRGB<Order>; \
 	template<int Order> using TSHVector = UCommon::TSHVector<Order>; \
 	template<int Order> using TSHVectorRGB = UCommon::TSHVectorRGB<Order>; \
+	using FSHBandVector2 = UCommon::FSHBandVector2; \
+	using FSHBandVector3 = UCommon::FSHBandVector3; \
 	using FSHVector2 = UCommon::FSHVector2; \
 	using FSHVector3 = UCommon::FSHVector3; \
+	using FSHBandVectorRGB2 = UCommon::FSHBandVectorRGB2; \
+	using FSHBandVectorRGB3 = UCommon::FSHBandVectorRGB3; \
 	using FSHVectorRGB2 = UCommon::FSHVectorRGB2; \
 	using FSHVectorRGB3 = UCommon::FSHVectorRGB3; \
 }
@@ -51,53 +57,28 @@ namespace UCommon
 	template<int i>
 	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : i - 6);
 
-	/** A vector of spherical harmonic coefficients. */
-	template<int Order>
-	class TSHVector
+	template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
+	class TSHVectorBase
 	{
 	public:
-		static constexpr int MaxSHOrder = Order;
-		static constexpr int MaxSHBasis = MaxSHOrder * MaxSHOrder;
+		static constexpr int MaxSHOrder = InMaxSHOrder;
+		static constexpr int MaxSHBasis = InMaxSHBasis;
 		float V[MaxSHBasis];
 
 		/** Default constructor. */
-		TSHVector() : V{ 0 } {}
+		TSHVectorBase() : V{ 0 } {}
 
-		TSHVector(float V0, float V1, float V2, float V3) : V{ V0,V1,V2,V3 } {}
-
-		explicit TSHVector(const FVector4& Vector) : TSHVector(Vector.X, Vector.Y, Vector.Z, Vector.W) {}
-
-		template<int OtherOrder>
-		explicit TSHVector(const TSHVector<OtherOrder>&Other)
-		{
-			if (MaxSHBasis <= TSHVector<OtherOrder>::MaxSHBasis)
-			{
-				for (int i = 0; i < MaxSHBasis; i++)
-				{
-					V[i] = Other.V[i];
-				}
-			}
-			else
-			{
-				for (int i = 0; i < TSHVector<OtherOrder>::MaxSHBasis; i++)
-				{
-					V[i] = Other.V[i];
-				}
-				for (int i = TSHVector<OtherOrder>::MaxSHBasis; i < MaxSHBasis; i++)
-				{
-					V[i] = 0.f;
-				}
-			}
-		}
+		template<typename ArgType0, typename... ArgTypes>
+		TSHVectorBase(ArgType0 Arg0, ArgTypes... Args) : V{ Arg0, Args... } {}
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
-		static TSHVector SHBasisFunction(const FVector& Vector);
+		static DerivedType SHBasisFunction(const FVector& Vector);
 
 		/** Scalar multiplication operator. */
 		/** Changed to float& from float to avoid LHS **/
-		friend inline TSHVector operator*(const TSHVector & A, const float& B)
+		friend inline DerivedType operator*(const DerivedType& A, const float& B)
 		{
-			TSHVector Result;
+			DerivedType Result;
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
 				Result.V[i] = A.V[i] * B;
@@ -106,16 +87,16 @@ namespace UCommon
 		}
 
 		/** Scalar division operator. */
-		friend inline TSHVector operator/(const TSHVector & A, const float& Scalar)
+		friend inline DerivedType operator/(const DerivedType& A, const float& Scalar)
 		{
 			const float B = 1.f / Scalar;
 			return A * B;
 		}
 
 		/** Addition operator. */
-		friend inline TSHVector operator+(const TSHVector & A, const TSHVector & B)
+		friend inline DerivedType operator+(const DerivedType& A, const DerivedType& B)
 		{
-			TSHVector Result;
+			DerivedType Result;
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
 				Result.V[i] = A.V[i] + B.V[i];
@@ -124,9 +105,9 @@ namespace UCommon
 		}
 
 		/** Subtraction operator. */
-		friend inline TSHVector operator-(const TSHVector & A, const TSHVector & B)
+		friend inline DerivedType operator-(const DerivedType& A, const DerivedType& B)
 		{
-			TSHVector Result;
+			DerivedType Result;
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
 				Result.V[i] = A.V[i] - B.V[i];
@@ -135,7 +116,7 @@ namespace UCommon
 		}
 
 		/** Dot product operator. */
-		static inline float Dot(const TSHVector & A, const TSHVector & B)
+		static inline float Dot(const DerivedType& A, const DerivedType& B)
 		{
 			float Result = 0.f;
 			for (int i = 0; i < MaxSHBasis; i++)
@@ -148,7 +129,7 @@ namespace UCommon
 		/** In-place addition operator. */
 		/** Changed from (*this = *this + B;} to calculate here to avoid LHS **/
 		/** Now this avoids TSHVector + operator thus LHS on *this as well as Result and more **/
-		inline TSHVector& operator+=(const TSHVector & B)
+		inline DerivedType& operator+=(const DerivedType& B)
 		{
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
@@ -160,7 +141,7 @@ namespace UCommon
 		/** In-place subtraction operator. */
 		/** Changed from (*this = *this - B;} to calculate here to avoid LHS **/
 		/** Now this avoids TSHVector - operator thus LHS on *this as well as Result and **/
-		inline TSHVector& operator-=(const TSHVector & B)
+		inline DerivedType& operator-=(const DerivedType& B)
 		{
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
@@ -173,7 +154,7 @@ namespace UCommon
 		/** Changed to float& from float to avoid LHS **/
 		/** Changed from (*this = *this * B;) to calculate here to avoid LHS **/
 		/** Now this avoids TSHVector * operator thus LHS on *this as well as Result and LHS **/
-		inline TSHVector& operator*=(const float& B)
+		inline DerivedType& operator*=(const float& B)
 		{
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
@@ -186,7 +167,7 @@ namespace UCommon
 		/** Changed to float& from float to avoid LHS **/
 		/** Changed from (*this = *this * (1.0f/B);) to calculate here to avoid LHS **/
 		/** Now this avoids TSHVector * operator thus LHS on *this as well as Result and LHS **/
-		inline TSHVector& operator/=(const float& Scalar)
+		inline DerivedType& operator/=(const float& Scalar)
 		{
 			const float B = 1.f / Scalar;
 			return operator*=(B);
@@ -195,45 +176,28 @@ namespace UCommon
 		inline float operator()(const FVector& Vector) const;
 	};
 
-	/** A vector of colored spherical harmonic coefficients. */
-	template<int Order>
-	class TSHVectorRGB
+	template<typename DerivedType, template<int> typename TElement, int InMaxSHOrder, int InMaxSHBasis>
+	class TSHVectorRGBBase
 	{
 	public:
-		static constexpr int MaxSHOrder = Order;
-		static constexpr int MaxSHBasis = MaxSHOrder * MaxSHOrder;
+		static constexpr int MaxSHOrder = InMaxSHOrder;
+		static constexpr int MaxSHBasis = InMaxSHBasis;
 
-		TSHVector<Order> R;
-		TSHVector<Order> G;
-		TSHVector<Order> B;
+		TElement<MaxSHOrder> R;
+		TElement<MaxSHOrder> G;
+		TElement<MaxSHOrder> B;
 
-		TSHVectorRGB() {}
-
-		template<int OtherOrder>
-		explicit TSHVectorRGB(const TSHVectorRGB<OtherOrder>& Other)
-		{
-			R = (TSHVector<Order>)Other.R;
-			G = (TSHVector<Order>)Other.G;
-			B = (TSHVector<Order>)Other.B;
-		}
-
-		template<int OtherOrder>
-		explicit TSHVectorRGB(const TSHVector<OtherOrder>& Other)
-		{
-			R = (TSHVector<Order>)Other;
-			G = (TSHVector<Order>)Other;
-			B = (TSHVector<Order>)Other;
-		}
+		TSHVectorRGBBase() {}
 
 		/** Calculates greyscale spherical harmonic coefficients. */
-		TSHVector<Order> GetLuminance() const
+		TElement<MaxSHOrder> GetLuminance() const
 		{
 			return R * 0.3f + G * 0.59f + B * 0.11f;
 		}
 
 		void Desaturate(float DesaturateFraction)
 		{
-			TSHVector<Order> Desaturated = GetLuminance() * DesaturateFraction;
+			TElement<MaxSHOrder> Desaturated = GetLuminance() * DesaturateFraction;
 
 			R = R * (1 - DesaturateFraction) + Desaturated;
 			G = G * (1 - DesaturateFraction) + Desaturated;
@@ -242,9 +206,9 @@ namespace UCommon
 
 		/** Scalar multiplication operator. */
 		/** Changed to float& from float to avoid LHS **/
-		friend inline TSHVectorRGB operator*(const TSHVectorRGB& A, const float& Scalar)
+		friend inline DerivedType operator*(const DerivedType& A, const float& Scalar)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R * Scalar;
 			Result.G = A.G * Scalar;
 			Result.B = A.B * Scalar;
@@ -253,9 +217,9 @@ namespace UCommon
 
 		/** Scalar multiplication operator. */
 		/** Changed to float& from float to avoid LHS **/
-		friend inline TSHVectorRGB operator*(const float& Scalar, const TSHVectorRGB& A)
+		friend inline DerivedType operator*(const float& Scalar, const DerivedType& A)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R * Scalar;
 			Result.G = A.G * Scalar;
 			Result.B = A.B * Scalar;
@@ -263,9 +227,9 @@ namespace UCommon
 		}
 
 		/** Color multiplication operator. */
-		friend inline TSHVectorRGB operator*(const TSHVectorRGB& A, const FVector& Color)
+		friend inline DerivedType operator*(const DerivedType& A, const FVector& Color)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R * Color.X;
 			Result.G = A.G * Color.Y;
 			Result.B = A.B * Color.Z;
@@ -273,9 +237,9 @@ namespace UCommon
 		}
 
 		/** Color multiplication operator. */
-		friend inline TSHVectorRGB operator*(const FVector& Color, const TSHVectorRGB& A)
+		friend inline DerivedType operator*(const FVector& Color, const DerivedType& A)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R * Color.X;
 			Result.G = A.G * Color.Y;
 			Result.B = A.B * Color.Z;
@@ -283,9 +247,9 @@ namespace UCommon
 		}
 
 		/** Division operator. */
-		friend inline TSHVectorRGB operator/(const TSHVectorRGB& A, const float& InB)
+		friend inline DerivedType operator/(const DerivedType& A, const float& InB)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R / InB;
 			Result.G = A.G / InB;
 			Result.B = A.B / InB;
@@ -293,9 +257,9 @@ namespace UCommon
 		}
 
 		/** Addition operator. */
-		friend inline TSHVectorRGB operator+(const TSHVectorRGB& A, const TSHVectorRGB& InB)
+		friend inline DerivedType operator+(const DerivedType& A, const DerivedType& InB)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R + InB.R;
 			Result.G = A.G + InB.G;
 			Result.B = A.B + InB.B;
@@ -303,9 +267,9 @@ namespace UCommon
 		}
 
 		/** Subtraction operator. */
-		friend inline TSHVectorRGB operator-(const TSHVectorRGB& A, const TSHVectorRGB& InB)
+		friend inline DerivedType operator-(const DerivedType& A, const DerivedType& InB)
 		{
-			TSHVectorRGB Result;
+			DerivedType Result;
 			Result.R = A.R - InB.R;
 			Result.G = A.G - InB.G;
 			Result.B = A.B - InB.B;
@@ -313,20 +277,20 @@ namespace UCommon
 		}
 
 		/** Dot product operator. */
-		static inline FVector Dot(const TSHVectorRGB& A, const TSHVector<Order>& InB)
+		static inline FVector Dot(const DerivedType& A, const TElement<MaxSHOrder>& InB)
 		{
 			FVector Result;
-			Result.X = TSHVector<Order>::Dot(A.R, InB);
-			Result.Y = TSHVector<Order>::Dot(A.G, InB);
-			Result.Z = TSHVector<Order>::Dot(A.B, InB);
+			Result.X = TElement<MaxSHOrder>::Dot(A.R, InB);
+			Result.Y = TElement<MaxSHOrder>::Dot(A.G, InB);
+			Result.Z = TElement<MaxSHOrder>::Dot(A.B, InB);
 			return Result;
 		}
 
 		/** In-place addition operator. */
 		/** Changed from (*this = *this + InB;) to separate all calc to avoid LHS **/
 
-		/** Now it calls directly += operator in TSHVector (avoid TSHVectorRGB + operator) **/
-		inline TSHVectorRGB& operator+=(const TSHVectorRGB& InB)
+		/** Now it calls directly += operator in TSHVector (avoid TSHVectorRGBBase + operator) **/
+		inline DerivedType& operator+=(const DerivedType& InB)
 		{
 			R += InB.R;
 			G += InB.G;
@@ -337,8 +301,8 @@ namespace UCommon
 
 		/** In-place subtraction operator. */
 		/** Changed from (*this = *this - InB;) to separate all calc to avoid LHS **/
-		/** Now it calls directly -= operator in TSHVector (avoid TSHVectorRGB - operator) **/
-		inline TSHVectorRGB& operator-=(const TSHVectorRGB& InB)
+		/** Now it calls directly -= operator in TSHVector (avoid TSHVectorRGBBase - operator) **/
+		inline DerivedType& operator-=(const DerivedType& InB)
 		{
 			R -= InB.R;
 			G -= InB.G;
@@ -349,8 +313,8 @@ namespace UCommon
 
 		/** In-place scalar multiplication operator. */
 		/** Changed from (*this = *this * InB;) to separate all calc to avoid LHS **/
-		/** Now it calls directly *= operator in TSHVector (avoid TSHVectorRGB * operator) **/
-		inline TSHVectorRGB& operator*=(const float& Scalar)
+		/** Now it calls directly *= operator in TSHVector (avoid TSHVectorRGBBase * operator) **/
+		inline DerivedType& operator*=(const float& Scalar)
 		{
 			R *= Scalar;
 			G *= Scalar;
@@ -359,29 +323,115 @@ namespace UCommon
 			return *this;
 		}
 
-		inline TSHVector<Order>& operator[](int Index)
+		inline TElement<MaxSHOrder>& operator[](int Index)
 		{
 			UBPA_UCOMMON_ASSERT(Index >= 0 && Index < 3);
 			return (&R)[Index];
 		}
 
-		inline const TSHVector<Order>& operator[](int Index) const
+		inline const TElement<MaxSHOrder>& operator[](int Index) const
 		{
-			return const_cast<TSHVectorRGB*>(this)->operator[](Index);
+			return const_cast<TSHVectorRGBBase*>(this)->operator[](Index);
 		}
 
 		inline FVector operator()(const FVector& Vector) const;
 
-		inline TSHVectorRGB ToYCoCg() const
+		inline DerivedType ToYCoCg() const
 		{
-			TSHVectorRGB SHVectorYCoCg;
+			DerivedType SHVectorRGBBaseYCoCg;
 			for (int i = 0; i < MaxSHBasis; i++)
 			{
-				RGBToYCoCg(R.V[i], G.V[i], B.V[i], SHVectorYCoCg.R.V[i], SHVectorYCoCg.G.V[i], SHVectorYCoCg.B.V[i]);
+				RGBToYCoCg(R.V[i], G.V[i], B.V[i], SHVectorRGBBaseYCoCg.R.V[i], SHVectorRGBBaseYCoCg.G.V[i], SHVectorRGBBaseYCoCg.B.V[i]);
 			}
-			return SHVectorYCoCg;
+			return SHVectorRGBBaseYCoCg;
 		}
 	};
+
+	template<int Order>
+	class TSHBandVector : public TSHVectorBase<TSHBandVector<Order>, Order, 2 * Order - 1>
+	{
+	public:
+		using Super = TSHVectorBase<TSHBandVector<Order>, Order, 2 * Order - 1>;
+		using Super::TSHVectorBase;
+
+		TSHBandVector(float V1, float V2, float V3) : Super{ V1,V2,V3 } {}
+
+		explicit TSHBandVector(const FVector& Vector) : TSHBandVector(Vector.X, Vector.Y, Vector.Z) {}
+	};
+
+	template<int Order>
+	class TSHBandVectorRGB : public TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>
+	{
+	public:
+		using Super = TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>;
+		using Super::TSHVectorRGBBase;
+	};
+
+	/** A vector of spherical harmonic coefficients. */
+	template<int Order>
+	class TSHVector : public TSHVectorBase<TSHVector<Order>, Order, Order* Order>
+	{
+	public:
+		using Super = TSHVectorBase<TSHVector<Order>, Order, Order* Order>;
+		using Super::TSHVectorBase;
+
+		TSHVector(float V0, float V1, float V2, float V3) : Super{ V0,V1,V2,V3 } {}
+
+		explicit TSHVector(const FVector4& Vector) : TSHVector(Vector.X, Vector.Y, Vector.Z, Vector.W) {}
+
+		template<int OtherOrder>
+		explicit TSHVector(const TSHVector<OtherOrder>& Other)
+		{
+			if (Super::MaxSHBasis <= TSHVector<OtherOrder>::Super::MaxSHBasis)
+			{
+				for (int i = 0; i < Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = Other.V[i];
+				}
+			}
+			else
+			{
+				for (int i = 0; i < TSHVector<OtherOrder>::Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = Other.V[i];
+				}
+				for (int i = TSHVector<OtherOrder>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = 0.f;
+				}
+			}
+		}
+	};
+
+	/** A vector of colored spherical harmonic coefficients. */
+	template<int Order>
+	class TSHVectorRGB : public TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order * Order>
+	{
+	public:
+		using Super = TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>;
+		using Super::TSHVectorRGBBase;
+
+		template<int OtherOrder>
+		explicit TSHVectorRGB(const TSHVectorRGB<OtherOrder>& Other)
+		{
+			Super::R = (TSHVector<Order>)Other.R;
+			Super::G = (TSHVector<Order>)Other.G;
+			Super::B = (TSHVector<Order>)Other.B;
+		}
+
+		template<int OtherOrder>
+		explicit TSHVectorRGB(const TSHVector<OtherOrder>& Other)
+		{
+			Super::R = (TSHVector<Order>)Other;
+			Super::G = (TSHVector<Order>)Other;
+			Super::B = (TSHVector<Order>)Other;
+		}
+	};
+
+	using FSHBandVector2 = TSHBandVector<2>;
+	using FSHBandVector3 = TSHBandVector<3>;
+	using FSHBandVectorRGB2 = TSHBandVectorRGB<2>;
+	using FSHBandVectorRGB3 = TSHBandVectorRGB<3>;
 
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;
