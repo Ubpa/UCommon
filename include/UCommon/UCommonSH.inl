@@ -55,6 +55,8 @@ namespace UCommon
 		template<int l, int m>
 		struct SHImpl;
 
+		//Reference: Stupid Spherical Harmonics (SH) Tricks
+		// different from wiki
 		template<>
 		struct SHImpl<0, 0>
 		{
@@ -63,7 +65,7 @@ namespace UCommon
 		template<>
 		struct SHImpl<1, -1>
 		{
-			static constexpr float Func(float x, float y, float z) { return 0.48860252f * y; }
+			static constexpr float Func(float x, float y, float z) { return -0.48860252f * y; }
 		};
 		template<>
 		struct SHImpl<1, 0>
@@ -73,7 +75,7 @@ namespace UCommon
 		template<>
 		struct SHImpl<1, 1>
 		{
-			static constexpr float Func(float x, float y, float z) { return 0.48860252f * x; }
+			static constexpr float Func(float x, float y, float z) { return -0.48860252f * x; }
 		};
 		template<>
 		struct SHImpl<2, -2>
@@ -83,7 +85,7 @@ namespace UCommon
 		template<>
 		struct SHImpl<2, -1>
 		{
-			static constexpr float Func(float x, float y, float z) { return 1.0925485f * y * z; }
+			static constexpr float Func(float x, float y, float z) { return -1.0925485f * y * z; }
 		};
 		template<>
 		struct SHImpl<2, 0>
@@ -93,7 +95,7 @@ namespace UCommon
 		template<>
 		struct SHImpl<2, 1>
 		{
-			static constexpr float Func(float x, float y, float z) { return 1.0925485f * x * z; }
+			static constexpr float Func(float x, float y, float z) { return -1.0925485f * x * z; }
 		};
 		template<>
 		struct SHImpl<2, 2>
