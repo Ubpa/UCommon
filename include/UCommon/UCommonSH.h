@@ -30,7 +30,7 @@ SOFTWARE.
 #define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
-	template<int l, int m> constexpr int SHK = UCommon::SHK<l, m>; \
+	template<int l, int m> constexpr float SHK = UCommon::SHK<l, m>; \
 	template<int i> constexpr int SHIndexToL = UCommon::SHIndexToL<i>; \
 	template<int i> constexpr int SHIndexToM = UCommon::SHIndexToM<i>; \
 	template<int Order> using TSHBandVector = UCommon::TSHBandVector<Order>; \
@@ -86,9 +86,12 @@ namespace UCommon
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
 		static DerivedType SHBasisFunction(const FVector& Vector);
 
-		FVector GetOptimalLinearDirection(float NormalizeSquaredDelta = UBPA_UCOMMON_DELTA) const
+		/** Unnormalized */
+		FVector GetLinearVector() const
 		{
-			return FVector(-V[3], -V[1], V[2]).SafeNormalize(NormalizeSquaredDelta);
+			constexpr int BaseIndex = 2 - (InMaxSHOrder * InMaxSHOrder - InMaxSHBasis);
+			static_assert(BaseIndex >= 1, "invalid base index");
+			return { -V[BaseIndex + 1], -V[BaseIndex - 1], V[BaseIndex] };
 		}
 
 		/** Scalar multiplication operator. */
@@ -101,6 +104,13 @@ namespace UCommon
 				Result.V[i] = A.V[i] * B;
 			}
 			return Result;
+		}
+
+		/** Scalar multiplication operator. */
+		/** Changed to float& from float to avoid LHS **/
+		friend inline DerivedType operator*(const float& A, const DerivedType& B)
+		{
+			return B * A;
 		}
 
 		/** Scalar division operator. */
@@ -207,6 +217,9 @@ namespace UCommon
 		TElement<MaxSHOrder> B;
 
 		TSHVectorRGBBase() {}
+
+		TSHVectorRGBBase(const TElement<MaxSHOrder>& InR, const TElement<MaxSHOrder>& InG, const TElement<MaxSHOrder>& InB)
+			: R(InR), G(InG), B(InB) {}
 
 		/** Calculates greyscale spherical harmonic coefficients. */
 		TElement<MaxSHOrder> GetLuminance() const
@@ -447,7 +460,7 @@ namespace UCommon
 		TSHBandVector<BandOrder>& GetBand()
 		{
 			constexpr int IndexBase = Pow2(BandOrder - 1);
-			return reinterpret_cast<TSHBandVector<BandOrder>*>(&Super::V[IndexBase]);
+			return *reinterpret_cast<TSHBandVector<BandOrder>*>(&Super::V[IndexBase]);
 		}
 
 		template<int BandOrder>
@@ -479,6 +492,12 @@ namespace UCommon
 			Super::R = (TSHVector<Order>)Other;
 			Super::G = (TSHVector<Order>)Other;
 			Super::B = (TSHVector<Order>)Other;
+		}
+
+		template<int BandOrder>
+		const TSHBandVectorRGB<BandOrder> GetBand() const
+		{
+			return { Super::R.template GetBand<BandOrder>(),Super::G.template GetBand<BandOrder>(),Super::B.template GetBand<BandOrder>() };
 		}
 	};
 

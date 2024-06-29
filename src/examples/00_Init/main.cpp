@@ -43,6 +43,8 @@ int main()
 	FSHVectorRGB3 SHVectorRGB3 = SHVector * FVector(1.f, 2.f, 1.f);
 
 	SHVectorRGB3.ToYCoCg();
+
+	SHVectorRGB3.GetBand<2>().GetSrgbLuminance().GetLinearVector();
 	
 	return 0;
 }
