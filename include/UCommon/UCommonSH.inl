@@ -52,56 +52,18 @@ namespace UCommon
 			return SHKTable[SHIndex];
 		}
 
-		template<int l, int m>
-		struct SHImpl;
-
 		//Reference: Stupid Spherical Harmonics (SH) Tricks
 		// different from wiki
-		template<>
-		struct SHImpl<0, 0>
-		{
-			static constexpr float Func(float x, float y, float z) { return 0.28209478f; }
-		};
-		template<>
-		struct SHImpl<1, -1>
-		{
-			static constexpr float Func(float x, float y, float z) { return -0.48860252f * y; }
-		};
-		template<>
-		struct SHImpl<1, 0>
-		{
-			static constexpr float Func(float x, float y, float z) { return 0.48860252f * z; }
-		};
-		template<>
-		struct SHImpl<1, 1>
-		{
-			static constexpr float Func(float x, float y, float z) { return -0.48860252f * x; }
-		};
-		template<>
-		struct SHImpl<2, -2>
-		{
-			static constexpr float Func(float x, float y, float z) { return 1.0925485f * x * y; }
-		};
-		template<>
-		struct SHImpl<2, -1>
-		{
-			static constexpr float Func(float x, float y, float z) { return -1.0925485f * y * z; }
-		};
-		template<>
-		struct SHImpl<2, 0>
-		{
-			static constexpr float Func(float x, float y, float z) { return 0.31539157f * (3.f * z * z - 1.f); }
-		};
-		template<>
-		struct SHImpl<2, 1>
-		{
-			static constexpr float Func(float x, float y, float z) { return -1.0925485f * x * z; }
-		};
-		template<>
-		struct SHImpl<2, 2>
-		{
-			static constexpr float Func(float x, float y, float z) { return 0.54627424f * (x * x - y * y); }
-		};
+		template<int l, int m> struct SHImpl;
+		template<> struct SHImpl<0,  0> { static constexpr float Func(float x, float y, float z) { return 0.28209478f; } };
+		template<> struct SHImpl<1, -1> { static constexpr float Func(float x, float y, float z) { return -0.48860252f * y; } };
+		template<> struct SHImpl<1,  0> { static constexpr float Func(float x, float y, float z) { return 0.48860252f * z; } };
+		template<> struct SHImpl<1,  1> { static constexpr float Func(float x, float y, float z) { return -0.48860252f * x; } };
+		template<> struct SHImpl<2, -2> { static constexpr float Func(float x, float y, float z) { return 1.0925485f * x * y; } };
+		template<> struct SHImpl<2, -1> { static constexpr float Func(float x, float y, float z) { return -1.0925485f * y * z; } };
+		template<> struct SHImpl<2,  0> { static constexpr float Func(float x, float y, float z) { return 0.31539157f * (3.f * z * z - 1.f); } };
+		template<> struct SHImpl<2,  1> { static constexpr float Func(float x, float y, float z) { return -1.0925485f * x * z; } };
+		template<> struct SHImpl<2,  2> { static constexpr float Func(float x, float y, float z) { return 0.54627424f * (x * x - y * y); } };
 
 		template<int SHIndexOffset, int MaxSHBasis>
 		inline void SHs(float(&V)[MaxSHBasis], float X, float Y, float Z, std::integer_sequence<int>) {}

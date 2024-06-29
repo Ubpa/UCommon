@@ -239,6 +239,26 @@ namespace UCommon
 		T X;
 		T Y;
 
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TVector2));
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const &
+		{
+			return const_cast<TVector2*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U As() const &&
+		{
+			static_assert(sizeof(U) == sizeof(TVector2));
+			return *reinterpret_cast<const U*>(this);
+		}
+
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }
 
@@ -480,6 +500,26 @@ namespace UCommon
 		T X;
 		T Y;
 		T Z;
+
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TVector));
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TVector*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U As() const &&
+		{
+			static_assert(sizeof(U) == sizeof(TVector));
+			return *reinterpret_cast<const U*>(this);
+		}
 
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }
@@ -725,6 +765,26 @@ namespace UCommon
 		T Y;
 		T Z;
 		T W;
+
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TVector4));
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TVector4*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U As() const &&
+		{
+			static_assert(sizeof(U) == sizeof(TVector4));
+			return *reinterpret_cast<const U*>(this);
+		}
 
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }

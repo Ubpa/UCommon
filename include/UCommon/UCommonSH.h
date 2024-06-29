@@ -83,6 +83,26 @@ namespace UCommon
 		template<typename ArgType0, typename... ArgTypes>
 		TSHVectorBase(ArgType0 Arg0, ArgTypes... Args) : V{ Arg0, Args... } {}
 
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TSHVectorBase));
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TSHVectorBase*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U As() const&&
+		{
+			static_assert(sizeof(U) == sizeof(TSHVectorBase));
+			return *reinterpret_cast<U*>(this);
+		}
+
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
 		static DerivedType SHBasisFunction(const FVector& Vector);
 
@@ -220,6 +240,26 @@ namespace UCommon
 
 		TSHVectorRGBBase(const TElement<MaxSHOrder>& InR, const TElement<MaxSHOrder>& InG, const TElement<MaxSHOrder>& InB)
 			: R(InR), G(InG), B(InB) {}
+
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase));
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TSHVectorRGBBase*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U As() const&&
+		{
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase));
+			return *reinterpret_cast<U*>(this);
+		}
 
 		/** Calculates greyscale spherical harmonic coefficients. */
 		TElement<MaxSHOrder> GetLuminance() const
