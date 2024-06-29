@@ -14,6 +14,16 @@ int main()
 	const FVector N = FVector(1.f).SafeNormalize();
 	constexpr float Nf = 0.57735026f;
 
+	printf("SHK<0, 0> == %f\n", SHK<0, 0>);
+	printf("SHK<1,-1> == %f\n", SHK<1,-1>);
+	printf("SHK<1, 0> == %f\n", SHK<1, 0>);
+	printf("SHK<1, 1> == %f\n", SHK<1, 1>);
+	printf("SHK<2,-2> == %f\n", SHK<2,-2>);
+	printf("SHK<2,-1> == %f\n", SHK<2,-1>);
+	printf("SHK<2, 0> == %f\n", SHK<2, 0>);
+	printf("SHK<2, 1> == %f\n", SHK<2, 1>);
+	printf("SHK<2, 2> == %f\n", SHK<2, 2>);
+
 	printf("SH<0, 0>(%f,%f,%f) == %f\n", Nf, Nf, Nf, SH<0, 0>(Nf, Nf, Nf));
 	printf("SH<1,-1>(%f,%f,%f) == %f\n", Nf, Nf, Nf, SH<1,-1>(Nf, Nf, Nf));
 	printf("SH<1, 0>(%f,%f,%f) == %f\n", Nf, Nf, Nf, SH<1, 0>(Nf, Nf, Nf));
@@ -30,10 +40,7 @@ int main()
 		SHVector.V[Index] = 1.f;
 	}
 
-	FSHVectorRGB3 SHVectorRGB3;
-	SHVectorRGB3.R = SHVector;
-	SHVectorRGB3.G = SHVector * 2.f;
-	SHVectorRGB3.B = SHVector;
+	FSHVectorRGB3 SHVectorRGB3 = SHVector * FVector(1.f, 2.f, 1.f);
 
 	SHVectorRGB3.ToYCoCg();
 	

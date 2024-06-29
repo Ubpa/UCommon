@@ -30,6 +30,28 @@ namespace UCommon
 {
 	namespace Details
 	{
+		// normalization constants
+		template<int l, int m>
+		constexpr float SHKImpl()
+		{
+			static_assert(0 <= l && l <= 2, "l=0,1,2");
+			static_assert(-l <= m && m <= l, "m in [-l, l]");
+			constexpr int SHIndex = l * l + m + l;
+			constexpr float SHKTable[9] =
+			{
+				0.2820948f,
+				0.34549415f,
+				0.48860252f,
+				0.34549415f,
+				0.12875807f,
+				0.25751615f,
+				0.63078314f,
+				0.25751615f,
+				0.12875807f,
+			};
+			return SHKTable[SHIndex];
+		}
+
 		template<int l, int m>
 		struct SHImpl;
 

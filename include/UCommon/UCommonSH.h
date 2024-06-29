@@ -30,6 +30,7 @@ SOFTWARE.
 #define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
+	template<int l, int m> constexpr int SHK = UCommon::SHK<l, m>; \
 	template<int i> constexpr int SHIndexToL = UCommon::SHIndexToL<i>; \
 	template<int i> constexpr int SHIndexToM = UCommon::SHIndexToM<i>; \
 	template<int Order> using TSHBandVector = UCommon::TSHBandVector<Order>; \
@@ -46,8 +47,14 @@ namespace NameSpace \
 	using FSHVectorRGB3 = UCommon::FSHVectorRGB3; \
 }
 
+namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
+
 namespace UCommon
 {
+	// SH normalization constants
+	template<int l, int m>
+	constexpr float SHK = Details::SHKImpl<l, m>();
+
 	template<int l, int m>
 	constexpr float SH(float x, float y, float z);
 
@@ -57,6 +64,9 @@ namespace UCommon
 	template<int i>
 	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : i - 6);
 
+	template<int Order> class TSHVectorRGB;
+	template<int Order> class TSHBandVectorRGB;
+
 	template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
 	class TSHVectorBase
 	{
@@ -64,6 +74,8 @@ namespace UCommon
 		static constexpr int MaxSHOrder = InMaxSHOrder;
 		static constexpr int MaxSHBasis = InMaxSHBasis;
 		float V[MaxSHBasis];
+
+		static_assert(MaxSHOrder > 1, "Invalid MaxSHOrder");
 
 		/** Default constructor. */
 		TSHVectorBase() : V{ 0 } {}
@@ -73,6 +85,11 @@ namespace UCommon
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
 		static DerivedType SHBasisFunction(const FVector& Vector);
+
+		FVector GetOptimalLinearDirection(float NormalizeSquaredDelta = UBPA_UCOMMON_DELTA) const
+		{
+			return FVector(-V[3], -V[1], V[2]).SafeNormalize(NormalizeSquaredDelta);
+		}
 
 		/** Scalar multiplication operator. */
 		/** Changed to float& from float to avoid LHS **/
@@ -183,6 +200,8 @@ namespace UCommon
 		static constexpr int MaxSHOrder = InMaxSHOrder;
 		static constexpr int MaxSHBasis = InMaxSHBasis;
 
+		static_assert(MaxSHOrder > 0, "Invalid MaxSHOrder");
+
 		TElement<MaxSHOrder> R;
 		TElement<MaxSHOrder> G;
 		TElement<MaxSHOrder> B;
@@ -193,6 +212,12 @@ namespace UCommon
 		TElement<MaxSHOrder> GetLuminance() const
 		{
 			return R * 0.3f + G * 0.59f + B * 0.11f;
+		}
+
+		/** Calculates srgb spherical harmonic coefficients. */
+		TElement<MaxSHOrder> GetSrgbLuminance() const
+		{
+			return R * 0.2126f + G * 0.7152f + B * 0.0722f;
 		}
 
 		void Desaturate(float DesaturateFraction)
@@ -354,9 +379,17 @@ namespace UCommon
 		using Super = TSHVectorBase<TSHBandVector<Order>, Order, 2 * Order - 1>;
 		using Super::TSHVectorBase;
 
+		using RGBType = TSHBandVectorRGB<Order>;
+
 		TSHBandVector(float V1, float V2, float V3) : Super{ V1,V2,V3 } {}
 
 		explicit TSHBandVector(const FVector& Vector) : TSHBandVector(Vector.X, Vector.Y, Vector.Z) {}
+
+		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector and ZH coefficient. */
+		static TSHBandVector ZHToSHBasisFunction(float ZHCoefficient, const FVector& Vector)
+		{
+			return Super::SHBasisFunction(Vector) * ZHCoefficient;
+		}
 	};
 
 	template<int Order>
@@ -365,6 +398,12 @@ namespace UCommon
 	public:
 		using Super = TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>;
 		using Super::TSHVectorRGBBase;
+
+		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector and ZH coefficient. */
+		static TSHBandVectorRGB ZHToSHBasisFunction(const FVector& ZHCoefficient, const FVector& Vector)
+		{
+			return Super::SHBasisFunction(Vector) * ZHCoefficient;
+		}
 	};
 
 	/** A vector of spherical harmonic coefficients. */
@@ -374,6 +413,8 @@ namespace UCommon
 	public:
 		using Super = TSHVectorBase<TSHVector<Order>, Order, Order* Order>;
 		using Super::TSHVectorBase;
+
+		using RGBType = TSHVectorRGB<Order>;
 
 		TSHVector(float V0, float V1, float V2, float V3) : Super{ V0,V1,V2,V3 } {}
 
@@ -400,6 +441,19 @@ namespace UCommon
 					Super::V[i] = 0.f;
 				}
 			}
+		}
+
+		template<int BandOrder>
+		TSHBandVector<BandOrder>& GetBand()
+		{
+			constexpr int IndexBase = Pow2(BandOrder - 1);
+			return reinterpret_cast<TSHBandVector<BandOrder>*>(&Super::V[IndexBase]);
+		}
+
+		template<int BandOrder>
+		const TSHBandVector<BandOrder>& GetBand() const
+		{
+			return const_cast<TSHVector*>(this)->GetBand<BandOrder>();
 		}
 	};
 
@@ -437,6 +491,12 @@ namespace UCommon
 	using FSHVector3 = TSHVector<3>;
 	using FSHVectorRGB2 = TSHVectorRGB<2>;
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
+
+	template<template<int> typename SHVectorType, int Order>
+	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector& Color)
+	{
+		return typename SHVectorType<Order>::RGBType(SHVector) * Color;
+	}
 } // namespace UCommon
 
 UBPA_UCOMMON_SH_TO_NAMESPACE(UCommonTest)
