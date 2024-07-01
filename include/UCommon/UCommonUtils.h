@@ -253,10 +253,11 @@ namespace UCommon
 		}
 
 		template<typename U>
-		const U As() const &&
+		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TVector2));
-			return *reinterpret_cast<const U*>(this);
+			static_assert(sizeof(U) == sizeof(TVector2), "The size of U is not same with TVector2");
+			static_assert(alignof(TVector2) % alignof(U) == 0, "The alignment of U is not compatible with TVector2");
+			return reinterpret_cast<const U&&>(*this);
 		}
 
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
@@ -515,10 +516,11 @@ namespace UCommon
 		}
 
 		template<typename U>
-		const U As() const &&
+		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TVector));
-			return *reinterpret_cast<const U*>(this);
+			static_assert(sizeof(U) == sizeof(TVector), "The size of U is not same with TVector");
+			static_assert(alignof(TVector) % alignof(U) == 0, "The alignment of U is not compatible with TVector");
+			return reinterpret_cast<const U&&>(*this);
 		}
 
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
@@ -780,10 +782,11 @@ namespace UCommon
 		}
 
 		template<typename U>
-		const U As() const &&
+		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TVector4));
-			return *reinterpret_cast<const U*>(this);
+			static_assert(sizeof(U) == sizeof(TVector4), "The size of U is not same with TVector4");
+			static_assert(alignof(TVector4) % alignof(U) == 0, "The alignment of U is not compatible with TVector4");
+			return reinterpret_cast<const U&&>(*this);
 		}
 
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }

@@ -97,10 +97,11 @@ namespace UCommon
 		}
 
 		template<typename U>
-		const U As() const&&
+		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorBase));
-			return *reinterpret_cast<U*>(this);
+			static_assert(sizeof(U) == sizeof(TSHVectorBase), "The size of U is not same with TSHVectorBase");
+			static_assert(alignof(TSHVectorBase) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorBase");
+			return reinterpret_cast<const U&&>(*this);
 		}
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
@@ -255,10 +256,11 @@ namespace UCommon
 		}
 
 		template<typename U>
-		const U As() const&&
+		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase));
-			return *reinterpret_cast<U*>(this);
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase), "The size of U is not same with TSHVectorRGBBase");
+			static_assert(alignof(TSHVectorRGBBase) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorRGBBase");
+			return reinterpret_cast<const U&&>(*this);
 		}
 
 		/** Calculates greyscale spherical harmonic coefficients. */
