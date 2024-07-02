@@ -454,6 +454,13 @@ namespace UCommon
 		using Super = TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>;
 		using Super::TSHVectorRGBBase;
 
+		explicit TSHBandVectorRGB(const TSHBandVector<Order>& Other)
+		{
+			Super::R = Other;
+			Super::G = Other;
+			Super::B = Other;
+		}
+
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector and ZH coefficient. */
 		static TSHBandVectorRGB ZHToSHBasisFunction(const FVector& ZHCoefficient, const FVector& Vector)
 		{
@@ -541,6 +548,14 @@ namespace UCommon
 		{
 			return { Super::R.template GetBand<BandOrder>(),Super::G.template GetBand<BandOrder>(),Super::B.template GetBand<BandOrder>() };
 		}
+
+		template<int BandOrder>
+		void SetBand(const TSHBandVectorRGB<BandOrder>& SHBandVectorRGB)
+		{
+			Super::R.template GetBand<BandOrder>() = SHBandVectorRGB.R;
+			Super::G.template GetBand<BandOrder>() = SHBandVectorRGB.G;
+			Super::B.template GetBand<BandOrder>() = SHBandVectorRGB.B;
+		}
 	};
 
 	using FSHBandVector2 = TSHBandVector<2>;
@@ -557,6 +572,12 @@ namespace UCommon
 	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector& Color)
 	{
 		return typename SHVectorType<Order>::RGBType(SHVector) * Color;
+	}
+
+	template<template<int> typename SHVectorType, int Order>
+	typename SHVectorType<Order>::RGBType operator*(const FVector& Color, const SHVectorType<Order>& SHVector)
+	{
+		return SHVector * Color;
 	}
 } // namespace UCommon
 
