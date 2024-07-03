@@ -242,7 +242,7 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TVector2));
+			static_assert(sizeof(U) == sizeof(TVector2), "The size of U is not same with TVector2");
 			return *reinterpret_cast<U*>(this);
 		}
 
@@ -505,7 +505,7 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TVector));
+			static_assert(sizeof(U) == sizeof(TVector), "The size of U is not same with TVector");
 			return *reinterpret_cast<U*>(this);
 		}
 
@@ -771,7 +771,7 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TVector4));
+			static_assert(sizeof(U) == sizeof(TVector4), "The size of U is not same with TVector4");
 			return *reinterpret_cast<U*>(this);
 		}
 
