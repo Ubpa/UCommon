@@ -107,7 +107,7 @@ float UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::operator(
 	return Dot(static_cast<const DerivedType&>(*this), SHBasises);
 }
 
-template<typename DerivedType, template<int> typename TElement, int InMaxSHOrder, int InMaxSHBasis>
+template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
 UCommon::FVector UCommon::TSHVectorRGBBase<DerivedType, TElement, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector& Vector) const
 {
 	const TElement<MaxSHOrder> SHBasises = TElement<MaxSHOrder>::SHBasisFunction(Vector);

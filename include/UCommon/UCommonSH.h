@@ -86,7 +86,7 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorBase));
+			static_assert(sizeof(U) == sizeof(TSHVectorBase), "The size of U is not same with TSHVectorBase");
 			return *reinterpret_cast<U*>(this);
 		}
 
@@ -224,7 +224,7 @@ namespace UCommon
 		inline float operator()(const FVector& Vector) const;
 	};
 
-	template<typename DerivedType, template<int> typename TElement, int InMaxSHOrder, int InMaxSHBasis>
+	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
 	class TSHVectorRGBBase
 	{
 	public:
@@ -245,7 +245,7 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase));
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase), "The size of U is not same with TSHVectorRGBBase");
 			return *reinterpret_cast<U*>(this);
 		}
 
@@ -432,7 +432,7 @@ namespace UCommon
 	{
 	public:
 		using Super = TSHVectorBase<TSHBandVector<Order>, Order, 2 * Order - 1>;
-		using Super::TSHVectorBase;
+		using TSHVectorBase<TSHBandVector<Order>, Order, 2 * Order - 1>::TSHVectorBase;
 
 		using RGBType = TSHBandVectorRGB<Order>;
 
@@ -452,7 +452,7 @@ namespace UCommon
 	{
 	public:
 		using Super = TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>;
-		using Super::TSHVectorRGBBase;
+		using TSHVectorRGBBase<TSHBandVectorRGB<Order>, TSHBandVector, Order, Order* Order>::TSHVectorRGBBase;
 
 		explicit TSHBandVectorRGB(const TSHBandVector<Order>& Other)
 		{
@@ -474,7 +474,7 @@ namespace UCommon
 	{
 	public:
 		using Super = TSHVectorBase<TSHVector<Order>, Order, Order* Order>;
-		using Super::TSHVectorBase;
+		using TSHVectorBase<TSHVector<Order>, Order, Order* Order>::TSHVectorBase;
 
 		using RGBType = TSHVectorRGB<Order>;
 
@@ -525,7 +525,7 @@ namespace UCommon
 	{
 	public:
 		using Super = TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>;
-		using Super::TSHVectorRGBBase;
+		using TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>::TSHVectorRGBBase;
 
 		template<int OtherOrder>
 		explicit TSHVectorRGB(const TSHVectorRGB<OtherOrder>& Other)
@@ -568,13 +568,13 @@ namespace UCommon
 	using FSHVectorRGB2 = TSHVectorRGB<2>;
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
 
-	template<template<int> typename SHVectorType, int Order>
+	template<template<int> class SHVectorType, int Order>
 	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector& Color)
 	{
 		return typename SHVectorType<Order>::RGBType(SHVector) * Color;
 	}
 
-	template<template<int> typename SHVectorType, int Order>
+	template<template<int> class SHVectorType, int Order>
 	typename SHVectorType<Order>::RGBType operator*(const FVector& Color, const SHVectorType<Order>& SHVector)
 	{
 		return SHVector * Color;
