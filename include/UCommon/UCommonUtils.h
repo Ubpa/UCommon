@@ -207,6 +207,15 @@ friend bool operator Op (const TVector2& Lhs, const TVector2& Rhs) noexcept \
 namespace UCommon
 {
 	template<typename T>
+	constexpr T Pow2(const T& V) noexcept { return V * V; }
+
+	template<typename T>
+	constexpr T Pow3(const T& V) noexcept { return V * V * V; }
+
+	template<typename T>
+	constexpr T Pow5(const T& V) noexcept { return Pow2(Pow2(V)) * V; }
+
+	template<typename T>
 	T Clamp(const T& V, const T& VMin, const T& VMax) noexcept
 	{
 		UBPA_UCOMMON_ASSERT(VMin <= VMax);
@@ -387,6 +396,11 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y) };
 		}
 
+		TVector2 Pow2() const noexcept
+		{
+			return { UCommon::Pow2(X), UCommon::Pow2(Y) };
+		}
+
 		TVector2 Round() const noexcept
 		{
 			return { std::round(X), std::round(Y) };
@@ -400,6 +414,11 @@ namespace UCommon
 		TVector2 Floor() const noexcept
 		{
 			return { std::floor(X), std::floor(Y) };
+		}
+
+		TVector2 Reciprocal() const noexcept
+		{
+			return { 1 / X, 1 / Y };
 		}
 
 		TVector2 Min(T V) const noexcept
@@ -654,6 +673,11 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z) };
 		}
 
+		TVector Pow2() const noexcept
+		{
+			return { UCommon::Pow2(X), UCommon::Pow2(Y), UCommon::Pow2(Z) };
+		}
+
 		TVector Round() const noexcept
 		{
 			return { std::round(X), std::round(Y), std::round(Z) };
@@ -667,6 +691,11 @@ namespace UCommon
 		TVector Floor() const noexcept
 		{
 			return { std::floor(X), std::floor(Y), std::floor(Z) };
+		}
+
+		TVector Reciprocal() const noexcept
+		{
+			return { 1 / X, 1 / Y, 1 / Z };
 		}
 
 		TVector Min(T V) const noexcept
@@ -913,6 +942,11 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z), std::sqrt(W) };
 		}
 
+		TVector4 Pow2() const noexcept
+		{
+			return { UCommon::Pow2(X), UCommon::Pow2(Y), UCommon::Pow2(Z), UCommon::Pow2(W) };
+		}
+
 		TVector4 Round() const noexcept
 		{
 			return { std::round(X), std::round(Y), std::round(Z), std::round(W) };
@@ -926,6 +960,11 @@ namespace UCommon
 		TVector4 Floor() const noexcept
 		{
 			return { std::floor(X), std::floor(Y), std::floor(Z), std::floor(W) };
+		}
+
+		TVector4 Reciprocal() const noexcept
+		{
+			return { 1 / X, 1 / Y, 1 / Z, 1 / W };
 		}
 
 		TVector4 Min(T V) const noexcept
@@ -1059,9 +1098,6 @@ namespace UCommon
 	using FBox2 = TBox2<float>;
 	using FBox = TBox<float>;
 	using FBox4 = TBox4<float>;
-
-	template<typename T>
-	constexpr T Pow2(const T& V) noexcept { return V * V; }
 
 	template<typename T, typename U, uint64_t Stride = 1>
 	inline T LinearInterpolate(const T val1[2], const U& Texcoord) noexcept

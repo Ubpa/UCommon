@@ -47,6 +47,8 @@ int main()
 	SHVectorRGB3.GetBand<2>().GetSrgbLuminance().GetLinearVector();
 
 	FSHVectorRGB3 A = (SHVectorRGB3 * 2).As<FSHVectorRGB3>();
+
+	TSHBandVector<1> B;
 	
 	return 0;
 }

@@ -75,7 +75,7 @@ namespace UCommon
 		static constexpr int MaxSHBasis = InMaxSHBasis;
 		float V[MaxSHBasis];
 
-		static_assert(MaxSHOrder > 1, "Invalid MaxSHOrder");
+		static_assert(MaxSHOrder > 0, "Invalid MaxSHOrder");
 
 		/** Default constructor. */
 		TSHVectorBase() : V{ 0 } {}
@@ -110,8 +110,8 @@ namespace UCommon
 		/** Unnormalized */
 		FVector GetLinearVector() const
 		{
-			constexpr int BaseIndex = 2 - (InMaxSHOrder * InMaxSHOrder - InMaxSHBasis);
-			static_assert(BaseIndex >= 1, "invalid base index");
+			constexpr int BaseIndex = 2 - (MaxSHOrder * MaxSHOrder - MaxSHBasis);
+			static_assert(BaseIndex >= 1 && BaseIndex + 1 <= MaxSHBasis, "invalid base index");
 			return { -V[BaseIndex + 1], -V[BaseIndex - 1], V[BaseIndex] };
 		}
 
@@ -364,6 +364,12 @@ namespace UCommon
 			Result.Y = TElement<MaxSHOrder>::Dot(A.G, InB);
 			Result.Z = TElement<MaxSHOrder>::Dot(A.B, InB);
 			return Result;
+		}
+
+		/** Dot product operator. */
+		static inline TElement<MaxSHOrder> Dot(const DerivedType& A, const FVector& InB)
+		{
+			return A.R * InB.X + A.G * InB.Y + A.B * InB.Z;
 		}
 
 		/** In-place addition operator. */
