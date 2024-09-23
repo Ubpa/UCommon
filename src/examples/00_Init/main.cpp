@@ -49,6 +49,9 @@ int main()
 	FSHVectorRGB3 A = (SHVectorRGB3 * 2).As<FSHVectorRGB3>();
 
 	TSHBandVector<1> B;
+
+	FSHVector3 C1{ FSHVector2(), FSHBandVector3() };
+	FSHVectorRGB3 C2{ FSHVectorRGB2(), FSHBandVectorRGB3() };
 	
 	return 0;
 }

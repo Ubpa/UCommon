@@ -84,23 +84,30 @@ namespace NameSpace \
     constexpr float Pi = UCommon::Pi; \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op)        \
-TVector operator Op(const TVector& Other) const   \
-{                                                 \
-    TVector Result;                               \
-    Result.X = X Op Other.X;                      \
-    Result.Y = Y Op Other.Y;                      \
-    Result.Z = Z Op Other.Z;                      \
-    return Result;                                \
-}                                                 \
-TVector operator Op(const T& K) const             \
-{                                                 \
-    TVector Result;                               \
-    Result.X = X Op K;                            \
-    Result.Y = Y Op K;                            \
-    Result.Z = Z Op K;                            \
-    return Result;                                \
+#define UBPA_UCOMMON_DEFINE_FRIEND_OP(Type, Op)    \
+friend Type operator Op(const T& K, const Type& V) \
+{                                                  \
+    return Type(K) Op V;                           \
 }
+
+#define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op)      \
+TVector operator Op(const TVector& Other) const \
+{                                               \
+    TVector Result;                             \
+    Result.X = X Op Other.X;                    \
+    Result.Y = Y Op Other.Y;                    \
+    Result.Z = Z Op Other.Z;                    \
+    return Result;                              \
+}                                               \
+TVector operator Op(const T& K) const           \
+{                                               \
+    TVector Result;                             \
+    Result.X = X Op K;                          \
+    Result.Y = Y Op K;                          \
+    Result.Z = Z Op K;                          \
+    return Result;                              \
+}                                               \
+UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector, Op)
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(Op) \
 TVector& operator Op(const TVector& Other)        \
@@ -142,7 +149,8 @@ TVector4 operator Op(const T& K) const            \
     Result.Z = Z Op K;                            \
     Result.W = W Op K;                            \
     return Result;                                \
-}
+}                                                 \
+UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector4, Op)
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(Op) \
 TVector4& operator Op(const TVector4& Other)       \
@@ -182,7 +190,8 @@ TVector2 operator Op(const T& K) const            \
     Result.X = X Op K;                            \
     Result.Y = Y Op K;                            \
     return Result;                                \
-}
+}                                                 \
+UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector2, Op)
 
 #define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(Op) \
 TVector2& operator Op(const TVector2& Other)       \

@@ -511,6 +511,18 @@ namespace UCommon
 			}
 		}
 
+		TSHVector(const TSHVector<Order - 1>& Other, const TSHBandVector<Order>& Band)
+		{
+			for (int i = 0; i < TSHVector<Order - 1>::Super::MaxSHBasis; i++)
+			{
+				Super::V[i] = Other.V[i];
+			}
+			for (int i = TSHVector<Order - 1>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+			{
+				Super::V[i] = Band.V[i - TSHVector<Order - 1>::Super::MaxSHBasis];
+			}
+		}
+
 		template<int BandOrder>
 		TSHBandVector<BandOrder>& GetBand()
 		{
@@ -547,6 +559,13 @@ namespace UCommon
 			Super::R = (TSHVector<Order>)Other;
 			Super::G = (TSHVector<Order>)Other;
 			Super::B = (TSHVector<Order>)Other;
+		}
+
+		TSHVectorRGB(const TSHVectorRGB<Order - 1>& Other, const TSHBandVectorRGB<Order>& Band)
+		{
+			Super::R = TSHVector<Order>(Other.R, Band.R);
+			Super::G = TSHVector<Order>(Other.G, Band.G);
+			Super::B = TSHVector<Order>(Other.B, Band.B);
 		}
 
 		template<int BandOrder>
