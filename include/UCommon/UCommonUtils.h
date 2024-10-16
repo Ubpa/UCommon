@@ -1108,16 +1108,124 @@ namespace UCommon
 	using FBox = TBox<float>;
 	using FBox4 = TBox4<float>;
 
-	template<typename T, typename U, uint64_t Stride = 1>
-	inline T LinearInterpolate(const T val1[2], const U& Texcoord) noexcept
+	template<typename T, typename U>
+	inline T LinearInterpolate(const T& val0, const T& val1, const U& Texcoord) noexcept
 	{
-		T val;
-
 		const U OneMinusTexcoord = static_cast<U>(1) - Texcoord;
 
-		val = val1[Stride * 0b1] * Texcoord + val1[Stride * 0b0] * OneMinusTexcoord;
+		return val1 * Texcoord + val0 * OneMinusTexcoord;
+	}
+
+	template<typename T, typename U>
+	inline T BilinearInterpolate(const T val2[4], const U Weights[4]) noexcept
+	{
+		T val1[2];
+		T val;
+
+		val1[0b0] = val2[0b01] * Weights[0b01] + val2[0b00] * Weights[0b00];
+		val1[0b1] = val2[0b11] * Weights[0b11] + val2[0b10] * Weights[0b10];
+
+		val = val1[0b1] + val1[0b0];
 
 		return val;
+	}
+
+	template<typename T, typename U>
+	inline T BilinearInterpolate(const T val2[4], const TVector2<U>& Texcoord, const TVector2<U>& OneMinusTexcoord) noexcept
+	{
+		T val1[2];
+		T val;
+
+		val1[0b0] = val2[0b01] * Texcoord.Y + val2[0b00] * OneMinusTexcoord.Y;
+		val1[0b1] = val2[0b11] * Texcoord.Y + val2[0b10] * OneMinusTexcoord.Y;
+
+		val = val1[0b1] * Texcoord.X + val1[0b0] * OneMinusTexcoord.X;
+
+		return val;
+	}
+
+	template<typename T, typename U>
+	inline T BilinearInterpolate(const T val2[4], const TVector2<U>& Texcoord) noexcept
+	{
+		const TVector2<U> OneMinusTexcoord = TVector2<U>(static_cast<U>(1)) - Texcoord;
+
+		return BilinearInterpolate(val2, Texcoord, OneMinusTexcoord);
+	}
+
+	template<typename T, typename U>
+	inline T TrilinearInterpolate(const T val3[8], const U Weights[8]) noexcept
+	{
+		T val2[4];
+		T val1[2];
+		T val;
+
+		val2[0b00] = val3[0b001] * Weights[0b001] + val3[0b000] * Weights[0b000];
+		val2[0b01] = val3[0b011] * Weights[0b011] + val3[0b010] * Weights[0b010];
+		val2[0b10] = val3[0b101] * Weights[0b101] + val3[0b100] * Weights[0b100];
+		val2[0b11] = val3[0b111] * Weights[0b111] + val3[0b110] * Weights[0b110];
+
+		val1[0b0] = val2[0b01] + val2[0b00];
+		val1[0b1] = val2[0b11] + val2[0b10];
+
+		val = val1[0b1] + val1[0b0];
+
+		return val;
+	}
+
+	template<typename T, typename U>
+	inline T TrilinearInterpolate(const T val3[8], const TVector<U>& Texcoord, const TVector<U>& OneMinusTexcoord) noexcept
+	{
+		T val2[4];
+		T val1[2];
+		T val;
+
+		val2[0b00] = val3[0b001] * Texcoord.Z + val3[0b000] * OneMinusTexcoord.Z;
+		val2[0b01] = val3[0b011] * Texcoord.Z + val3[0b010] * OneMinusTexcoord.Z;
+		val2[0b10] = val3[0b101] * Texcoord.Z + val3[0b100] * OneMinusTexcoord.Z;
+		val2[0b11] = val3[0b111] * Texcoord.Z + val3[0b110] * OneMinusTexcoord.Z;
+
+		val1[0b0] = val2[0b01] * Texcoord.Y + val2[0b00] * OneMinusTexcoord.Y;
+		val1[0b1] = val2[0b11] * Texcoord.Y + val2[0b10] * OneMinusTexcoord.Y;
+
+		val = val1[0b1] * Texcoord.X + val1[0b0] * OneMinusTexcoord.X;
+
+		return val;
+	}
+
+	template<typename T, typename U>
+	inline T TrilinearInterpolate(const T val3[8], const TVector<U>& Texcoord) noexcept
+	{
+		const TVector<U> OneMinusTexcoord = TVector<U>(static_cast<U>(1)) - Texcoord;
+
+		return TrilinearInterpolate(val3, Texcoord, OneMinusTexcoord);
+	}
+
+	template<typename T, typename U>
+	inline T TrilinearInterpolateZ(const T val3[8], const TVector<U>& Texcoord, const TVector<U>& OneMinusTexcoord) noexcept
+	{
+		T val2[4];
+		T val1[2];
+		T val;
+
+		val2[0b00] = val3[0b001] * Texcoord.Y + val3[0b000] * OneMinusTexcoord.Y;
+		val2[0b01] = val3[0b011] * Texcoord.Y + val3[0b010] * OneMinusTexcoord.Y;
+		val2[0b10] = val3[0b101] * Texcoord.Y + val3[0b100] * OneMinusTexcoord.Y;
+		val2[0b11] = val3[0b111] * Texcoord.Y + val3[0b110] * OneMinusTexcoord.Y;
+
+		val1[0b0] = val2[0b01] * Texcoord.X + val2[0b00] * OneMinusTexcoord.X;
+		val1[0b1] = val2[0b11] * Texcoord.X + val2[0b10] * OneMinusTexcoord.X;
+
+		val = val1[0b1] * Texcoord.Z + val1[0b0] * OneMinusTexcoord.Z;
+
+		return val;
+	}
+
+	template<typename T, typename U, uint64_t Stride = 1>
+	inline T TrilinearInterpolateZ(const T val3[8], const TVector<U>& Texcoord) noexcept
+	{
+		const TVector<U> OneMinusTexcoord = TVector<U>(static_cast<U>(1)) - Texcoord;
+
+		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
 	template<typename T>
