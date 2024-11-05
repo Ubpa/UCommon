@@ -27,7 +27,9 @@ SOFTWARE.
 #include "UCommonConfig.h"
 #include "UCommonUtils.h"
 #include "UCommonSH.h"
+#include "UCommonThreadPool.h"
 
 #define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace)
+UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_THREAD_POOL_NAMESPACE(NameSpace)
