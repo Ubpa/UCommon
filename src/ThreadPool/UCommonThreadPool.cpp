@@ -24,25 +24,32 @@ SOFTWARE.
 
 #include <UCommon/UCommonThreadPool.h>
 
-UCommon::FThreadPool::~FThreadPool()
-{
-    {
-        std::unique_lock<std::mutex> lock(QueueMutex);
-        bStop = true;
-    }
-    Condition.notify_all();
-    for (std::thread& worker : Workers)
-    {
-        worker.join();
-    }
-}
+#include <vector>
+#include <queue>
+#include <memory>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <stdexcept>
 
-UCommon::FThreadPool::FThreadPool(uint64_t NumThread)
-    : bStop(false)
+struct UCommon::FThreadPool::FImpl
 {
-    for (uint64_t i = 0; i < NumThread; ++i)
+    /** need to keep track of threads so we can join them. */
+    std::vector< std::thread > Workers;
+    /** the task queue */
+    std::queue< std::function<void()> > Tasks;
+
+    /** synchronization */
+    std::mutex QueueMutex;
+    std::condition_variable Condition;
+    bool bStop;
+
+    FImpl(uint64_t NumThread)
+        : bStop(false)
     {
-        Workers.emplace_back(
+        for (uint64_t i = 0; i < NumThread; ++i)
+        {
+            Workers.emplace_back(
             [this]
             {
                 for (;;)
@@ -62,7 +69,52 @@ UCommon::FThreadPool::FThreadPool(uint64_t NumThread)
 
                     task();
                 }
-            }
-            );
+            });
+        }
     }
+
+    ~FImpl()
+    {
+        {
+            std::unique_lock<std::mutex> lock(QueueMutex);
+            bStop = true;
+        }
+        Condition.notify_all();
+        for (std::thread& worker : Workers)
+        {
+            worker.join();
+        }
+    }
+};
+
+UCommon::FThreadPool::FThreadPool(uint64_t NumThread)
+    : Impl(new UBPA_UCOMMON_MALLOC(sizeof(FImpl))FImpl(NumThread))
+{
 }
+
+UCommon::FThreadPool::~FThreadPool()
+{
+    UBPA_UCOMMON_ASSERT(Impl);
+    Impl->~FImpl();
+    UBPA_UCOMMON_FREE(Impl);
+}
+
+bool UCommon::FThreadPool::Enqueue(std::function<void()> Function)
+{
+    {
+        std::unique_lock<std::mutex> lock(Impl->QueueMutex);
+
+        // don't allow enqueueing after stopping the pool
+        if (Impl->bStop)
+        {
+            // throw std::runtime_error("enqueue on stopped ThreadPool");
+            return false;
+        }
+
+        Impl->Tasks.emplace(std::move(Function));
+    }
+    Impl->Condition.notify_one();
+    return true;
+}
+
+size_t UCommon::FThreadPool::GetNumThreads() const noexcept { return Impl->Workers.size(); }

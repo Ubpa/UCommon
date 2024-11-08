@@ -10,6 +10,7 @@ endif()
 Ubpa_AddTarget(
   TEST
   MODE EXE
+  CXX_STANDARD 17
   LIB
     Ubpa::UCommon_Core
   C_OPTION

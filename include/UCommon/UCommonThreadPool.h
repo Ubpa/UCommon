@@ -24,15 +24,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <vector>
-#include <queue>
-#include <memory>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <future>
+#include "UCommonConfig.h"
+
 #include <functional>
-#include <stdexcept>
+#include <future>
+#include <type_traits>
 
 #define UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
@@ -42,53 +38,39 @@ namespace NameSpace \
 
 namespace UCommon
 {
-    class FThreadPool
+    class UBPA_UCOMMON_API FThreadPool
     {
+        struct FImpl;
+        FImpl* Impl;
     public:
         FThreadPool(uint64_t NumThread);
         ~FThreadPool();
 
+        bool Enqueue(std::function<void()> Function);
+
         /** Add new work item to the pool. */
         template<class F, class... Args>
-        std::future<std::invoke_result_t<F, Args...>> Enqueue(F&& Function, Args&&... Arguments)
+        std::future<typename std::result_of<F(Args...)>::type> Enqueue(F&& Function, Args&&... Arguments)
         {
-            using return_type = std::invoke_result_t<F, Args...>;
+            using return_type = std::result_of<F(Args...)>::type;
 
-            auto task = std::make_shared< std::packaged_task<return_type()> >(
+            auto task = std::make_unique< std::packaged_task<return_type()> >(
                 std::bind(std::forward<F>(Function), std::forward<Args>(Arguments)...)
                 );
 
             std::future<return_type> res = task->get_future();
+
+            if (!Enqueue([localtask = std::move(task)]() { (*localtask)(); }))
             {
-                std::unique_lock<std::mutex> lock(QueueMutex);
-
-                // don't allow enqueueing after stopping the pool
-                if (bStop)
-                {
-                    // throw std::runtime_error("enqueue on stopped ThreadPool");
-                    return std::future<return_type>();
-                }
-
-                Tasks.emplace([task]() { (*task)(); });
+                return std::future<return_type>();
             }
-            Condition.notify_one();
+
             return res;
         }
 
-        size_t GetNumThreads() const noexcept { return Workers.size(); }
+        size_t GetNumThreads() const noexcept;
 
         FThreadPool(const FThreadPool&) = delete;
         FThreadPool& operator=(const FThreadPool&) = delete;
-        
-    private:
-        /** need to keep track of threads so we can join them. */
-        std::vector< std::thread > Workers;
-        /** the task queue */
-        std::queue< std::function<void()> > Tasks;
-
-        /** synchronization */
-        std::mutex QueueMutex;
-        std::condition_variable Condition;
-        bool bStop;
     };
 }
