@@ -118,3 +118,19 @@ bool UCommon::FThreadPool::Enqueue(std::function<void()> Function)
 }
 
 size_t UCommon::FThreadPool::GetNumThreads() const noexcept { return Impl->Workers.size(); }
+
+UCommon::FThreadPoolRegistry UCommon::FThreadPoolRegistry::ThreadPoolRegistry;
+
+UCommon::FThreadPoolRegistry& UCommon::FThreadPoolRegistry::GetInstance() { return ThreadPoolRegistry; }
+
+void UCommon::FThreadPoolRegistry::Register(FThreadPool* InThreadPool) noexcept
+{
+    ThreadPool = InThreadPool;
+}
+
+void UCommon::FThreadPoolRegistry::Deregister() noexcept
+{
+    ThreadPool = nullptr;
+}
+
+UCommon::FThreadPool* UCommon::FThreadPoolRegistry::GetThreadPool() const noexcept { return ThreadPool; }

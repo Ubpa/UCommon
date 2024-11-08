@@ -43,7 +43,7 @@ namespace UCommon
         struct FImpl;
         FImpl* Impl;
     public:
-        FThreadPool(uint64_t NumThread);
+        FThreadPool(uint64_t NumThread = std::thread::hardware_concurrency());
         ~FThreadPool();
 
         bool Enqueue(std::function<void()> Function);
@@ -72,5 +72,19 @@ namespace UCommon
 
         FThreadPool(const FThreadPool&) = delete;
         FThreadPool& operator=(const FThreadPool&) = delete;
+    };
+
+    class UBPA_UCOMMON_API FThreadPoolRegistry
+    {
+    public:
+        static FThreadPoolRegistry& GetInstance();
+        void Register(FThreadPool* InThreadPool) noexcept;
+        void Deregister() noexcept;
+        FThreadPool* GetThreadPool() const noexcept;
+    private:
+        static FThreadPoolRegistry ThreadPoolRegistry;
+        FThreadPoolRegistry() = default;
+
+        FThreadPool* ThreadPool = nullptr;
     };
 }
