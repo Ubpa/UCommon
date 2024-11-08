@@ -34,6 +34,7 @@ SOFTWARE.
 namespace NameSpace \
 { \
 	using FThreadPool = UCommon::FThreadPool; \
+	using FThreadPoolRegistry = UCommon::FThreadPoolRegistry; \
 }
 
 namespace UCommon
@@ -52,15 +53,15 @@ namespace UCommon
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> Enqueue(F&& Function, Args&&... Arguments)
         {
-            using return_type = std::result_of<F(Args...)>::type;
+            using return_type = typename std::result_of<F(Args...)>::type;
 
-            auto task = std::make_unique< std::packaged_task<return_type()> >(
+            auto task = new std::packaged_task<return_type()>(
                 std::bind(std::forward<F>(Function), std::forward<Args>(Arguments)...)
                 );
 
             std::future<return_type> res = task->get_future();
 
-            if (!Enqueue([localtask = std::move(task)]() { (*localtask)(); }))
+            if (!Enqueue(std::function<void()>([task]() { (*task)(); delete task; })))
             {
                 return std::future<return_type>();
             }
