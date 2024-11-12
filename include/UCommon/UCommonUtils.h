@@ -1241,6 +1241,8 @@ namespace UCommon
 			UBPA_UCOMMON_ASSERT(InPointer || InSize == 0);
 		}
 
+		inline TSpan() noexcept : TSpan(nullptr, 0) {}
+
 		template<uint64_t N>
 		inline TSpan(T(&InPointer)[N]) noexcept : TSpan(InPointer, N) {}
 
