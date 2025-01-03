@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <UCommon/UCommonThreadPool.h>
+#include <UCommon/ThreadPool.h>
 
 #include <vector>
 #include <queue>

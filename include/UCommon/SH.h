@@ -24,8 +24,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "UCommonConfig.h"
-#include "UCommonUtils.h"
+#include "Config.h"
+#include "Utils.h"
 
 #define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
@@ -608,4 +608,4 @@ namespace UCommon
 
 UBPA_UCOMMON_SH_TO_NAMESPACE(UCommonTest)
 
-#include "UCommonSH.inl"
+#include "SH.inl"

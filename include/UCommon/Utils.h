@@ -24,7 +24,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "UCommonConfig.h"
+#include "Config.h"
 
 #include <stdint.h>
 #include <cmath>

@@ -24,10 +24,10 @@ SOFTWARE.
 
 #pragma once
 
-#include "UCommonConfig.h"
-#include "UCommonUtils.h"
-#include "UCommonSH.h"
-#include "UCommonThreadPool.h"
+#include "Config.h"
+#include "Utils.h"
+#include "SH.h"
+#include "ThreadPool.h"
 
 #define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \

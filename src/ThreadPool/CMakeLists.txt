@@ -34,7 +34,7 @@ Ubpa_AddTarget(
   INC
     "${PROJECT_SOURCE_DIR}/include"
   SOURCE
-    "${PROJECT_SOURCE_DIR}/include/UCommon/UCommonThreadPool.h"
+    "${PROJECT_SOURCE_DIR}/include/UCommon/ThreadPool.h"
   C_OPTION
     ${c_options}
 )
