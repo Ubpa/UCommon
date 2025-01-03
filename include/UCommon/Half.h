@@ -24,13 +24,17 @@ SOFTWARE.
 
 #pragma once
 
-#include "Config.h"
-#include "Half.h"
-#include "Utils.h"
-#include "SH.h"
-#include "ThreadPool.h"
+#include "_deps/half.hpp"
 
-#define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace)
+#define UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+	using FHalf = UCommon::FHalf; \
+	namespace literal = UCommon::literal; \
+}
+
+namespace UCommon
+{
+	using FHalf = half_float::half;
+	namespace literal = half_float::literal;
+}

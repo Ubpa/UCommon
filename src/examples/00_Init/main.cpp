@@ -52,6 +52,9 @@ int main()
 
 	FSHVector3 C1{ FSHVector2(), FSHBandVector3() };
 	FSHVectorRGB3 C2{ FSHVectorRGB2(), FSHBandVectorRGB3() };
+
+	FHalf h(1.f);
+	std::cout << (float)h << std::endl;
 	
 	return 0;
 }
