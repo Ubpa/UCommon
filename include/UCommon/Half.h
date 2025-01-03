@@ -38,3 +38,5 @@ namespace UCommon
 	using FHalf = half_float::half;
 	namespace literal = half_float::literal;
 }
+
+UBPA_UCOMMON_HALF_TO_NAMESPACE(UCommonTest)
