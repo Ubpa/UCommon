@@ -5,5 +5,5 @@ Ubpa_AddTarget(
   SOURCE
     "${PROJECT_SOURCE_DIR}/include/UCommon"
   LIB
-    Ubpa::UCommon_Core
+    Ubpa::UCommon_Runtime
 )

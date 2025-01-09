@@ -385,9 +385,9 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y) };
 		}
 
-		TVector2 Pow2() const noexcept
+		TVector2 Square() const noexcept
 		{
-			return { UCommon::Pow2(X), UCommon::Pow2(Y) };
+			return { X * X, Y * Y };
 		}
 
 		TVector2 Round() const noexcept
@@ -662,9 +662,9 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z) };
 		}
 
-		TVector Pow2() const noexcept
+		TVector Square() const noexcept
 		{
-			return { UCommon::Pow2(X), UCommon::Pow2(Y), UCommon::Pow2(Z) };
+			return { X * X, Y * Y, Z * Z };
 		}
 
 		TVector Round() const noexcept
@@ -931,9 +931,9 @@ namespace UCommon
 			return { std::sqrt(X), std::sqrt(Y), std::sqrt(Z), std::sqrt(W) };
 		}
 
-		TVector4 Pow2() const noexcept
+		TVector4 Square() const noexcept
 		{
-			return { UCommon::Pow2(X), UCommon::Pow2(Y), UCommon::Pow2(Z), UCommon::Pow2(W) };
+			return { X * X, Y * Y, Z * Z, W * W };
 		}
 
 		TVector4 Round() const noexcept
