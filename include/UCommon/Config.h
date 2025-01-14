@@ -109,7 +109,3 @@ SOFTWARE.
 #define UBPA_UCOMMON_MALLOC(size) (malloc(size))
 #define UBPA_UCOMMON_FREE(ptr) (free(ptr))
 #endif
-
-#ifndef UBPA_UCOMMON_ELEMENT_TYPE_TEX_C_DEFAULT
-#define UBPA_UCOMMON_ELEMENT_TYPE_TEX_C_DEFAULT
-#endif
