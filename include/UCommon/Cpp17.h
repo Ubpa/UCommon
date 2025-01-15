@@ -81,6 +81,16 @@ namespace UCommon
 		T* Pointer;
 		uint64_t Size;
 	};
+
+	template<typename F, typename... ArgTypes>
+	using InvokeResult =
+#ifdef UCOMMON_COMPATIBLE_CPP14
+		std::result_of<F(ArgTypes...)>;
+#else
+		std::invoke_result<F, ArgTypes...>;
+#endif
+	template<typename F, typename... ArgTypes>
+	using InvokeResult_t = typename InvokeResult<F, ArgTypes...>::type;
 }
 
 UBPA_UCOMMON_CPP17_TO_NAMESPACE(UCommonTest)

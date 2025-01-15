@@ -24,11 +24,10 @@ SOFTWARE.
 
 #pragma once
 
-#include "Config.h"
+#include "Cpp17.h"
 
 #include <functional>
 #include <future>
-#include <type_traits>
 
 #define UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
@@ -51,9 +50,9 @@ namespace UCommon
 
         /** Add new work item to the pool. */
         template<class F, class... Args>
-        std::future<typename std::result_of<F(Args...)>::type> Enqueue(F&& Function, Args&&... Arguments)
+        std::future<InvokeResult_t<F, Args...>> Enqueue(F&& Function, Args&&... Arguments)
         {
-            using return_type = typename std::result_of<F(Args...)>::type;
+            using return_type = InvokeResult_t<F, Args...>;
 
             auto task = new std::packaged_task<return_type()>(
                 std::bind(std::forward<F>(Function), std::forward<Args>(Arguments)...)

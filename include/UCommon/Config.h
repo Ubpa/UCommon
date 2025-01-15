@@ -42,6 +42,8 @@ SOFTWARE.
 
 //----------------------------------------------------------
 
+//#define UCOMMON_COMPATIBLE_CPP14
+
 #ifndef UBPA_UCOMMON_ASSERT
 
 /**
