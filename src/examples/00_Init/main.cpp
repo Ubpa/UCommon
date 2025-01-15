@@ -7,11 +7,11 @@ using namespace UCommon;
 
 int main()
 {
-	FVector RGB(1.f, 0.5f, 0.3f);
-	FVector NewRGB = YCoCgToRGB(RGBToYCoCg(RGB));
+	FLinearColorRGB RGB(1.f, 0.5f, 0.3f);
+	FLinearColorRGB NewRGB = YCoCgToRGB(RGBToYCoCg(RGB));
 	printf("RGB(%f,%f,%f) == NewRGB(%f,%f,%f)\n", RGB.X, RGB.Y, RGB.Z, NewRGB.X, NewRGB.Y, NewRGB.Z);
 
-	const FVector N = FVector(1.f).SafeNormalize();
+	const FVector3f N = FVector3f(1.f).SafeNormalize();
 	constexpr float Nf = 0.57735026f;
 
 	printf("SHK<0, 0> == %f\n", SHK<0, 0>);
@@ -40,7 +40,7 @@ int main()
 		SHVector.V[Index] = 1.f;
 	}
 
-	FSHVectorRGB3 SHVectorRGB3 = SHVector * FVector(1.f, 2.f, 1.f);
+	FSHVectorRGB3 SHVectorRGB3 = SHVector * FVector3f(1.f, 2.f, 1.f);
 
 	SHVectorRGB3.ToYCoCg();
 

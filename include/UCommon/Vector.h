@@ -35,8 +35,8 @@ namespace NameSpace \
     template<typename T> using TVector2 = UCommon::TVector2<T>; \
     template<typename T> using TVector = UCommon::TVector<T>; \
     template<typename T> using TVector4 = UCommon::TVector4<T>; \
-    using FVector2 = UCommon::FVector2; \
-    using FDoubleVector2 = UCommon::FDoubleVector2; \
+    using FVector2f = UCommon::FVector2f; \
+    using FVector2d = UCommon::FVector2d; \
     using FInt8Vector2 = UCommon::FInt8Vector2; \
     using FInt16Vector2 = UCommon::FInt16Vector2; \
     using FInt32Vector2 = UCommon::FInt32Vector2; \
@@ -45,8 +45,8 @@ namespace NameSpace \
     using FUint16Vector2 = UCommon::FUint16Vector2; \
     using FUint32Vector2 = UCommon::FUint32Vector2; \
     using FUint64Vector2 = UCommon::FUint64Vector2; \
-    using FVector = UCommon::FVector; \
-    using FDoubleVector = UCommon::FDoubleVector; \
+    using FVector3f = UCommon::FVector3f; \
+    using FVector3d = UCommon::FVector3d; \
     using FInt8Vector = UCommon::FInt8Vector; \
     using FInt16Vector = UCommon::FInt16Vector; \
     using FInt32Vector = UCommon::FInt32Vector; \
@@ -55,8 +55,8 @@ namespace NameSpace \
     using FUint16Vector = UCommon::FUint16Vector; \
     using FUint32Vector = UCommon::FUint32Vector; \
     using FUint64Vector = UCommon::FUint64Vector; \
-    using FVector4 = UCommon::FVector4; \
-    using FDoubleVector4 = UCommon::FDoubleVector4; \
+    using FVector4f = UCommon::FVector4f; \
+    using FVector4d = UCommon::FVector4d; \
     using FInt8Vector4 = UCommon::FInt8Vector4; \
     using FInt16Vector4 = UCommon::FInt16Vector4; \
     using FInt32Vector4 = UCommon::FInt32Vector4; \
@@ -86,7 +86,7 @@ friend Type operator Op(const T& K, const Type& V) \
     return Type(K) Op V;                           \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP(Op)      \
+#define UBPA_UCOMMON_DEFINE_TVECTOR_OP(Op)      \
 TVector operator Op(const TVector& Other) const \
 {                                               \
     TVector Result;                             \
@@ -105,7 +105,7 @@ TVector operator Op(const T& K) const           \
 }                                               \
 UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector, Op)
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(Op) \
+#define UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(Op) \
 TVector& operator Op(const TVector& Other)        \
 {                                                 \
     X Op Other.X;                                 \
@@ -121,13 +121,13 @@ TVector& operator Op(const T& K)                  \
     return *this;                                 \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(Op, BoolOp)                \
+#define UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(Op, BoolOp)                \
 friend bool operator Op (const TVector& Lhs, const TVector& Rhs) noexcept \
 {                                                                         \
     return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z;    \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP(Op)       \
+#define UBPA_UCOMMON_DEFINE_TVECTOR4_OP(Op)       \
 TVector4 operator Op(const TVector4& Other) const \
 {                                                 \
     TVector4 Result;                              \
@@ -148,7 +148,7 @@ TVector4 operator Op(const T& K) const            \
 }                                                 \
 UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector4, Op)
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(Op) \
+#define UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(Op) \
 TVector4& operator Op(const TVector4& Other)       \
 {                                                  \
     X Op Other.X;                                  \
@@ -166,13 +166,13 @@ TVector4& operator Op(const T& K)                  \
     return *this;                                  \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(Op, BoolOp)                                  \
+#define UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(Op, BoolOp)                                  \
 friend bool operator Op (const TVector4& Lhs, const TVector4& Rhs) noexcept                  \
 {                                                                                            \
     return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y BoolOp Lhs.Z Op Rhs.Z BoolOp Lhs.W Op Rhs.W; \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP(Op)       \
+#define UBPA_UCOMMON_DEFINE_TVECTOR2_OP(Op)       \
 TVector2 operator Op(const TVector2& Other) const \
 {                                                 \
     TVector2 Result;                              \
@@ -189,7 +189,7 @@ TVector2 operator Op(const T& K) const            \
 }                                                 \
 UBPA_UCOMMON_DEFINE_FRIEND_OP(TVector2, Op)
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(Op) \
+#define UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(Op) \
 TVector2& operator Op(const TVector2& Other)       \
 {                                                  \
     X Op Other.X;                                  \
@@ -203,7 +203,7 @@ TVector2& operator Op(const T& K)                  \
     return *this;                                  \
 }
 
-#define UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(Op, BoolOp)                 \
+#define UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(Op, BoolOp)                 \
 friend bool operator Op (const TVector2& Lhs, const TVector2& Rhs) noexcept \
 {                                                                           \
     return Lhs.X Op Rhs.X BoolOp Lhs.Y Op Rhs.Y;                            \
@@ -261,27 +261,27 @@ namespace UCommon
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }
 
-		UBPA_UCOMMON_DEFINE_FVECTOR2_OP(+)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP(-)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP(*)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP(/ )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP(%)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(+)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(-)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(*)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(%)
 
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(= )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(+= )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(-= )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(*= )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(/= )
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(+= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(-= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(*= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(/= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(%= )
 
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(< , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(<= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(> , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(>= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(== , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR2_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(< , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(> , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(>= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(== , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(!= , || )
 
-			static T Dot(const TVector2& A, const TVector2& B)
+		static T Dot(const TVector2& A, const TVector2& B)
 		{
 			return A.X * B.X + A.Y * B.Y;
 		}
@@ -472,8 +472,8 @@ namespace UCommon
 		}
 	};
 
-	using FVector2 = TVector2<float>;
-	using FDoubleVector2 = TVector2<double>;
+	using FVector2f = TVector2<float>;
+	using FVector2d = TVector2<double>;
 	using FInt8Vector2 = TVector2<int8_t>;
 	using FInt16Vector2 = TVector2<int16_t>;
 	using FInt32Vector2 = TVector2<int32_t>;
@@ -534,27 +534,27 @@ namespace UCommon
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }
 
-		UBPA_UCOMMON_DEFINE_FVECTOR_OP(+)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP(-)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP(*)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP(/ )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP(%)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(+)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(-)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(*)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(%)
 
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(= )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(+= )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(-= )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(*= )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(/= )
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(+= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(-= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(*= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(/= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(%= )
 
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(< , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(<= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(> , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(>= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(== , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(< , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(> , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(>= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(== , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(!= , || )
 
-			static T Dot(const TVector& A, const TVector& B)
+		static T Dot(const TVector& A, const TVector& B)
 		{
 			return A.X * B.X + A.Y * B.Y + A.Z * B.Z;
 		}
@@ -749,8 +749,8 @@ namespace UCommon
 		}
 	};
 
-	using FVector = TVector<float>;
-	using FDoubleVector = TVector<double>;
+	using FVector3f = TVector<float>;
+	using FVector3d = TVector<double>;
 	using FInt8Vector = TVector<int8_t>;
 	using FInt16Vector = TVector<int16_t>;
 	using FInt32Vector = TVector<int32_t>;
@@ -810,27 +810,27 @@ namespace UCommon
 		T* GetData() noexcept { return reinterpret_cast<T*>(this); }
 		const T* GetData() const noexcept { return reinterpret_cast<const T*>(this); }
 
-		UBPA_UCOMMON_DEFINE_FVECTOR4_OP(+)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP(-)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP(*)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP(/ )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP(%)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(+)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(-)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(*)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(%)
 
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(= )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(+= )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(-= )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(*= )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(/= )
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(+= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(-= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(*= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(/= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(%= )
 
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(< , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(<= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(> , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(>= , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(== , &&)
-			UBPA_UCOMMON_DEFINE_FVECTOR4_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(< , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(> , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(>= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(== , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(!= , || )
 
-			static T Dot(const TVector4& A, const TVector4& B)
+		static T Dot(const TVector4& A, const TVector4& B)
 		{
 			return A.X * B.X + A.Y * B.Y + A.Z * B.Z + A.W * B.W;
 		}
@@ -1029,8 +1029,8 @@ namespace UCommon
 	template<typename T> struct TRemoveVector<TVector<T>> { using value_type = T; };
 	template<typename T> struct TRemoveVector<TVector4<T>> { using value_type = T; };
 
-	using FVector4 = TVector4<float>;
-	using FDoubleVector4 = TVector4<double>;
+	using FVector4f = TVector4<float>;
+	using FVector4d = TVector4<double>;
 	using FInt8Vector4 = TVector4<int8_t>;
 	using FInt16Vector4 = TVector4<int16_t>;
 	using FInt32Vector4 = TVector4<int32_t>;
@@ -1041,11 +1041,11 @@ namespace UCommon
 	using FUint64Vector4 = TVector4<uint64_t>;
 
 	using FColorRGB = FUint8Vector;
-	using FLinearColorRGB = FVector;
-	using FDoubleColorRGB = FDoubleVector;
+	using FLinearColorRGB = FVector3f;
+	using FDoubleColorRGB = FVector3d;
 	using FColor = FUint8Vector4;
-	using FLinearColor = FVector4;
-	using FDoubleColor = FDoubleVector4;
+	using FLinearColor = FVector4f;
+	using FDoubleColor = FVector4d;
 
 	template<typename T>
 	struct TRange

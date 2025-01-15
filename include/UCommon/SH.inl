@@ -92,7 +92,7 @@ constexpr float UCommon::SH(float x, float y, float z)
 }
 
 template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
-DerivedType UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::SHBasisFunction(const FVector& Vector)
+DerivedType UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::SHBasisFunction(const FVector3f& Vector)
 {
 	constexpr int SHIndexOffset = InMaxSHOrder * InMaxSHOrder - InMaxSHBasis;
 	DerivedType Result;
@@ -101,14 +101,14 @@ DerivedType UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::SHB
 }
 
 template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
-float UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector& Vector) const
+float UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector3f& Vector) const
 {
 	const DerivedType SHBasises = DerivedType::SHBasisFunction(Vector);
 	return Dot(static_cast<const DerivedType&>(*this), SHBasises);
 }
 
 template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
-UCommon::FVector UCommon::TSHVectorRGBBase<DerivedType, TElement, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector& Vector) const
+UCommon::FVector3f UCommon::TSHVectorRGBBase<DerivedType, TElement, InMaxSHOrder, InMaxSHBasis>::operator()(const FVector3f& Vector) const
 {
 	const TElement<MaxSHOrder> SHBasises = TElement<MaxSHOrder>::SHBasisFunction(Vector);
 	return { TElement<MaxSHOrder>::Dot(R, SHBasises), TElement<MaxSHOrder>::Dot(G, SHBasises), TElement<MaxSHOrder>::Dot(B, SHBasises) };

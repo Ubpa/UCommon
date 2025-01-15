@@ -171,9 +171,9 @@ namespace UCommon
 		Cg = (2 * G - RB) / 4;
 	}
 
-	static inline FVector RGBToYCoCg(const FVector& RGB)
+	static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
 	{
-		FVector YCoCg;
+		FLinearColorRGB YCoCg;
 		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
 		return YCoCg;
 	}
@@ -186,47 +186,47 @@ namespace UCommon
 		B = Tmp - Co;
 	}
 
-	static inline FVector YCoCgToRGB(const FVector& YCoCg)
+	static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
 	{
-		FVector RGB;
+		FLinearColorRGB RGB;
 		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
 		return RGB;
 	}
 
-	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FVector& MinYCoCg, const FVector& MaxYCoCg)
+	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FLinearColorRGB& MinYCoCg, const FLinearColorRGB& MaxYCoCg)
 	{
-		const FVector YCoCg = RGBToYCoCg(RGB);
-		const FVector ClampYCoCg = YCoCg.Clamp(MinYCoCg, MaxYCoCg);
+		const FLinearColorRGB YCoCg = RGBToYCoCg(RGB);
+		const FLinearColorRGB ClampYCoCg = YCoCg.Clamp(MinYCoCg, MaxYCoCg);
 		return YCoCgToRGB(ClampYCoCg);
 	}
 
-	static inline FVector ClampRGBwithYCoCg(const FVector& RGB, const FBox& YCoCgBox)
+	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FBox& YCoCgBox)
 	{
 		return ClampRGBwithYCoCg(RGB, YCoCgBox.Min, YCoCgBox.Max);
 	}
 
 	static constexpr float Pi = 3.1415926f;
 
-	static inline FVector4 UniformSampleSphere(FVector2 E)
+	static inline FVector4f UniformSampleSphere(FVector2f E)
 	{
 		float Phi = 2 * Pi * E.X;
 		float CosTheta = 1 - 2 * E.Y;
 		float SinTheta = std::sqrt(1 - CosTheta * CosTheta);
 
-		FVector H;
+		FVector3f H;
 		H.X = SinTheta * cos(Phi);
 		H.Y = SinTheta * sin(Phi);
 		H.Z = CosTheta;
 
 		constexpr float PDF = 1.0f / (4 * Pi);
 
-		return FVector4(H, PDF);
+		return FVector4f(H, PDF);
 	}
 
 	constexpr float GlodenRatio = 1.618034f;
 
 	//Reference: https://zhuanlan.zhihu.com/p/25988652?group_id=828963677192491008
-	static inline FVector4 FibonacciSpherePoint(int N, int n)
+	static inline FVector4f FibonacciSpherePoint(int N, int n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
 		const float Z = (2.f * n + 1.f) / N - 1.f;
@@ -236,7 +236,7 @@ namespace UCommon
 
 		constexpr float PDF = 1.0f / (4.f * Pi);
 
-		return FVector4(X, Y, Z, PDF);
+		return FVector4f(X, Y, Z, PDF);
 	}
 }
 

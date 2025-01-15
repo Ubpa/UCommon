@@ -105,10 +105,10 @@ namespace UCommon
 		}
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector. */
-		static DerivedType SHBasisFunction(const FVector& Vector);
+		static DerivedType SHBasisFunction(const FVector3f& Vector);
 
 		/** Unnormalized */
-		FVector GetLinearVector() const
+		FVector3f GetLinearVector() const
 		{
 			constexpr int BaseIndex = 2 - (MaxSHOrder * MaxSHOrder - MaxSHBasis);
 			static_assert(BaseIndex >= 1 && BaseIndex + 1 <= MaxSHBasis, "invalid base index");
@@ -221,7 +221,7 @@ namespace UCommon
 			return operator*=(B);
 		}
 
-		inline float operator()(const FVector& Vector) const;
+		inline float operator()(const FVector3f& Vector) const;
 	};
 
 	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
@@ -307,7 +307,7 @@ namespace UCommon
 		}
 
 		/** Color multiplication operator. */
-		friend inline DerivedType operator*(const DerivedType& A, const FVector& Color)
+		friend inline DerivedType operator*(const DerivedType& A, const FVector3f& Color)
 		{
 			DerivedType Result;
 			Result.R = A.R * Color.X;
@@ -317,7 +317,7 @@ namespace UCommon
 		}
 
 		/** Color multiplication operator. */
-		friend inline DerivedType operator*(const FVector& Color, const DerivedType& A)
+		friend inline DerivedType operator*(const FVector3f& Color, const DerivedType& A)
 		{
 			DerivedType Result;
 			Result.R = A.R * Color.X;
@@ -357,9 +357,9 @@ namespace UCommon
 		}
 
 		/** Dot product operator. */
-		static inline FVector Dot(const DerivedType& A, const TElement<MaxSHOrder>& InB)
+		static inline FVector3f Dot(const DerivedType& A, const TElement<MaxSHOrder>& InB)
 		{
-			FVector Result;
+			FVector3f Result;
 			Result.X = TElement<MaxSHOrder>::Dot(A.R, InB);
 			Result.Y = TElement<MaxSHOrder>::Dot(A.G, InB);
 			Result.Z = TElement<MaxSHOrder>::Dot(A.B, InB);
@@ -367,7 +367,7 @@ namespace UCommon
 		}
 
 		/** Dot product operator. */
-		static inline TElement<MaxSHOrder> Dot(const DerivedType& A, const FVector& InB)
+		static inline TElement<MaxSHOrder> Dot(const DerivedType& A, const FVector3f& InB)
 		{
 			return A.R * InB.X + A.G * InB.Y + A.B * InB.Z;
 		}
@@ -420,7 +420,7 @@ namespace UCommon
 			return const_cast<TSHVectorRGBBase*>(this)->operator[](Index);
 		}
 
-		inline FVector operator()(const FVector& Vector) const;
+		inline FVector3f operator()(const FVector3f& Vector) const;
 
 		inline DerivedType ToYCoCg() const
 		{
@@ -444,10 +444,10 @@ namespace UCommon
 
 		TSHBandVector(float V1, float V2, float V3) : Super{ V1,V2,V3 } {}
 
-		explicit TSHBandVector(const FVector& Vector) : TSHBandVector(Vector.X, Vector.Y, Vector.Z) {}
+		explicit TSHBandVector(const FVector3f& Vector) : TSHBandVector(Vector.X, Vector.Y, Vector.Z) {}
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector and ZH coefficient. */
-		static TSHBandVector ZHToSHBasisFunction(float ZHCoefficient, const FVector& Vector)
+		static TSHBandVector ZHToSHBasisFunction(float ZHCoefficient, const FVector3f& Vector)
 		{
 			return Super::SHBasisFunction(Vector) * ZHCoefficient;
 		}
@@ -468,7 +468,7 @@ namespace UCommon
 		}
 
 		/** Returns the value of the SH basis L,M at the point on the sphere defined by the unit vector Vector and ZH coefficient. */
-		static TSHBandVectorRGB ZHToSHBasisFunction(const FVector& ZHCoefficient, const FVector& Vector)
+		static TSHBandVectorRGB ZHToSHBasisFunction(const FVector3f& ZHCoefficient, const FVector3f& Vector)
 		{
 			return Super::SHBasisFunction(Vector) * ZHCoefficient;
 		}
@@ -486,7 +486,7 @@ namespace UCommon
 
 		TSHVector(float V0, float V1, float V2, float V3) : Super{ V0,V1,V2,V3 } {}
 
-		explicit TSHVector(const FVector4& Vector) : TSHVector(Vector.X, Vector.Y, Vector.Z, Vector.W) {}
+		explicit TSHVector(const FVector4f& Vector) : TSHVector(Vector.X, Vector.Y, Vector.Z, Vector.W) {}
 
 		template<int OtherOrder>
 		explicit TSHVector(const TSHVector<OtherOrder>& Other)
@@ -594,13 +594,13 @@ namespace UCommon
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
 
 	template<template<int> class SHVectorType, int Order>
-	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector& Color)
+	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector3f& Color)
 	{
 		return typename SHVectorType<Order>::RGBType(SHVector) * Color;
 	}
 
 	template<template<int> class SHVectorType, int Order>
-	typename SHVectorType<Order>::RGBType operator*(const FVector& Color, const SHVectorType<Order>& SHVector)
+	typename SHVectorType<Order>::RGBType operator*(const FVector3f& Color, const SHVectorType<Order>& SHVector)
 	{
 		return SHVector * Color;
 	}
