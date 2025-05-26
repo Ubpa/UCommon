@@ -211,201 +211,16 @@ uint64_t UCommon::FTex2D::GetIndex(const FUint64Vector2& Point, uint64_t C) cons
 	return Grid2D.GetIndex(Point) * NumChannel + C;
 }
 
-float& UCommon::FTex2D::AtFloat(uint64_t Index) noexcept
-{
-	UBPA_UCOMMON_ASSERT(Index < GetNumElements());
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Float);
-	return reinterpret_cast<float*>(Storage)[Index];
-}
-
-const float& UCommon::FTex2D::AtFloat(uint64_t Index) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtFloat(Index);
-}
-
-float& UCommon::FTex2D::AtFloat(const FUint64Vector2& Point, uint64_t C) noexcept
-{
-	return AtFloat(GetIndex(Point, C));
-}
-
-const float& UCommon::FTex2D::AtFloat(const FUint64Vector2& Point, uint64_t C) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtFloat(Point, C);
-}
-
-double& UCommon::FTex2D::AtDouble(uint64_t Index) noexcept
-{
-	UBPA_UCOMMON_ASSERT(Index < GetNumElements());
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Double);
-	return reinterpret_cast<double*>(Storage)[Index];
-}
-
-const double& UCommon::FTex2D::AtDouble(uint64_t Index) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDouble(Index);
-}
-
-double& UCommon::FTex2D::AtDouble(const FUint64Vector2& Point, uint64_t C) noexcept
-{
-	return AtDouble(GetIndex(Point, C));
-}
-
-const double& UCommon::FTex2D::AtDouble(const FUint64Vector2& Point, uint64_t C) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDouble(Point, C);
-}
-
-UCommon::FColorRGB& UCommon::FTex2D::AtColorRGB(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 3);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Uint8);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FColorRGB*>(Storage)[TexelIndex];
-}
-
-const UCommon::FColorRGB& UCommon::FTex2D::AtColorRGB(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtColorRGB(TexelIndex);
-}
-
-UCommon::FLinearColorRGB& UCommon::FTex2D::AtLinearColorRGB(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 3);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Float);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FLinearColorRGB*>(Storage)[TexelIndex];
-}
-
-const UCommon::FLinearColorRGB& UCommon::FTex2D::AtLinearColorRGB(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtLinearColorRGB(TexelIndex);
-}
-
-
-UCommon::FColor& UCommon::FTex2D::AtColor(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 4);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Uint8);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FColor*>(Storage)[TexelIndex];
-}
-
-const UCommon::FColor& UCommon::FTex2D::AtColor(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtColor(TexelIndex);
-}
-
-
-UCommon::FLinearColor& UCommon::FTex2D::AtLinearColor(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 4);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Float);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FLinearColor*>(Storage)[TexelIndex];
-}
-
-const UCommon::FLinearColor& UCommon::FTex2D::AtLinearColor(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtLinearColor(TexelIndex);
-}
-
-
-UCommon::FDoubleColorRGB& UCommon::FTex2D::AtDoubleColorRGB(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 3);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Double);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FDoubleColorRGB*>(Storage)[TexelIndex];
-}
-
-const UCommon::FDoubleColorRGB& UCommon::FTex2D::AtDoubleColorRGB(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDoubleColorRGB(TexelIndex);
-}
-
-UCommon::FDoubleColor& UCommon::FTex2D::AtDoubleColor(uint64_t TexelIndex) noexcept
-{
-	UBPA_UCOMMON_ASSERT(NumChannel == 4);
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Double);
-	UBPA_UCOMMON_ASSERT(TexelIndex < Grid2D.GetArea());
-	return reinterpret_cast<FDoubleColor*>(Storage)[TexelIndex];
-}
-
-const UCommon::FDoubleColor& UCommon::FTex2D::AtDoubleColor(uint64_t TexelIndex) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDoubleColor(TexelIndex);
-}
-
-UCommon::FColorRGB& UCommon::FTex2D::AtColorRGB(const FUint64Vector2& Point) noexcept
-{
-	return AtColorRGB(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FColorRGB& UCommon::FTex2D::AtColorRGB(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtColorRGB(Point);
-}
-
-UCommon::FLinearColorRGB& UCommon::FTex2D::AtLinearColorRGB(const FUint64Vector2& Point) noexcept
-{
-	return AtLinearColorRGB(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FLinearColorRGB& UCommon::FTex2D::AtLinearColorRGB(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtLinearColorRGB(Point);
-}
-
-UCommon::FColor& UCommon::FTex2D::AtColor(const FUint64Vector2& Point) noexcept
-{
-	return AtColor(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FColor& UCommon::FTex2D::AtColor(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtColor(Point);
-}
-
-UCommon::FLinearColor& UCommon::FTex2D::AtLinearColor(const FUint64Vector2& Point) noexcept
-{
-	return AtLinearColor(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FLinearColor& UCommon::FTex2D::AtLinearColor(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtLinearColor(Point);
-}
-
-UCommon::FDoubleColorRGB& UCommon::FTex2D::AtDoubleColorRGB(const FUint64Vector2& Point) noexcept
-{
-	return AtDoubleColorRGB(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FDoubleColorRGB& UCommon::FTex2D::AtDoubleColorRGB(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDoubleColorRGB(Point);
-}
-
-UCommon::FDoubleColor& UCommon::FTex2D::AtDoubleColor(const FUint64Vector2& Point) noexcept
-{
-	return AtDoubleColor(Grid2D.GetIndex(Point));
-}
-
-const UCommon::FDoubleColor& UCommon::FTex2D::AtDoubleColor(const FUint64Vector2& Point) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtDoubleColor(Point);
-}
-
 float UCommon::FTex2D::GetFloat(uint64_t Index) const noexcept
 {
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		return ElementUint8ToFloat(AtUint8(Index));
+		return ElementUint8ToFloat(At<uint8_t>(Index));
 	case UCommon::EElementType::Float:
-		return AtFloat(Index);
+		return At<float>(Index);
 	case UCommon::EElementType::Double:
-		return static_cast<float>(AtDouble(Index));
+		return static_cast<float>(At<double>(Index));
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return 0.f;
@@ -417,11 +232,11 @@ UCommon::FLinearColorRGB UCommon::FTex2D::GetLinearColorRGB(const FUint64Vector2
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		return ElementColorToLinearColor(AtColorRGB(Point));
+		return ElementColorToLinearColor(At<FColorRGB>(Point));
 	case UCommon::EElementType::Float:
-		return AtLinearColorRGB(Point);
+		return At<FLinearColorRGB>(Point);
 	case UCommon::EElementType::Double:
-		return FLinearColorRGB(AtDoubleColorRGB(Point));
+		return FLinearColorRGB(At<FDoubleColorRGB>(Point));
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return FLinearColorRGB(0.f);
@@ -433,11 +248,11 @@ UCommon::FLinearColor UCommon::FTex2D::GetLinearColor(const FUint64Vector2& Poin
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		return ElementColorToLinearColor(AtColor(Point));
+		return ElementColorToLinearColor(At<FColor>(Point));
 	case UCommon::EElementType::Float:
-		return AtLinearColor(Point);
+		return At<FLinearColor>(Point);
 	case UCommon::EElementType::Double:
-		return FLinearColor(AtDoubleColor(Point));
+		return FLinearColor(At<FDoubleColor>(Point));
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return FLinearColor(0.f);
@@ -449,11 +264,11 @@ UCommon::FDoubleColorRGB UCommon::FTex2D::GetDoubleColorRGB(const FUint64Vector2
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		return ElementColorToDoubleColor(AtColorRGB(Point));
+		return ElementColorToDoubleColor(At<FColorRGB>(Point));
 	case UCommon::EElementType::Float:
-		return FDoubleColorRGB(AtLinearColorRGB(Point));
+		return FDoubleColorRGB(At<FLinearColorRGB>(Point));
 	case UCommon::EElementType::Double:
-		return AtDoubleColorRGB(Point);
+		return At<FDoubleColorRGB>(Point);
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return FDoubleColorRGB(0.f);
@@ -465,11 +280,11 @@ UCommon::FDoubleColor UCommon::FTex2D::GetDoubleColor(const FUint64Vector2& Poin
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		return ElementColorToDoubleColor(AtColor(Point));
+		return ElementColorToDoubleColor(At<FColor>(Point));
 	case UCommon::EElementType::Float:
-		return AtDoubleColor(Point);
+		return At<FDoubleColor>(Point);
 	case UCommon::EElementType::Double:
-		return FDoubleColor(AtDoubleColor(Point));
+		return FDoubleColor(At<FDoubleColor>(Point));
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return FDoubleColor(0.f);
@@ -486,13 +301,13 @@ void UCommon::FTex2D::SetFloat(uint64_t Index, float Value) noexcept
 	switch (ElementType)
 	{
 	case UCommon::EElementType::Uint8:
-		AtUint8(Index) = ElementFloatToUint8(Value);
+		At<uint8_t>(Index) = ElementFloatToUint8(Value);
 		break;
 	case UCommon::EElementType::Float:
-		AtFloat(Index) = Value;
+		At<float>(Index) = Value;
 		break;
 	case UCommon::EElementType::Double:
-		AtDouble(Index) = static_cast<double>(Value);
+		At<double>(Index) = static_cast<double>(Value);
 		break;
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
@@ -503,28 +318,6 @@ void UCommon::FTex2D::SetFloat(uint64_t Index, float Value) noexcept
 void UCommon::FTex2D::SetFloat(const FUint64Vector2& Point, uint64_t C, float Value) noexcept
 {
 	SetFloat(GetIndex(Point, C), Value);
-}
-
-uint8_t& UCommon::FTex2D::AtUint8(uint64_t Index) noexcept
-{
-	UBPA_UCOMMON_ASSERT(Index < GetNumElements());
-	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Uint8);
-	return reinterpret_cast<uint8_t*>(Storage)[Index];
-}
-
-const uint8_t& UCommon::FTex2D::AtUint8(uint64_t Index) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtUint8(Index);
-}
-
-uint8_t& UCommon::FTex2D::AtUint8(const FUint64Vector2& Point, uint64_t C) noexcept
-{
-	return AtUint8(GetIndex(Point, C));
-}
-
-const uint8_t& UCommon::FTex2D::AtUint8(const FUint64Vector2& Point, uint64_t C) const noexcept
-{
-	return const_cast<FTex2D*>(this)->AtUint8(Point, C);
 }
 
 uint64_t UCommon::FTex2D::GetNumChannel() const noexcept { return NumChannel; }
@@ -622,18 +415,18 @@ namespace UCommon
 	template<typename T> struct TTex2DAt;
 	template<> struct TTex2DAt<uint8_t>
 	{
-		static uint8_t& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtUint8(Point, C); }
-		static const uint8_t& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtUint8(Point, C); }
+		static uint8_t& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<uint8_t>(Point, C); }
+		static const uint8_t& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<uint8_t>(Point, C); }
 	};
 	template<> struct TTex2DAt<float>
 	{
-		static float& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtFloat(Point, C); }
-		static const float& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtFloat(Point, C); }
+		static float& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<float>(Point, C); }
+		static const float& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<float>(Point, C); }
 	};
 	template<> struct TTex2DAt<double>
 	{
-		static double& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtDouble(Point, C); }
-		static const double& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.AtDouble(Point, C); }
+		static double& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<double>(Point, C); }
+		static const double& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<double>(Point, C); }
 	};
 
 	template<typename T>
@@ -706,7 +499,7 @@ UCommon::FTex2D UCommon::FTex2D::ToFloat() const
 		{
 			for (uint64_t C = 0; C < NumChannel; C++)
 			{
-				Tex.AtFloat(Point, C) = GetFloat(Point, C);
+				Tex.At<float>(Point, C) = GetFloat(Point, C);
 			}
 		}
 	}
@@ -729,7 +522,7 @@ void UCommon::FTex2D::ToUint8(FTex2D& Tex) const
 		{
 			for (uint64_t C = 0; C < NumChannel; C++)
 			{
-				Tex.AtUint8(Point, C) = ElementFloatClampToUint8(GetFloat(Point, C));
+				Tex.At<uint8_t>(Point, C) = ElementFloatClampToUint8(GetFloat(Point, C));
 			}
 		}
 	}

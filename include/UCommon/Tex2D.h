@@ -174,59 +174,20 @@ namespace UCommon
 
 		uint64_t GetIndex(const FUint64Vector2& Point, uint64_t C) const noexcept;
 
-		uint8_t& AtUint8(uint64_t Index) noexcept;
-		const uint8_t& AtUint8(uint64_t Index) const noexcept;
+		template<typename T>
+		T& At(uint64_t Index) noexcept;
+		template<typename T>
+		const T& At(uint64_t Index) const noexcept;
 
-		uint8_t& AtUint8(const FUint64Vector2& Point, uint64_t C) noexcept;
-		const uint8_t& AtUint8(const FUint64Vector2& Point, uint64_t C) const noexcept;
+		template<typename T>
+		T& At(const FUint64Vector2& Point, uint64_t C) noexcept;
+		template<typename T>
+		const T& At(const FUint64Vector2& Point, uint64_t C) const noexcept;
 
-		float& AtFloat(uint64_t Index) noexcept;
-		const float& AtFloat(uint64_t Index) const noexcept;
-
-		float& AtFloat(const FUint64Vector2& Point, uint64_t C) noexcept;
-		const float& AtFloat(const FUint64Vector2& Point, uint64_t C) const noexcept;
-
-		double& AtDouble(uint64_t Index) noexcept;
-		const double& AtDouble(uint64_t Index) const noexcept;
-
-		double& AtDouble(const FUint64Vector2& Point, uint64_t C) noexcept;
-		const double& AtDouble(const FUint64Vector2& Point, uint64_t C) const noexcept;
-
-		FColorRGB& AtColorRGB(uint64_t TexelIndex) noexcept;
-		const FColorRGB& AtColorRGB(uint64_t TexelIndex) const noexcept;
-
-		FLinearColorRGB& AtLinearColorRGB(uint64_t TexelIndex) noexcept;
-		const FLinearColorRGB& AtLinearColorRGB(uint64_t TexelIndex) const noexcept;
-
-		FColor& AtColor(uint64_t TexelIndex) noexcept;
-		const FColor& AtColor(uint64_t TexelIndex) const noexcept;
-
-		FLinearColor& AtLinearColor(uint64_t TexelIndex) noexcept;
-		const FLinearColor& AtLinearColor(uint64_t TexelIndex) const noexcept;
-
-		FDoubleColorRGB& AtDoubleColorRGB(uint64_t TexelIndex) noexcept;
-		const FDoubleColorRGB& AtDoubleColorRGB(uint64_t TexelIndex) const noexcept;
-
-		FDoubleColor& AtDoubleColor(uint64_t TexelIndex) noexcept;
-		const FDoubleColor& AtDoubleColor(uint64_t TexelIndex) const noexcept;
-
-		FColorRGB& AtColorRGB(const FUint64Vector2& Point) noexcept;
-		const FColorRGB& AtColorRGB(const FUint64Vector2& Point) const noexcept;
-
-		FLinearColorRGB& AtLinearColorRGB(const FUint64Vector2& Point) noexcept;
-		const FLinearColorRGB& AtLinearColorRGB(const FUint64Vector2& Point) const noexcept;
-
-		FColor& AtColor(const FUint64Vector2& Point) noexcept;
-		const FColor& AtColor(const FUint64Vector2& Point) const noexcept;
-
-		FLinearColor& AtLinearColor(const FUint64Vector2& Point) noexcept;
-		const FLinearColor& AtLinearColor(const FUint64Vector2& Point) const noexcept;
-
-		FDoubleColorRGB& AtDoubleColorRGB(const FUint64Vector2& Point) noexcept;
-		const FDoubleColorRGB& AtDoubleColorRGB(const FUint64Vector2& Point) const noexcept;
-
-		FDoubleColor& AtDoubleColor(const FUint64Vector2& Point) noexcept;
-		const FDoubleColor& AtDoubleColor(const FUint64Vector2& Point) const noexcept;
+		template<typename T>
+		T& At(const FUint64Vector2& Point) noexcept;
+		template<typename T>
+		const T& At(const FUint64Vector2& Point) const noexcept;
 
 		float GetFloat(uint64_t Index) const noexcept;
 		float GetFloat(const FUint64Vector2& Point, uint64_t C) const noexcept;
@@ -288,3 +249,5 @@ namespace UCommon
 		void* Storage;
 	};
 } // UCommon
+
+#include "Tex2D.inl"
