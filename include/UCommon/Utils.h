@@ -25,11 +25,16 @@ SOFTWARE.
 #pragma once
 
 #include "Vector.h"
+#include "Half.h"
 
 #define UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
     constexpr float Pi = UCommon::Pi; \
+    using EElementType = UCommon::EElementType; \
+    using EOwnership = UCommon::EOwnership; \
+    template<typename T> constexpr bool IsDirectSupported = UCommon::IsDirectSupported<T>; \
+    template<typename T> constexpr bool IsSupported = UCommon::IsSupported<T>; \
 }
 
 namespace UCommon
@@ -238,6 +243,147 @@ namespace UCommon
 
 		return FVector4f(X, Y, Z, PDF);
 	}
+
+	enum class EElementType : std::uint64_t
+	{
+		Unknown,
+		Uint8,          /** 1 byte unsigned integer number, 0-255 */
+		Half,           /** 2 bytes floating point number, IEEE 754 */
+		Float,          /** 4 bytes floating point number */
+		Double,         /** 8 bytes floating point number */
+		ASTC_4x4,       /** 128 bits / block => 8.00 bits / pixel */
+		ASTC_6x6,       /** 128 bits / block => 3.56 bits / pixel */
+		ASTC_8x8,       /** 128 bits / block => 2.00 bits / pixel */
+		ASTC_10x10,     /** 128 bits / block => 1.28 bits / pixel */
+		ASTC_12x12,     /** 128 bits / block => 0.89 bits / pixel */
+		AdaptiveASTC,   /** Adative Uint8/ASTC_4x4/ASTC_8x8 */
+	};
+	inline uint64_t ElementGetSize(EElementType ElementType) noexcept
+	{
+		switch (ElementType)
+		{
+		case EElementType::Uint8:
+			return 1;
+		case EElementType::Half:
+			return sizeof(FHalf);
+		case EElementType::Float:
+			return sizeof(float);
+		case EElementType::Double:
+			return sizeof(double);
+		default:
+			UBPA_UCOMMON_NO_ENTRY();
+			return 0;
+		}
+	}
+	template<typename T>
+	constexpr bool IsDirectSupported = false
+		|| std::is_same<T, std::uint8_t>::value
+		|| std::is_same<T, FHalf>::value
+		|| std::is_same<T, float>::value
+		|| std::is_same<T, double>::value;
+	template<typename T>
+	constexpr bool IsSupported = (IsVector_v<T> && IsDirectSupported<typename TRemoveVector<T>::value_type>) || IsDirectSupported<T>;
+	template<typename T>
+	constexpr EElementType ElementTypeOf = std::is_same<typename TRemoveVector<T>::value_type, std::uint8_t>::value ? EElementType::Uint8 :
+		(std::is_same<typename TRemoveVector<T>::value_type, FHalf>::value ? EElementType::Half :
+		(std::is_same<typename TRemoveVector<T>::value_type, float>::value ? EElementType::Float :
+		(std::is_same<typename TRemoveVector<T>::value_type, double>::value ? EElementType::Double :
+		EElementType::Unknown)));
+	static float ElementUint8ToFloat(uint8_t Element) noexcept { return Element / 255.f; }
+	static inline float ElementHalfToFloat(FHalf Element) noexcept { return static_cast<float>(Element); }
+	static uint8_t ElementFloatToUint8(float Element) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(0.f <= Element && Element <= 1.f);
+		return static_cast<uint8_t>(std::roundf(Element * 255.f));
+	}
+	static uint8_t ElementFloatClampToUint8(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element, 0.f, 1.f) * 255.f)); }
+	static FHalf ElementFloatToHalf(float Element) noexcept { return static_cast<FHalf>(Element); }
+	static FHalf ElementUint8ToHalf(uint8_t Element) noexcept { return static_cast<FHalf>(ElementUint8ToFloat(Element)); }
+	static uint8_t ElementHalfToUint8(FHalf Element) noexcept { return ElementFloatToUint8(ElementHalfToFloat(Element)); }
+	static uint8_t ElementHalfClampToUint8(FHalf Element) noexcept { return ElementFloatClampToUint8(ElementHalfToFloat(Element)); }
+	static double ElementUint8ToDouble(uint8_t Element) noexcept { return Element / 255.; }
+	static double ElementHalfToDouble(FHalf Element) noexcept { return static_cast<double>(Element); }
+	static uint8_t ElementDoubleToUint8(double Element) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(0. <= Element && Element <= 1.);
+		return static_cast<uint8_t>(std::round(Element * 255.));
+	}
+	static uint8_t ElementDoubleClampToUint8(double Element) noexcept { return static_cast<uint8_t>(std::round(Clamp(Element, 0., 1.) * 255.)); }
+	static FHalf ElementDoubleToHalf(double Element) noexcept { return ElementFloatToHalf(static_cast<float>(Element)); }
+
+	static FLinearColorRGB ElementColorToLinearColor(const FColorRGB& Element) noexcept
+	{ return { ElementUint8ToFloat(Element.X), ElementUint8ToFloat(Element.Y), ElementUint8ToFloat(Element.Z) }; }
+
+	static FColorRGB ElementLinearColorToColor(const FLinearColorRGB& Element) noexcept
+	{ return { ElementFloatToUint8(Element.X), ElementFloatToUint8(Element.Y), ElementFloatToUint8(Element.Z) }; }
+
+	static FColorRGB ElementLinearColorClampToColor(const FLinearColorRGB& Element) noexcept
+	{ return { ElementFloatClampToUint8(Element.X), ElementFloatClampToUint8(Element.Y), ElementFloatClampToUint8(Element.Z) }; }
+
+	static FLinearColor ElementColorToLinearColor(const FColor& Element) noexcept
+	{ return { ElementUint8ToFloat(Element.X), ElementUint8ToFloat(Element.Y), ElementUint8ToFloat(Element.Z), ElementUint8ToFloat(Element.W) }; }
+
+	static FColor ElementLinearColorToColor(const FLinearColor& Element) noexcept
+	{ return { ElementFloatToUint8(Element.X), ElementFloatToUint8(Element.Y), ElementFloatToUint8(Element.Z), ElementFloatToUint8(Element.W) }; }
+
+	static FColor ElementLinearColorClampToColor(const FLinearColor& Element) noexcept
+	{ return { ElementFloatClampToUint8(Element.X), ElementFloatClampToUint8(Element.Y), ElementFloatClampToUint8(Element.Z), ElementFloatClampToUint8(Element.W) }; }
+
+	static FDoubleColorRGB ElementColorToDoubleColor(const FColorRGB& Element) noexcept
+	{ return { ElementUint8ToDouble(Element.X), ElementUint8ToDouble(Element.Y), ElementUint8ToDouble(Element.Z) }; }
+
+	static FColorRGB ElementDoubleColorToColor(const FDoubleColorRGB& Element) noexcept
+	{ return { ElementDoubleToUint8(Element.X), ElementDoubleToUint8(Element.Y), ElementDoubleToUint8(Element.Z) }; }
+
+	static FColorRGB ElementDoubleColorClampToColor(const FDoubleColorRGB& Element) noexcept
+	{ return { ElementDoubleClampToUint8(Element.X), ElementDoubleClampToUint8(Element.Y), ElementDoubleClampToUint8(Element.Z) }; }
+
+	static FDoubleColor ElementColorToDoubleColor(const FColor& Element) noexcept
+	{ return { ElementUint8ToDouble(Element.X), ElementUint8ToDouble(Element.Y), ElementUint8ToDouble(Element.Z), ElementUint8ToDouble(Element.W) }; }
+
+	static FColor ElementDoubleColorToColor(const FDoubleColor& Element) noexcept
+	{ return { ElementDoubleToUint8(Element.X), ElementDoubleToUint8(Element.Y), ElementDoubleToUint8(Element.Z), ElementDoubleToUint8(Element.W) }; }
+
+	static FColor ElementDoubleColorClampToColor(const FDoubleColor& Element) noexcept
+	{ return { ElementDoubleClampToUint8(Element.X), ElementDoubleClampToUint8(Element.Y), ElementDoubleClampToUint8(Element.Z), ElementDoubleClampToUint8(Element.W) }; }
+
+	static bool ElementIsASTC(EElementType ElementType) noexcept
+	{
+		return (uint64_t)ElementType >= (uint64_t)EElementType::ASTC_4x4
+			&& (uint64_t)ElementType <= (uint64_t)EElementType::ASTC_12x12;
+	}
+	static FUint64Vector2 ElementGetBlockSize(EElementType ElementType) noexcept
+	{
+		switch (ElementType)
+		{
+		case EElementType::ASTC_4x4: return FUint64Vector2(4);
+		case EElementType::ASTC_6x6: return FUint64Vector2(6);
+		case EElementType::ASTC_8x8: return FUint64Vector2(8);
+		case EElementType::ASTC_10x10: return FUint64Vector2(10);
+		case EElementType::ASTC_12x12: return FUint64Vector2(12);
+		case EElementType::AdaptiveASTC: return FUint64Vector2(8);
+		default: return FUint64Vector2(1);
+		}
+	}
+	static EElementType ElementGetASTC(uint64_t BlockSize) noexcept
+	{
+		switch (BlockSize)
+		{
+		case 1: return EElementType::Uint8;
+		case 4: return EElementType::ASTC_4x4;
+		case 6: return EElementType::ASTC_6x6;
+		case 8: return EElementType::ASTC_8x8;
+		case 10: return EElementType::ASTC_10x10;
+		case 12: return EElementType::ASTC_12x12;
+		default: return EElementType::Unknown;
+		}
+	}
+
+	enum class EOwnership : std::uint64_t
+	{
+		TakeOwnership, /** used in some APIs, the object will take the ownership of pointer. */
+		DoNotTakeOwnership, /** used in some APIs, the object will not take the ownership of pointer. */
+	};
 }
 
 UBPA_UCOMMON_UTILS_TO_NAMESPACE(UCommonTest)

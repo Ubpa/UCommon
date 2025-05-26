@@ -27,15 +27,17 @@ SOFTWARE.
 #include "Config.h"
 #include "Cpp17.h"
 #include "Half.h"
+#include "SH.h"
+#include "Tex2D.h"
+#include "ThreadPool.h"
 #include "Utils.h"
 #include "Vector.h"
-#include "SH.h"
-#include "ThreadPool.h"
 
 #define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace)
+UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace)
