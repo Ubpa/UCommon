@@ -264,31 +264,41 @@ namespace UCommon
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(+)
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(-)
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(*)
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(/)
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP(%)
 
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(= )
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(+= )
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(-= )
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(*= )
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(/= )
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN( =)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(+=)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(-=)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(*=)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(/=)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_ASSIGN(%=)
 
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(< , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(<=, &&)
 		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(> , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(>= , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(== , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(>=, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(==, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR2_OP_COMPARE(!=, ||)
 
 		static T Dot(const TVector2& A, const TVector2& B)
 		{
 			return A.X * B.X + A.Y * B.Y;
 		}
 
+		T Dot(const TVector2& Other) const
+		{
+			return Dot(*this, Other);
+		}
+
 		static T Cross(const TVector2& A, const TVector2& B)
 		{
 			return A.X * B.Y - A.Y * B.X;
+		}
+
+		T Cross(const TVector2& Other) const
+		{
+			return Cross(*this, Other);
 		}
 
 		static T SquaredDistance(const TVector2& A, const TVector2& B)
@@ -410,24 +420,44 @@ namespace UCommon
 			return { 1 / X, 1 / Y };
 		}
 
-		TVector2 Min(T V) const noexcept
+		static TVector2 Min(const TVector2& A, T B)
 		{
-			return { std::min(X, V), std::min(Y, V) };
+			return { std::min(A.X, B), std::min(A.Y, B) };
+		}
+		
+		static TVector2 Min(const TVector2& A, const TVector2& B)
+		{
+			return { std::min(A.X, B.X), std::min(A.Y, B.Y) };
 		}
 
-		TVector2 Max(T V) const noexcept
+		static TVector2 Max(const TVector2& A, T B)
 		{
-			return { std::max(X, V), std::max(Y, V) };
+			return { std::max(A.X, B), std::max(A.Y, B) };
+		}
+
+		static TVector2 Max(const TVector2& A, const TVector2& B)
+		{
+			return { std::max(A.X, B.X), std::max(A.Y, B.Y) };
+		}
+
+		TVector2 Min(T V) const noexcept
+		{
+			return Min(*this, V);
 		}
 
 		TVector2 Min(const TVector2& V) const noexcept
 		{
-			return { std::min(X, V.X), std::min(Y, V.Y) };
+			return Min(*this, V);
+		}
+
+		TVector2 Max(T V) const noexcept
+		{
+			return Max(*this, V);
 		}
 
 		TVector2 Max(const TVector2& V) const noexcept
 		{
-			return { std::max(X, V.X), std::max(Y, V.Y) };
+			return Max(*this, V);
 		}
 
 		T MinComponent() const noexcept
@@ -537,26 +567,31 @@ namespace UCommon
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP(+)
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP(-)
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP(*)
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP(/)
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP(%)
 
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(= )
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(+= )
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(-= )
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(*= )
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(/= )
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN( =)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(+=)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(-=)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(*=)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(/=)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_ASSIGN(%=)
 
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(< , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(<=, &&)
 		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(> , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(>= , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(== , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(>=, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(==, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR_OP_COMPARE(!=, ||)
 
 		static T Dot(const TVector& A, const TVector& B)
 		{
 			return A.X * B.X + A.Y * B.Y + A.Z * B.Z;
+		}
+
+		T Dot(const TVector& V) const
+		{
+			return Dot(*this, V);
 		}
 
 		static TVector Cross(const TVector& A, const TVector& B)
@@ -565,6 +600,11 @@ namespace UCommon
 				A.Y * B.Z - A.Z * B.Y,
 				A.Z * B.X - A.X * B.Z,
 				A.X * B.Y - A.Y * B.X);
+		}
+
+		TVector Cross(const TVector& V) const
+		{
+			return Cross(*this, V);
 		}
 
 		static T SquaredDistance(const TVector& A, const TVector& B)
@@ -687,24 +727,44 @@ namespace UCommon
 			return { 1 / X, 1 / Y, 1 / Z };
 		}
 
-		TVector Min(T V) const noexcept
+		static TVector Min(const TVector& A, T B)
 		{
-			return { std::min(X, V), std::min(Y, V), std::min(Z, V) };
+			return { std::min(A.X, B), std::min(A.Y, B), std::min(A.Z, B) };
 		}
 
-		TVector Max(T V) const noexcept
+		static TVector Min(const TVector& A, const TVector& B)
 		{
-			return { std::max(X, V), std::max(Y, V), std::max(Z, V) };
+			return { std::min(A.X, B.X), std::min(A.Y, B.Y), std::min(A.Z, B.Z) };
+		}
+
+		static TVector Max(const TVector& A, T B)
+		{
+			return { std::max(A.X, B), std::max(A.Y, B), std::max(A.Z, B) };
+		}
+
+		static TVector Max(const TVector& A, const TVector& B)
+		{
+			return { std::max(A.X, B.X), std::max(A.Y, B.Y), std::max(A.Z, B.Z) };
+		}
+
+		TVector Min(T V) const noexcept
+		{
+			return Min(*this, V);
 		}
 
 		TVector Min(const TVector& V) const noexcept
 		{
-			return { std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z) };
+			return Min(*this, V);
+		}
+
+		TVector Max(T V) const noexcept
+		{
+			return Max(*this, V);
 		}
 
 		TVector Max(const TVector& V) const noexcept
 		{
-			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z) };
+			return Max(*this, V);
 		}
 
 		T MinComponent() const noexcept
@@ -813,26 +873,31 @@ namespace UCommon
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(+)
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(-)
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(*)
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(/ )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(/)
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP(%)
 
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(= )
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(+= )
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(-= )
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(*= )
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(/= )
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(%= )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN( =)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(+=)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(-=)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(*=)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(/=)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_ASSIGN(%=)
 
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(< , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(<= , &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(<=, &&)
 		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(> , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(>= , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(== , &&)
-		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(!= , || )
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(>=, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(==, &&)
+		UBPA_UCOMMON_DEFINE_TVECTOR4_OP_COMPARE(!=, ||)
 
 		static T Dot(const TVector4& A, const TVector4& B)
 		{
 			return A.X * B.X + A.Y * B.Y + A.Z * B.Z + A.W * B.W;
+		}
+
+		T Dot(const TVector4& V) const
+		{
+			return Dot(*this, V);
 		}
 
 		static T SquaredDistance(const TVector4& A, const TVector4& B)
@@ -956,24 +1021,44 @@ namespace UCommon
 			return { 1 / X, 1 / Y, 1 / Z, 1 / W };
 		}
 
-		TVector4 Min(T V) const noexcept
+		static TVector4 Min(const TVector4& A, T B)
 		{
-			return { std::min(X, V), std::min(Y, V), std::min(Z, V), std::min(W, V) };
+			return { std::min(A.X, B), std::min(A.Y, B), std::min(A.Z, B), std::min(A.W, B) };
 		}
 
-		TVector4 Max(T V) const noexcept
+		static TVector4 Min(const TVector4& A, const TVector4& B)
 		{
-			return { std::max(X, V), std::max(Y, V), std::max(Z, V), std::max(W, V) };
+			return { std::min(A.X, B.X), std::min(A.Y, B.Y), std::min(A.Z, B.Z), std::min(A.W, B.W) };
+		}
+
+		static TVector4 Max(const TVector4& A, T B)
+		{
+			return { std::max(A.X, B), std::max(A.Y, B), std::max(A.Z, B), std::max(A.W, B) };
+		}
+
+		static TVector4 Max(const TVector4& A, const TVector4& B)
+		{
+			return { std::max(A.X, B.X), std::max(A.Y, B.Y), std::max(A.Z, B.Z), std::max(A.W, B.W) };
+		}
+
+		TVector4 Min(T V) const noexcept
+		{
+			return Min(*this, V);
 		}
 
 		TVector4 Min(const TVector4& V) const noexcept
 		{
-			return { std::min(X, V.X), std::min(Y, V.Y), std::min(Z, V.Z), std::min(W, V.W) };
+			return Min(*this, V);
+		}
+
+		TVector4 Max(T V) const noexcept
+		{
+			return Max(*this, V);
 		}
 
 		TVector4 Max(const TVector4& V) const noexcept
 		{
-			return { std::max(X, V.X), std::max(Y, V.Y), std::max(Z, V.Z), std::max(W, V.W) };
+			return Max(*this, V);
 		}
 
 		T MaxComponent() const noexcept
