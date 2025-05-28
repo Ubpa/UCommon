@@ -55,7 +55,7 @@ uint64_t UCommon::FGrid2D::GetIndex(const FUint64Vector2& Point) const noexcept
 
 UCommon::FVector2f UCommon::FGrid2D::GetTexcoord(const FUint64Vector2& Point) const noexcept
 {
-	return FVector2f(Point) + 0.5f;
+	return (FVector2f(Point) + 0.5f) / FVector2f(GetExtent());
 }
 
 UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(const FVector2f& Texcoord) const noexcept
