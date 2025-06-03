@@ -247,16 +247,17 @@ namespace UCommon
 	enum class EElementType : std::uint64_t
 	{
 		Unknown,
-		Uint8,          /** 1 byte unsigned integer number, 0-255 */
-		Half,           /** 2 bytes floating point number, IEEE 754 */
-		Float,          /** 4 bytes floating point number */
-		Double,         /** 8 bytes floating point number */
-		ASTC_4x4,       /** 128 bits / block => 8.00 bits / pixel */
-		ASTC_6x6,       /** 128 bits / block => 3.56 bits / pixel */
-		ASTC_8x8,       /** 128 bits / block => 2.00 bits / pixel */
-		ASTC_10x10,     /** 128 bits / block => 1.28 bits / pixel */
-		ASTC_12x12,     /** 128 bits / block => 0.89 bits / pixel */
-		AdaptiveASTC,   /** Adative Uint8/ASTC_4x4/ASTC_8x8 */
+		Uint8,        /** 1 byte unsigned integer number, 0-255 */
+		Half,         /** 2 bytes floating point number, IEEE 754 */
+		Float,        /** 4 bytes floating point number */
+		Double,       /** 8 bytes floating point number */
+		ASTC_4x4,     /** 128 bits / block => 8.00 bits / pixel */
+		ASTC_6x6,     /** 128 bits / block => 3.56 bits / pixel */
+		ASTC_8x8,     /** 128 bits / block => 2.00 bits / pixel */
+		ASTC_10x10,   /** 128 bits / block => 1.28 bits / pixel */
+		ASTC_12x12,   /** 128 bits / block => 0.89 bits / pixel */
+		AdaptiveASTC, /** Adative Uint8/ASTC_4x4/ASTC_8x8 */
+		BC7,          /** 128 bits / block => 8.00 bits / pixel */
 	};
 	inline uint64_t ElementGetSize(EElementType ElementType) noexcept
 	{
@@ -352,6 +353,10 @@ namespace UCommon
 		return (uint64_t)ElementType >= (uint64_t)EElementType::ASTC_4x4
 			&& (uint64_t)ElementType <= (uint64_t)EElementType::ASTC_12x12;
 	}
+	static bool ElementIsBC7(EElementType ElementType) noexcept
+	{
+		return (uint64_t)ElementType == (uint64_t)EElementType::BC7;
+	}
 	static FUint64Vector2 ElementGetBlockSize(EElementType ElementType) noexcept
 	{
 		switch (ElementType)
@@ -362,6 +367,7 @@ namespace UCommon
 		case EElementType::ASTC_10x10: return FUint64Vector2(10);
 		case EElementType::ASTC_12x12: return FUint64Vector2(12);
 		case EElementType::AdaptiveASTC: return FUint64Vector2(8);
+		case EElementType::BC7: return FUint64Vector2(4);
 		default: return FUint64Vector2(1);
 		}
 	}
