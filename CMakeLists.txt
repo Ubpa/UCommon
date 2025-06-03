@@ -14,6 +14,8 @@ Ubpa_DownloadFile(
   SHA256 8c084b0b6fa4fab6aef7173ae99a80a87a879fbdd1ce0a5cdf4620319995171a
 )
 
+option(Ubpa_UCommon_UsingSharedLibrary "using shared library" OFF)
+
 Ubpa_AddSubDirsRec(src)
 
 Ubpa_Export(
