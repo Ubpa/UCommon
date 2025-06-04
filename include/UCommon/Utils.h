@@ -35,6 +35,7 @@ namespace NameSpace \
     using EOwnership = UCommon::EOwnership; \
     template<typename T> constexpr bool IsDirectSupported = UCommon::IsDirectSupported<T>; \
     template<typename T> constexpr bool IsSupported = UCommon::IsSupported<T>; \
+    template<typename T> constexpr EElementType ElementTypeOf = UCommon::ElementTypeOf<T>; \
 }
 
 namespace UCommon
