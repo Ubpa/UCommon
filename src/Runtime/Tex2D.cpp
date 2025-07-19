@@ -354,7 +354,7 @@ bool UCommon::FTex2D::IsLayoutSameWith(const FTex2D& Other) const noexcept
 
 void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) const noexcept
 {
-	UBPA_UCOMMON_ASSERT(FVector2f(0.f) <= Texcoord && Texcoord <= FVector2f(0.f));
+	UBPA_UCOMMON_ASSERT(FVector2f(0.f) <= Texcoord && Texcoord <= FVector2f(1.f));
 
 	const FVector2f PointT = Texcoord * FVector2f(Grid2D.GetExtent());
 	const FInt64Vector2 IntPoint0 = FInt64Vector2(PointT - 0.5f);
@@ -368,9 +368,7 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) c
 		FUint64Vector2(IntPoint1),
 	};
 
-	const FVector2f LocalTexcoord = PointT - (FVector2f(IntPoint0) + 0.5f);
-
-	UBPA_UCOMMON_ASSERT(FVector2f(0.f) <= LocalTexcoord && LocalTexcoord <= FVector2f(0.f));
+	const FVector2f LocalTexcoord = (PointT - (FVector2f(IntPoint0) + 0.5f)).Clamp(0.f, 1.f);
 
 	const FVector2f OneMinusLocalTexcoord = FVector2f(1.f) - LocalTexcoord;
 
@@ -395,7 +393,7 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) c
 		float Val2[4];
 		for (uint64_t i = 0; i < 4; i++)
 		{
-			Val2[i] = GetFloat(Offsets[i]);
+			Val2[i] = GetFloat(Offsets[i] + C);
 		}
 		*Result++ = UCommon::BilinearInterpolate(Val2, Weights);
 	}
