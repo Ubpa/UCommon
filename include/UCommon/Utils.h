@@ -259,6 +259,7 @@ namespace UCommon
 		ASTC_12x12,   /** 128 bits / block => 0.89 bits / pixel */
 		AdaptiveASTC, /** Adative Uint8/ASTC_4x4/ASTC_8x8 */
 		BC7,          /** 128 bits / block => 8.00 bits / pixel */
+		BQ            /** 160 bits per 4x4 block */
 	};
 	inline uint64_t ElementGetSize(EElementType ElementType) noexcept
 	{
@@ -354,10 +355,6 @@ namespace UCommon
 		return (uint64_t)ElementType >= (uint64_t)EElementType::ASTC_4x4
 			&& (uint64_t)ElementType <= (uint64_t)EElementType::ASTC_12x12;
 	}
-	static bool ElementIsBC7(EElementType ElementType) noexcept
-	{
-		return (uint64_t)ElementType == (uint64_t)EElementType::BC7;
-	}
 	static FUint64Vector2 ElementGetBlockSize(EElementType ElementType) noexcept
 	{
 		switch (ElementType)
@@ -369,6 +366,7 @@ namespace UCommon
 		case EElementType::ASTC_12x12: return FUint64Vector2(12);
 		case EElementType::AdaptiveASTC: return FUint64Vector2(8);
 		case EElementType::BC7: return FUint64Vector2(4);
+		case EElementType::BQ: return FUint64Vector2(4);
 		default: return FUint64Vector2(1);
 		}
 	}

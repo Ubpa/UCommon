@@ -23,23 +23,25 @@ SOFTWARE.
 */
 
 #pragma once
-
-#include "BQ.h"
 #include "Config.h"
-#include "Cpp17.h"
-#include "Half.h"
-#include "SH.h"
-#include "Tex2D.h"
-#include "ThreadPool.h"
 #include "Utils.h"
-#include "Vector.h"
+#include "Half.h"
 
-#define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace)
+#define UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+    using FBQBlock = UCommon::FBQBlock; \
+}
+
+namespace UCommon
+{
+	struct UBPA_UCOMMON_API FBQBlock
+	{
+		FHalf Scale;
+		FHalf Bias;
+		uint8_t Indices[16] = { 0 };
+		FBQBlock(const float(&Values)[16]) noexcept;
+		FBQBlock(TSpan<const float> Values) noexcept;
+		float GetValue(uint64_t Index) const noexcept;
+	};
+}

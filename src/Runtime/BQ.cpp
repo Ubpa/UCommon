@@ -22,24 +22,45 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#pragma once
+#include <UCommon/BQ.h>
 
-#include "BQ.h"
-#include "Config.h"
-#include "Cpp17.h"
-#include "Half.h"
-#include "SH.h"
-#include "Tex2D.h"
-#include "ThreadPool.h"
-#include "Utils.h"
-#include "Vector.h"
+UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
+{
+	// find min max
+	float Min = Values[0];
+	float Max = Values[0];
+	for (uint64_t i = 1; i < 16; ++i)
+	{
+		if (Values[i] < Min)
+		{
+			Min = Values[i];
+		}
+		if (Values[i] > Max)
+		{
+			Max = Values[i];
+		}
+	}
 
-#define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace)
+	// compute indices
+	Scale = FHalf(Max - Min);
+	Bias = FHalf(Min);
+	const float Scalef = Scale;
+	const float Biasf = Bias;
+	for (uint64_t i = 0; i < 16; ++i)
+	{
+		UBPA_UCOMMON_ASSERT(Values[i] >= Min && Values[i] <= Max);
+		Indices[i] = Scalef > 0.f ? ElementFloatClampToUint8((Values[i] - Biasf) / Scalef) : 0;
+	}
+}
+
+UCommon::FBQBlock::FBQBlock(TSpan<const float> Values) noexcept
+	: FBQBlock(*reinterpret_cast<const float(*)[16]>(Values.GetData()))
+{
+	UBPA_UCOMMON_ASSERT(Values.Num() == 16);
+}
+
+float UCommon::FBQBlock::GetValue(uint64_t Index) const noexcept
+{
+	UBPA_UCOMMON_ASSERT(Index < 16);
+	return ElementUint8ToFloat(Indices[Index]) * Scale + Bias;
+}

@@ -102,7 +102,6 @@ public:
     }
     bool operator!=(const FFP8& rhs) const { return !(*this == rhs); }
 
-
 private:
     uint8_t data;
 };
@@ -119,14 +118,14 @@ int main() {
     };
 
     for (float f : test_values) {
-        FFP8<4, 3, 1> f8(f);
+        FFP8<3, 4, 1> f8(f);
         float f_back = static_cast<float>(f8);
 
         std::cout << f << "," << f_back << std::endl;
 
         if (std::isnan(f)) continue;
 
-        FFP8<4, 3, 1> f8_again(f_back);
+        FFP8<3, 4, 1> f8_again(f_back);
         if (f8 != f8_again) {
             return 1;
         }
