@@ -109,8 +109,8 @@ namespace UCommon
 	{
 	public:
 		/** Required number of floating point numbers for the storage. */
-		static uint64_t GetRequiredStorageSizeInBytes(FGrid2D Grid2D, uint64_t NumChannel, EElementType ElementType) noexcept;
-		static uint64_t GetNumElements(FGrid2D Grid2D, uint64_t NumChannel) noexcept;
+		static uint64_t GetRequiredStorageSizeInBytes(FGrid2D Grid2D, uint64_t NumChannels, EElementType ElementType) noexcept;
+		static uint64_t GetNumElements(FGrid2D Grid2D, uint64_t NumChannels) noexcept;
 
 		FTex2D() noexcept;
 
@@ -118,29 +118,29 @@ namespace UCommon
 		 * An advanced contructor (no initalization).
 		 *
 		 * @param InGrid2D the Grid2D of the texture.
-		 * @param InNumChannel the channel number of the texture.
+		 * @param InNumChannels the channel number of the texture.
 		 * @param InOwnership control the ownership of InStorage.
 		 * @param InElementType the element type of the storage.
 		 * @param InStorage the storage of the texture, deleted by `free`.
 		 */
-		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept;
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept;
 
-		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType, const void* InStorage);
-
-		template<typename Element>
-		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, Element* InStorage) noexcept;
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EElementType InElementType, const void* InStorage);
 
 		template<typename Element>
-		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, const Element* InStorage);
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EOwnership InOwnership, Element* InStorage) noexcept;
+
+		template<typename Element>
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, const Element* InStorage);
 
 		/**
 		 * Allocate a storage internally by `malloc` (no initalization).
 		 *
 		 * @param InGrid2D the Grid2D of the texture.
-		 * @param InNumChannel the channel number of the texture.
+		 * @param InNumChannels the channel number of the texture.
 		 * @param InElementType the element type of the storage.
 		 */
-		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType);
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EElementType InElementType);
 
 		/**
 		 * Copy with the explicitly specified ownership and InEmptyStorage (may be nullptr).
@@ -212,7 +212,7 @@ namespace UCommon
 		/** Release `Storage` and reset all member variables. */
 		void Reset() noexcept;
 
-		/** Whether `Grid2D`, `NumChannel` and `ElementType` are the same as `Other`'s. */
+		/** Whether `Grid2D`, `NumChannels` and `ElementType` are the same as `Other`'s. */
 		bool IsLayoutSameWith(const FTex2D& Other) const noexcept;
 
 		void BilinearSample(float* Result, const FVector2f& Texcoord) const noexcept;
@@ -251,7 +251,7 @@ namespace UCommon
 
 	private:
 		FGrid2D Grid2D;
-		uint64_t NumChannel;
+		uint64_t NumChannels;
 		EOwnership Ownership;
 		EElementType ElementType;
 		void* Storage;

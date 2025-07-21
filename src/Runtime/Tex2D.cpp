@@ -112,55 +112,55 @@ namespace UCommon
 // FTex2D
 ///////////
 
-uint64_t UCommon::FTex2D::GetRequiredStorageSizeInBytes(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType ElementType) noexcept
+uint64_t UCommon::FTex2D::GetRequiredStorageSizeInBytes(FGrid2D InGrid2D, uint64_t InNumChannels, EElementType ElementType) noexcept
 {
-	return InGrid2D.GetArea() * InNumChannel * ElementGetSize(ElementType);
+	return InGrid2D.GetArea() * InNumChannels * ElementGetSize(ElementType);
 }
 
-uint64_t UCommon::FTex2D::GetNumElements(FGrid2D Grid2D, uint64_t NumChannel) noexcept
+uint64_t UCommon::FTex2D::GetNumElements(FGrid2D Grid2D, uint64_t NumChannels) noexcept
 {
-	return Grid2D.GetArea() * NumChannel;
+	return Grid2D.GetArea() * NumChannels;
 }
 
 UCommon::FTex2D::FTex2D() noexcept :
-	NumChannel(0),
+	NumChannels(0),
 	Ownership(EOwnership::DoNotTakeOwnership),
 	ElementType(EElementType::Unknown),
 	Storage(nullptr) {}
 
-UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept :
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept :
 	Grid2D(InGrid2D),
-	NumChannel(InNumChannel),
+	NumChannels(InNumChannels),
 	Ownership(InOwnership),
 	ElementType(InElementType),
 	Storage(InStorage)
 {
 	UBPA_UCOMMON_ASSERT(!InGrid2D.IsAreaEmpty());
-	UBPA_UCOMMON_ASSERT(InNumChannel > 0);
+	UBPA_UCOMMON_ASSERT(InNumChannels > 0);
 	UBPA_UCOMMON_ASSERT(InStorage);
 }
 
-UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType, const void* InStorage)
-	: FTex2D(InGrid2D, InNumChannel, EOwnership::TakeOwnership, InElementType,
-		CreateCopy(InStorage, GetRequiredStorageSizeInBytes(InGrid2D, InNumChannel, InElementType))) {}
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EElementType InElementType, const void* InStorage)
+	: FTex2D(InGrid2D, InNumChannels, EOwnership::TakeOwnership, InElementType,
+		CreateCopy(InStorage, GetRequiredStorageSizeInBytes(InGrid2D, InNumChannels, InElementType))) {}
 
-UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType) :
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EElementType InElementType) :
 	FTex2D(InGrid2D,
-		InNumChannel,
+		InNumChannels,
 		EOwnership::TakeOwnership,
 		InElementType,
-		UBPA_UCOMMON_MALLOC(GetRequiredStorageSizeInBytes(InGrid2D, InNumChannel, InElementType))) {
+		UBPA_UCOMMON_MALLOC(GetRequiredStorageSizeInBytes(InGrid2D, InNumChannels, InElementType))) {
 }
 
 UCommon::FTex2D::FTex2D(FTex2D&& Other) noexcept :
 	Grid2D(Other.GetGrid2D()),
-	NumChannel(Other.NumChannel),
+	NumChannels(Other.NumChannels),
 	Ownership(Other.Ownership),
 	ElementType(Other.ElementType),
 	Storage(Other.Storage)
 {
 	Other.Grid2D = FGrid2D();
-	Other.NumChannel = 0;
+	Other.NumChannels = 0;
 	Other.Ownership = EOwnership::DoNotTakeOwnership;
 	Other.ElementType = EElementType();
 	Other.Storage = nullptr;
@@ -168,7 +168,7 @@ UCommon::FTex2D::FTex2D(FTex2D&& Other) noexcept :
 
 UCommon::FTex2D::FTex2D(const FTex2D& Other, EOwnership InOwnership, void* InEmptyStorage)
 	: Grid2D(Other.GetGrid2D())
-	, NumChannel(Other.NumChannel)
+	, NumChannels(Other.NumChannels)
 	, Ownership(InOwnership)
 	, ElementType(Other.ElementType)
 	, Storage(InEmptyStorage)
@@ -204,13 +204,13 @@ UCommon::FTex2D::~FTex2D()
 
 bool UCommon::FTex2D::IsValid() const noexcept
 {
-	return !Grid2D.IsAreaEmpty() && NumChannel > 0 && Storage;
+	return !Grid2D.IsAreaEmpty() && NumChannels > 0 && Storage;
 }
 
 uint64_t UCommon::FTex2D::GetIndex(const FUint64Vector2& Point, uint64_t C) const noexcept
 {
-	UBPA_UCOMMON_ASSERT(C < NumChannel);
-	return Grid2D.GetIndex(Point) * NumChannel + C;
+	UBPA_UCOMMON_ASSERT(C < NumChannels);
+	return Grid2D.GetIndex(Point) * NumChannels + C;
 }
 
 float UCommon::FTex2D::GetFloat(uint64_t Index) const noexcept
@@ -322,10 +322,10 @@ void UCommon::FTex2D::SetFloat(const FUint64Vector2& Point, uint64_t C, float Va
 	SetFloat(GetIndex(Point, C), Value);
 }
 
-uint64_t UCommon::FTex2D::GetNumChannels() const noexcept { return NumChannel; }
+uint64_t UCommon::FTex2D::GetNumChannels() const noexcept { return NumChannels; }
 UCommon::FGrid2D UCommon::FTex2D::GetGrid2D() const noexcept { return Grid2D; }
-uint64_t UCommon::FTex2D::GetNumElements() const noexcept { return GetNumElements(Grid2D, NumChannel); }
-uint64_t UCommon::FTex2D::GetStorageSizeInBytes() const noexcept { return GetRequiredStorageSizeInBytes(Grid2D, NumChannel, ElementType); }
+uint64_t UCommon::FTex2D::GetNumElements() const noexcept { return GetNumElements(Grid2D, NumChannels); }
+uint64_t UCommon::FTex2D::GetStorageSizeInBytes() const noexcept { return GetRequiredStorageSizeInBytes(Grid2D, NumChannels, ElementType); }
 UCommon::EOwnership UCommon::FTex2D::GetStorageOwnership() const noexcept { return Ownership; }
 UCommon::EElementType UCommon::FTex2D::GetElementType() const noexcept { return ElementType; }
 
@@ -340,7 +340,7 @@ void UCommon::FTex2D::Reset() noexcept
 	}
 
 	Grid2D = FGrid2D();
-	NumChannel = 0;
+	NumChannels = 0;
 
 	Ownership = EOwnership::DoNotTakeOwnership;
 	ElementType = EElementType();
@@ -351,7 +351,7 @@ bool UCommon::FTex2D::IsLayoutSameWith(const FTex2D& Other) const noexcept
 {
 	return Grid2D == Other.Grid2D
 		&& ElementType == Other.ElementType
-		&& NumChannel == Other.NumChannel;
+		&& NumChannels == Other.NumChannels;
 }
 
 void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) const noexcept
@@ -384,13 +384,13 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) c
 
 	const uint64_t Offsets[4] =
 	{
-		Grid2D.GetIndex({ Points[0].X, Points[0].Y }) * NumChannel,
-		Grid2D.GetIndex({ Points[0].X, Points[1].Y }) * NumChannel,
-		Grid2D.GetIndex({ Points[1].X, Points[0].Y }) * NumChannel,
-		Grid2D.GetIndex({ Points[1].X, Points[1].Y }) * NumChannel,
+		Grid2D.GetIndex({ Points[0].X, Points[0].Y }) * NumChannels,
+		Grid2D.GetIndex({ Points[0].X, Points[1].Y }) * NumChannels,
+		Grid2D.GetIndex({ Points[1].X, Points[0].Y }) * NumChannels,
+		Grid2D.GetIndex({ Points[1].X, Points[1].Y }) * NumChannels,
 	};
 
-	for (uint64_t C = 0; C < NumChannel; C++)
+	for (uint64_t C = 0; C < NumChannels; C++)
 	{
 		float Val2[4];
 		for (uint64_t i = 0; i < 4; i++)
@@ -463,8 +463,8 @@ UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStor
 {
 	const FGrid2D HalfGrid2D(std::max<uint64_t>(1, Grid2D.Width / 2), std::max<uint64_t>(1, Grid2D.Height / 2));
 
-	FTex2D HalfTex = InStorage ? FTex2D(HalfGrid2D, NumChannel, InOwnership, ElementType, InStorage)
-		: FTex2D(HalfGrid2D, NumChannel, ElementType);
+	FTex2D HalfTex = InStorage ? FTex2D(HalfGrid2D, NumChannels, InOwnership, ElementType, InStorage)
+		: FTex2D(HalfGrid2D, NumChannels, ElementType);
 
 	switch (ElementType)
 	{
@@ -492,12 +492,12 @@ UCommon::FTex2D UCommon::FTex2D::DownSample()
 
 UCommon::FTex2D UCommon::FTex2D::ToFloat() const
 {
-	FTex2D Tex(Grid2D, NumChannel, EElementType::Float);
+	FTex2D Tex(Grid2D, NumChannels, EElementType::Float);
 	if (ElementType != EElementType::Float)
 	{
 		for (const FUint64Vector2& Point : Grid2D)
 		{
-			for (uint64_t C = 0; C < NumChannel; C++)
+			for (uint64_t C = 0; C < NumChannels; C++)
 			{
 				Tex.At<float>(Point, C) = GetFloat(Point, C);
 			}
@@ -514,13 +514,13 @@ void UCommon::FTex2D::ToUint8(FTex2D& Tex) const
 {
 	UBPA_UCOMMON_ASSERT(Tex.ElementType == EElementType::Uint8);
 	UBPA_UCOMMON_ASSERT(Tex.Grid2D == Grid2D);
-	UBPA_UCOMMON_ASSERT(Tex.NumChannel == NumChannel);
+	UBPA_UCOMMON_ASSERT(Tex.NumChannels == NumChannels);
 
 	if (ElementType != EElementType::Uint8)
 	{
 		for (const FUint64Vector2& Point : Grid2D)
 		{
-			for (uint64_t C = 0; C < NumChannel; C++)
+			for (uint64_t C = 0; C < NumChannels; C++)
 			{
 				Tex.At<uint8_t>(Point, C) = ElementFloatClampToUint8(GetFloat(Point, C));
 			}
@@ -534,7 +534,7 @@ void UCommon::FTex2D::ToUint8(FTex2D& Tex) const
 
 UCommon::FTex2D UCommon::FTex2D::ToUint8() const
 {
-	FTex2D Tex(Grid2D, NumChannel, EElementType::Uint8);
+	FTex2D Tex(Grid2D, NumChannels, EElementType::Uint8);
 	ToUint8(Tex);
 	return Tex;
 }
@@ -549,13 +549,13 @@ UCommon::FTex2D& UCommon::FTex2D::operator=(FTex2D&& Rhs) noexcept
 		}
 
 		Grid2D = Rhs.Grid2D;
-		NumChannel = Rhs.NumChannel;
+		NumChannels = Rhs.NumChannels;
 		Ownership = Rhs.Ownership;
 		ElementType = Rhs.ElementType;
 		Storage = Rhs.Storage;
 
 		Rhs.Grid2D = FGrid2D();
-		Rhs.NumChannel = 0;
+		Rhs.NumChannels = 0;
 		Rhs.Ownership = EOwnership::DoNotTakeOwnership;
 		Rhs.ElementType = EElementType();
 		Rhs.Storage = nullptr;
@@ -581,7 +581,7 @@ UCommon::FTex2D& UCommon::FTex2D::operator=(const FTex2D& Rhs)
 				}
 
 				Grid2D = Rhs.Grid2D;
-				NumChannel = Rhs.NumChannel;
+				NumChannels = Rhs.NumChannels;
 				ElementType = Rhs.ElementType;
 
 				if (Rhs.Ownership == EOwnership::TakeOwnership)
@@ -597,7 +597,7 @@ UCommon::FTex2D& UCommon::FTex2D::operator=(const FTex2D& Rhs)
 					else
 					{
 						Grid2D = FGrid2D();
-						NumChannel = 0;
+						NumChannels = 0;
 						ElementType = EElementType();
 						Ownership = EOwnership::DoNotTakeOwnership;
 						UBPA_UCOMMON_ASSERT(!Storage);
@@ -621,9 +621,9 @@ UCommon::FTex2D& UCommon::FTex2D::operator=(const FTex2D& Rhs)
 void UCommon::FTex2D::Copy(FTex2D& Dst, const FUint64Vector2& DstPoint, const FTex2D& Src, const FUint64Vector2& SrcPoint, const FUint64Vector2& Range)
 {
 	UBPA_UCOMMON_ASSERT(Dst.ElementType == Src.ElementType);
-	UBPA_UCOMMON_ASSERT(Dst.NumChannel == Src.NumChannel);
+	UBPA_UCOMMON_ASSERT(Dst.NumChannels == Src.NumChannels);
 	const FGrid2D RangeGrid2D(Range);
-	const uint64_t PixelSize = ElementGetSize(Dst.ElementType) * Dst.NumChannel;
+	const uint64_t PixelSize = ElementGetSize(Dst.ElementType) * Dst.NumChannels;
 	for (const auto& RangePoint : RangeGrid2D)
 	{
 		uint8_t* DstBuffer = reinterpret_cast<uint8_t*>(Dst.Storage) + Dst.GetGrid2D().GetIndex(DstPoint + RangePoint) * PixelSize;

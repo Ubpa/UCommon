@@ -27,12 +27,12 @@ SOFTWARE.
 #include "Tex2D.h"
 
 template<typename Element>
-UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, Element* InStorage) noexcept
-	: FTex2D(InGrid2D, InNumChannel, InOwnership, ElementTypeOf<ElementType>, InStorage) {}
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EOwnership InOwnership, Element* InStorage) noexcept
+	: FTex2D(InGrid2D, InNumChannels, InOwnership, ElementTypeOf<ElementType>, InStorage) {}
 
 template<typename Element>
-UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, const Element* InStorage)
-	: FTex2D(InGrid2D, InNumChannel, ElementTypeOf<ElementType>, InStorage) {}
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, const Element* InStorage)
+	: FTex2D(InGrid2D, InNumChannels, ElementTypeOf<ElementType>, InStorage) {}
 
 template<typename T>
 T& UCommon::FTex2D::At(uint64_t Index) noexcept
@@ -54,8 +54,8 @@ template<typename T>
 T& UCommon::FTex2D::At(const FUint64Vector2& Point, uint64_t C) noexcept
 {
 	static_assert(!UCommon::IsVector_v<T>, "T must not be a vector type");
-	UBPA_UCOMMON_ASSERT(C < NumChannel);
-	return At<T>(Grid2D.GetIndex(Point) * NumChannel + C);
+	UBPA_UCOMMON_ASSERT(C < NumChannels);
+	return At<T>(Grid2D.GetIndex(Point) * NumChannels + C);
 }
 
 template<typename T>
