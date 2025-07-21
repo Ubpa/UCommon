@@ -123,12 +123,10 @@ uint64_t UCommon::FTex2D::GetNumElements(FGrid2D Grid2D, uint64_t NumChannel) no
 }
 
 UCommon::FTex2D::FTex2D() noexcept :
-	Grid2D(),
 	NumChannel(0),
 	Ownership(EOwnership::DoNotTakeOwnership),
-	ElementType(),
-	Storage(nullptr) {
-}
+	ElementType(EElementType::Unknown),
+	Storage(nullptr) {}
 
 UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept :
 	Grid2D(InGrid2D),
@@ -141,6 +139,10 @@ UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOw
 	UBPA_UCOMMON_ASSERT(InNumChannel > 0);
 	UBPA_UCOMMON_ASSERT(InStorage);
 }
+
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType, const void* InStorage)
+	: FTex2D(InGrid2D, InNumChannel, EOwnership::TakeOwnership, InElementType,
+		CreateCopy(InStorage, GetRequiredStorageSizeInBytes(InGrid2D, InNumChannel, InElementType))) {}
 
 UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType) :
 	FTex2D(InGrid2D,
@@ -320,7 +322,7 @@ void UCommon::FTex2D::SetFloat(const FUint64Vector2& Point, uint64_t C, float Va
 	SetFloat(GetIndex(Point, C), Value);
 }
 
-uint64_t UCommon::FTex2D::GetNumChannel() const noexcept { return NumChannel; }
+uint64_t UCommon::FTex2D::GetNumChannels() const noexcept { return NumChannel; }
 UCommon::FGrid2D UCommon::FTex2D::GetGrid2D() const noexcept { return Grid2D; }
 uint64_t UCommon::FTex2D::GetNumElements() const noexcept { return GetNumElements(Grid2D, NumChannel); }
 uint64_t UCommon::FTex2D::GetStorageSizeInBytes() const noexcept { return GetRequiredStorageSizeInBytes(Grid2D, NumChannel, ElementType); }
@@ -435,7 +437,7 @@ namespace UCommon
 			const uint64_t X = Point.X;
 			const uint64_t Y = Point.Y;
 
-			for (uint64_t C = 0; C < HalfTex.GetNumChannel(); ++C)
+			for (uint64_t C = 0; C < HalfTex.GetNumChannels(); ++C)
 			{
 				auto Sum = static_cast<TUpperType_t<T>>(0);
 				Sum += TToUpper<T>::Apply(TTex2DAt<T>::Run(SrcTex, { 2 * X + 0, 2 * Y + 0 }, C));

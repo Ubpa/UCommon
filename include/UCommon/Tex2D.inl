@@ -26,6 +26,14 @@ SOFTWARE.
 
 #include "Tex2D.h"
 
+template<typename Element>
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, Element* InStorage) noexcept
+	: FTex2D(InGrid2D, InNumChannel, InOwnership, ElementTypeOf<ElementType>, InStorage) {}
+
+template<typename Element>
+UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, const Element* InStorage)
+	: FTex2D(InGrid2D, InNumChannel, ElementTypeOf<ElementType>, InStorage) {}
+
 template<typename T>
 T& UCommon::FTex2D::At(uint64_t Index) noexcept
 {

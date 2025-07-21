@@ -29,6 +29,7 @@ SOFTWARE.
 //#define UBPA_UCOMMON_NO_ENTRY() <Your-No-Entry>
 //#define UBPA_UCOMMON_API <Your-API>
 //#define UBPA_UCOMMON_MALLOC(size) <Your-Malloc>
+//#define UBPA_UCOMMON_REALLOC(ptr,size) <Your-Realloc>
 //#define UBPA_UCOMMON_FREE(ptr) <Your-Free>
 
 /** Uncomment this code for forward compatibility. */
@@ -102,12 +103,13 @@ SOFTWARE.
 #error "UBPA_UCOMMON_API is not defined."
 #endif // !UBPA_UCOMMON_API
 
-#if (defined(UBPA_UCOMMON_MALLOC) && !defined(UBPA_UCOMMON_FREE)) || (!defined(UBPA_UCOMMON_MALLOC) && defined(UBPA_UCOMMON_FREE))
-#error "You must define malloc and free in the same time."
+#if (defined(UBPA_UCOMMON_MALLOC) || defined(UBPA_UCOMMON_REALLOC) || defined(UBPA_UCOMMON_FREE)) && !(defined(UBPA_UCOMMON_MALLOC) && defined(UBPA_UCOMMON_REALLOC) && defined(UBPA_UCOMMON_FREE))
+#error "You must define malloc, realloc and free in the same time."
 #endif
 
-#if !defined(UBPA_UCOMMON_MALLOC) && !defined(UBPA_UCOMMON_FREE)
+#if !defined(UBPA_UCOMMON_MALLOC) && !defined(UBPA_UCOMMON_REALLOC) && !defined(UBPA_UCOMMON_FREE)
 #include <cstdlib>
 #define UBPA_UCOMMON_MALLOC(size) (malloc(size))
+#define UBPA_UCOMMON_REALLOC(size) (realloc(ptr,size))
 #define UBPA_UCOMMON_FREE(ptr) (free(ptr))
 #endif

@@ -28,6 +28,15 @@ SOFTWARE.
 
 namespace UCommon
 {
-	UBPA_UCOMMON_API FTex2D LoadImage(char const* FileName);
-	UBPA_UCOMMON_API bool SaveImage(const FTex2D& Tex2D, char const* FileName);
+	UBPA_UCOMMON_API void* LoadImage(const char* FileName, EElementType& ElementType, uint64_t& Width, uint64_t& Height, uint64_t& NumChannels, uint64_t DesiredNumChannels = 0);
+
+	UBPA_UCOMMON_API void FreeImage(void* Data);
+
+	UBPA_UCOMMON_API bool SaveImage(const char* FileName, uint64_t Width, uint64_t Height, uint64_t NumChannels, const float* Data);
+
+	UBPA_UCOMMON_API bool SaveImage(const char* FileName, uint64_t Width, uint64_t Height, uint64_t NumChannels, const uint8_t* Data, uint64_t StrideInBytes = 0);
+
+	UBPA_UCOMMON_API FTex2D LoadImage(const char* FileName, uint64_t DesiredNumChannels = 0);
+
+	UBPA_UCOMMON_API bool SaveImage(char const* FileName, const FTex2D& Tex2D);
 }

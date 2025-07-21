@@ -391,6 +391,17 @@ namespace UCommon
 		TakeOwnership, /** used in some APIs, the object will take the ownership of pointer. */
 		DoNotTakeOwnership, /** used in some APIs, the object will not take the ownership of pointer. */
 	};
+
+	static void* CreateCopy(const void* Buffer, uint64_t SizeInBytes)
+	{
+		void* NewBuffer = UBPA_UCOMMON_MALLOC(SizeInBytes);
+		if (NewBuffer == nullptr)
+		{
+			return nullptr;
+		}
+		std::memcpy(NewBuffer, Buffer, SizeInBytes);
+		return NewBuffer;
+	}
 }
 
 UBPA_UCOMMON_UTILS_TO_NAMESPACE(UCommonTest)

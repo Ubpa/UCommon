@@ -23,46 +23,83 @@ SOFTWARE.
 */
 
 #include <UCommon_ext/Tex2DIO.h>
+#define STBI_MALLOC UBPA_UCOMMON_MALLOC
+#define STBI_REALLOC UBPA_UCOMMON_REALLOC
+#define STBI_FREE UBPA_UCOMMON_FREE
 #include <UCommon_ext/stb/stb_image.h>
+#define STBIW_MALLOC UBPA_UCOMMON_MALLOC
+#define STBIW_REALLOC UBPA_UCOMMON_REALLOC
+#define STBIW_FREE UBPA_UCOMMON_FREE
 #include <UCommon_ext/stb/stb_image_write.h>
 #include <string>
 
-UCommon::FTex2D UCommon::LoadImage(char const* FileName)
+void* UCommon::LoadImage(char const* FileName, EElementType& ElementType, uint64_t& Width, uint64_t& Height, uint64_t& NumChannels, uint64_t DesiredNumChannels)
 {
-	EElementType ElementType = EElementType::Unknown;
 	void* Data;
-	int Width, Height, NumChannels;
+	int WidthInt, HeightInt, NumChannelsInt;
 	if (stbi_is_hdr(FileName))
 	{
 		ElementType = EElementType::Float;
-		Data = stbi_loadf(FileName, &Width, &Height, &NumChannels, 0);
+		Data = stbi_loadf(FileName, &WidthInt, &HeightInt, &NumChannelsInt, (int)DesiredNumChannels);
 	}
 	else
 	{
 		ElementType = EElementType::Uint8;
-		Data = stbi_load(FileName, &Width, &Height, &NumChannels, 0);
+		Data = stbi_load(FileName, &WidthInt, &HeightInt, &NumChannelsInt, (int)DesiredNumChannels);
 	}
+	if (!Data)
+	{
+		return nullptr;
+	}
+	Width = (uint64_t)WidthInt;
+	Height = (uint64_t)HeightInt;
+	NumChannels = (uint64_t)NumChannelsInt;
+	return Data;
+}
+
+void UCommon::FreeImage(void* Data)
+{
+	stbi_image_free(Data);
+}
+
+bool UCommon::SaveImage(const char* FileName, uint64_t Width, uint64_t Height, uint64_t NumChannels, const float* Data)
+{
+	const int error_code = stbi_write_hdr(FileName, (int)Width, (int)Height, (int)NumChannels, Data);
+	return error_code == 0;
+}
+
+bool UCommon::SaveImage(const char* FileName, uint64_t Width, uint64_t Height, uint64_t NumChannels, const uint8_t* Data, uint64_t StrideInBytes)
+{
+	const int error_code = stbi_write_png(FileName, (int)Width, (int)Height, (int)NumChannels, Data, (int)StrideInBytes);
+	return error_code == 0;
+}
+
+UCommon::FTex2D UCommon::LoadImage(char const* FileName, uint64_t DesiredNumChannels)
+{
+	EElementType ElementType = EElementType::Unknown;
+	uint64_t Width = 0, Height = 0, NumChannels = 0;
+	void* Data = LoadImage(FileName, ElementType, Width, Height, NumChannels, DesiredNumChannels);
 	if (!Data)
 	{
 		return {};
 	}
-	FTex2D Tex2D(FGrid2D((uint64_t)Width, (uint64_t)Height), (uint64_t)NumChannels, ElementType);
-	std::memcpy(Tex2D.GetStorage(), Data, Tex2D.GetStorageSizeInBytes());
-	stbi_image_free(Data);
-	return Tex2D;
+	return { { Width, Height }, NumChannels, EOwnership::TakeOwnership, ElementType, Data };
 }
 
-bool UCommon::SaveImage(const FTex2D& Tex2D, char const* FileName)
+bool UCommon::SaveImage(char const* FileName, const FTex2D& Tex2D)
 {
 	int error_code = 0;
 	if (Tex2D.GetElementType() == EElementType::Float)
 	{
-		error_code = stbi_write_hdr(FileName, (int)Tex2D.GetGrid2D().Width, (int)Tex2D.GetGrid2D().Height, (int)Tex2D.GetNumChannel(), (float*)Tex2D.GetStorage());
+		error_code = SaveImage(FileName, (int)Tex2D.GetGrid2D().Width, (int)Tex2D.GetGrid2D().Height, (int)Tex2D.GetNumChannels(), (const float*)Tex2D.GetStorage());
+	}
+	else if(Tex2D.GetElementType() == EElementType::Uint8)
+	{
+		error_code = SaveImage(FileName, (int)Tex2D.GetGrid2D().Width, (int)Tex2D.GetGrid2D().Height, (int)Tex2D.GetNumChannels(), (const uint8_t*)Tex2D.GetStorage());
 	}
 	else
 	{
-		UBPA_UCOMMON_ASSERT(Tex2D.GetElementType() == EElementType::Uint8);
-		error_code = stbi_write_png(FileName, (int)Tex2D.GetGrid2D().Width, (int)Tex2D.GetGrid2D().Height, (int)Tex2D.GetNumChannel(), Tex2D.GetStorage(), 0);
+		error_code = 1;
 	}
 	return error_code == 0;
 }

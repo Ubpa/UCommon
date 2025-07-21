@@ -125,6 +125,14 @@ namespace UCommon
 		 */
 		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, EElementType InElementType, void* InStorage) noexcept;
 
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EElementType InElementType, const void* InStorage);
+
+		template<typename Element>
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, EOwnership InOwnership, Element* InStorage) noexcept;
+
+		template<typename Element>
+		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannel, const Element* InStorage);
+
 		/**
 		 * Allocate a storage internally by `malloc` (no initalization).
 		 *
@@ -158,7 +166,7 @@ namespace UCommon
 
 		FGrid2D GetGrid2D() const noexcept;
 
-		uint64_t GetNumChannel() const noexcept;
+		uint64_t GetNumChannels() const noexcept;
 
 		uint64_t GetNumElements() const noexcept;
 
