@@ -42,10 +42,10 @@ UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
 	}
 
 	// compute indices
-	Scale = FHalf(Max - Min);
 	Bias = FHalf(Min);
-	const float Scalef = Scale;
 	const float Biasf = Bias;
+	Scale = FHalf(Max - Biasf);
+	const float Scalef = Scale;
 	for (uint64_t i = 0; i < 16; ++i)
 	{
 		UBPA_UCOMMON_ASSERT(Values[i] >= Min && Values[i] <= Max);
