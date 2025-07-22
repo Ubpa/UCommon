@@ -38,7 +38,7 @@ namespace UCommon
 	struct UBPA_UCOMMON_API FBQBlock
 	{
 		FHalf Scale;
-		FHalf Bias;
+		FHalf Center;
 		uint8_t Indices[16] = { 0 };
 		FBQBlock(const float(&Values)[16]) noexcept;
 		FBQBlock(TSpan<const float> Values) noexcept;

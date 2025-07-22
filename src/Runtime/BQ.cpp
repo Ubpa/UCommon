@@ -42,14 +42,14 @@ UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
 	}
 
 	// compute indices
-	Bias = FHalf(Min);
-	const float Biasf = Bias;
-	Scale = FHalf(Max - Biasf);
+	Center = FHalf((Min + Max) / 2);
+	Scale = FHalf((Max - Min) / 2);
+	const float Centerf = Center;
 	const float Scalef = Scale;
 	for (uint64_t i = 0; i < 16; ++i)
 	{
 		UBPA_UCOMMON_ASSERT(Values[i] >= Min && Values[i] <= Max);
-		Indices[i] = Scalef > 0.f ? ElementFloatClampToUint8((Values[i] - Biasf) / Scalef) : 0;
+		Indices[i] = Scalef > 0.f ? ElementFloatClampToUint8(((Values[i] - Centerf) / Scalef + 1.f) / 2.f) : 128;
 	}
 }
 
@@ -62,5 +62,5 @@ UCommon::FBQBlock::FBQBlock(TSpan<const float> Values) noexcept
 float UCommon::FBQBlock::GetValue(uint64_t Index) const noexcept
 {
 	UBPA_UCOMMON_ASSERT(Index < 16);
-	return ElementUint8ToFloat(Indices[Index]) * Scale + Bias;
+	return (ElementUint8ToFloat(Indices[Index]) * 2.f - 1.f) * Scale + Center;
 }
