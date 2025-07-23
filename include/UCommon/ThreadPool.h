@@ -88,3 +88,5 @@ namespace UCommon
         FThreadPool* ThreadPool = nullptr;
     };
 }
+
+UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(UCommonTest)

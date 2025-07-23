@@ -258,4 +258,6 @@ namespace UCommon
 	};
 } // UCommon
 
+UBPA_UCOMMON_TEX2D_TO_NAMESPACE(UCommonTest)
+
 #include "Tex2D.inl"
