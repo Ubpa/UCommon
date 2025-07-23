@@ -27,6 +27,7 @@ SOFTWARE.
 #include "BQ.h"
 #include "Config.h"
 #include "Cpp17.h"
+#include "FP8.h"
 #include "Half.h"
 #include "SH.h"
 #include "Tex2D.h"
@@ -37,6 +38,7 @@ SOFTWARE.
 #define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_FP8_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \

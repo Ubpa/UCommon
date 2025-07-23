@@ -24,12 +24,15 @@ SOFTWARE.
 
 #include <UCommon/BQ.h>
 
-UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
+UCommon::FBQBlock::FBQBlock(const float(&Values)[Size]) noexcept
 {
+	Data[0] = 0;
+	Data[1] = 0;
+
 	// find min max
 	float Min = Values[0];
 	float Max = Values[0];
-	for (uint64_t i = 1; i < 16; ++i)
+	for (uint64_t i = 1; i < Size; ++i)
 	{
 		if (Values[i] < Min)
 		{
@@ -42,25 +45,27 @@ UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
 	}
 
 	// compute indices
-	Center = FHalf((Min + Max) / 2);
-	const float Centerf = Center;
-	Scale = FHalf(std::max(std::abs(Max - Centerf), std::abs(Min - Centerf)));
-	const float Scalef = Scale;
-	for (uint64_t i = 0; i < 16; ++i)
+	Components.Center = CenterType((Min + Max) / 2);
+	const float Centerf = Components.Center;
+	Components.Scale = ScaleType(std::max(std::abs(Max - Centerf), std::abs(Min - Centerf)), ERound::Up);
+	const float Scalef = Components.Scale;
+	for (uint64_t i = 0; i < Size; ++i)
 	{
 		UBPA_UCOMMON_ASSERT(Values[i] >= Min && Values[i] <= Max);
-		Indices[i] = Scalef > 0.f ? ElementFloatClampToUint8(((Values[i] - Centerf) / Scalef + 1.f) / 2.f) : 128;
+
+		uint8_t Value = Scalef > 0.f ? ElementFloatClampToUint7(((Values[i] - Centerf) / Scalef + 1.f) / 2.f) : 64;
+		Data[i / 8] |= (uint64_t)Value << ((i % 8) * ElementBits);
 	}
 }
 
 UCommon::FBQBlock::FBQBlock(TSpan<const float> Values) noexcept
-	: FBQBlock(*reinterpret_cast<const float(*)[16]>(Values.GetData()))
+	: FBQBlock(*reinterpret_cast<const float(*)[Size]>(Values.GetData()))
 {
-	UBPA_UCOMMON_ASSERT(Values.Num() == 16);
+	UBPA_UCOMMON_ASSERT(Values.Num() == Size);
 }
 
 float UCommon::FBQBlock::GetValue(uint64_t Index) const noexcept
 {
-	UBPA_UCOMMON_ASSERT(Index < 16);
-	return (ElementUint8ToFloat(Indices[Index]) * 2.f - 1.f) * Scale + Center;
+	UBPA_UCOMMON_ASSERT(Index < Size);
+	return (ElementUint7ToFloat((Data[Index / 8] >> ((Index % 8) * ElementBits)) & 0x7F) * 2.f - 1.f) * (float)Components.Scale + (float)Components.Center;
 }

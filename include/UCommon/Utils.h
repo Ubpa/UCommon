@@ -259,7 +259,7 @@ namespace UCommon
 		ASTC_12x12,   /** 128 bits / block => 0.89 bits / pixel */
 		AdaptiveASTC, /** Adative Uint8/ASTC_4x4/ASTC_8x8 */
 		BC7,          /** 128 bits / block => 8.00 bits / pixel */
-		BQ            /** 160 bits per 4x4 block */
+		BQ,           /** 128 bits / block => 8.00 bits / channel*/
 	};
 	inline uint64_t ElementGetSize(EElementType ElementType) noexcept
 	{
@@ -292,18 +292,29 @@ namespace UCommon
 		(std::is_same<typename TRemoveVector<T>::value_type, float>::value ? EElementType::Float :
 		(std::is_same<typename TRemoveVector<T>::value_type, double>::value ? EElementType::Double :
 		EElementType::Unknown)));
+	static float ElementUint6ToFloat(uint8_t Element) noexcept { return Element / 63.f; }
+	static float ElementUint7ToFloat(uint8_t Element) noexcept { return Element / 127.f; }
 	static float ElementUint8ToFloat(uint8_t Element) noexcept { return Element / 255.f; }
 	static inline float ElementHalfToFloat(FHalf Element) noexcept { return static_cast<float>(Element); }
+	static uint8_t ElementFloatToUint7(float Element) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(0.f <= Element && Element <= 1.f);
+		return static_cast<uint8_t>(std::roundf(Element * 127.f));
+	}
+	static uint8_t ElementFloatClampToUint7(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element * 127.f, 0.f, 127.f))); }
 	static uint8_t ElementFloatToUint8(float Element) noexcept
 	{
 		UBPA_UCOMMON_ASSERT(0.f <= Element && Element <= 1.f);
 		return static_cast<uint8_t>(std::roundf(Element * 255.f));
 	}
-	static uint8_t ElementFloatClampToUint8(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element, 0.f, 1.f) * 255.f)); }
+	static uint8_t ElementFloatClampToUint6(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element * 63.f, 0.f, 63.f))); }
+	static uint8_t ElementFloatClampToUint8(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element * 255.f, 0.f, 255.f))); }
 	static FHalf ElementFloatToHalf(float Element) noexcept { return static_cast<FHalf>(Element); }
+	static FHalf ElementUint7ToHalf(uint8_t Element) noexcept { return static_cast<FHalf>(ElementUint7ToFloat(Element)); }
 	static FHalf ElementUint8ToHalf(uint8_t Element) noexcept { return static_cast<FHalf>(ElementUint8ToFloat(Element)); }
 	static uint8_t ElementHalfToUint8(FHalf Element) noexcept { return ElementFloatToUint8(ElementHalfToFloat(Element)); }
 	static uint8_t ElementHalfClampToUint8(FHalf Element) noexcept { return ElementFloatClampToUint8(ElementHalfToFloat(Element)); }
+	static double ElementUint7ToDouble(uint8_t Element) noexcept { return Element / 127.; }
 	static double ElementUint8ToDouble(uint8_t Element) noexcept { return Element / 255.; }
 	static double ElementHalfToDouble(FHalf Element) noexcept { return static_cast<double>(Element); }
 	static uint8_t ElementDoubleToUint8(double Element) noexcept

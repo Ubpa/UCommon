@@ -26,6 +26,7 @@ SOFTWARE.
 #include "Config.h"
 #include "Utils.h"
 #include "Half.h"
+#include "FP8.h"
 
 #define UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
@@ -37,11 +38,27 @@ namespace UCommon
 {
 	struct UBPA_UCOMMON_API FBQBlock
 	{
-		FHalf Scale;
-		FHalf Center;
-		uint8_t Indices[16] = { 0 };
-		FBQBlock(const float(&Values)[16]) noexcept;
+		static constexpr uint64_t Size = 16;
+		using ScaleType = FUFP8_E4M4;
+		using CenterType = FFP8_E4M3;
+		static_assert(((Size - sizeof(ScaleType) - sizeof(CenterType)) * 8) % Size == 0, "FBQBlock layout mismatch");
+		static constexpr uint64_t ElementBits = ((Size - sizeof(ScaleType) - sizeof(CenterType)) * 8) / Size;
+		union
+		{
+			struct
+			{
+				uint8_t Buffer0[ElementBits];
+				ScaleType Scale;
+				uint8_t Buffer1[ElementBits];
+				CenterType Center;
+			} Components;
+			uint64_t Data[2];
+		};
+		FBQBlock(const float(&Values)[Size]) noexcept;
 		FBQBlock(TSpan<const float> Values) noexcept;
 		float GetValue(uint64_t Index) const noexcept;
 	};
+	static_assert(sizeof(FBQBlock) == FBQBlock::Size, "FBQBlock size mismatch");
 }
+
+UBPA_UCOMMON_BQ_TO_NAMESPACE(UCommonTest)
