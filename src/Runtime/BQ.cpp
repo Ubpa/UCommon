@@ -43,8 +43,8 @@ UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
 
 	// compute indices
 	Center = FHalf((Min + Max) / 2);
-	Scale = FHalf((Max - Min) / 2);
 	const float Centerf = Center;
+	Scale = FHalf(std::max(std::abs(Max - Centerf), std::abs(Min - Centerf)));
 	const float Scalef = Scale;
 	for (uint64_t i = 0; i < 16; ++i)
 	{
