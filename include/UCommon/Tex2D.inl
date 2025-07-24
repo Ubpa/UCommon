@@ -28,11 +28,11 @@ SOFTWARE.
 
 template<typename Element>
 UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, EOwnership InOwnership, Element* InStorage) noexcept
-	: FTex2D(InGrid2D, InNumChannels, InOwnership, ElementTypeOf<ElementType>, InStorage) {}
+	: FTex2D(InGrid2D, InNumChannels, InOwnership, ElementTypeOf<Element>, InStorage) {}
 
 template<typename Element>
 UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, const Element* InStorage)
-	: FTex2D(InGrid2D, InNumChannels, ElementTypeOf<ElementType>, InStorage) {}
+	: FTex2D(InGrid2D, InNumChannels, ElementTypeOf<Element>, InStorage) {}
 
 template<typename T>
 T& UCommon::FTex2D::At(uint64_t Index) noexcept

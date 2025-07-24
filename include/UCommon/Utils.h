@@ -368,7 +368,6 @@ namespace UCommon
 		UBPA_UCOMMON_ASSERT(0.f <= Element && Element <= 1.f);
 		return static_cast<uint8_t>(std::roundf(Element * 255.f));
 	}
-	static uint8_t ElementFloatClampToUint6(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element * 63.f, 0.f, 63.f))); }
 	static uint8_t ElementFloatClampToUint8(float Element) noexcept { return static_cast<uint8_t>(std::roundf(Clamp(Element * 255.f, 0.f, 255.f))); }
 	static FHalf ElementFloatToHalf(float Element) noexcept { return static_cast<FHalf>(Element); }
 	static FHalf ElementUint8ToHalf(uint8_t Element) noexcept { return static_cast<FHalf>(ElementUint8ToFloat(Element)); }
