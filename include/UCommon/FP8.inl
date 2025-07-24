@@ -26,11 +26,11 @@ SOFTWARE.
 
 #include "FP8.h"
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FFP8<E, M, B>::FFP8() noexcept : Data(0) {}
+template<uint8_t E, uint8_t M>
+UCommon::FFP8<E, M>::FFP8() noexcept : Data(0) {}
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FFP8<E, M, B>::FFP8(float Value, ERound Round) noexcept
+template<uint8_t E, uint8_t M>
+UCommon::FFP8<E, M>::FFP8(float Value, ERound Round) noexcept
 {
     const auto& Float = reinterpret_cast<const FFloat&>(Value);
     const uint8_t Sign = Float.Sign;
@@ -119,8 +119,8 @@ UCommon::FFP8<E, M, B>::FFP8(float Value, ERound Round) noexcept
     Data = (Sign << 7) | ((uint8_t)e << M) | m;
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FFP8<E, M, B>::operator float() const noexcept
+template<uint8_t E, uint8_t M>
+UCommon::FFP8<E, M>::operator float() const noexcept
 {
     const uint32_t frac = Components.Frac;
 
@@ -144,25 +144,25 @@ UCommon::FFP8<E, M, B>::operator float() const noexcept
     }
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-bool UCommon::FFP8<E, M, B>::operator==(const FFP8& rhs) const noexcept
+template<uint8_t E, uint8_t M>
+bool UCommon::FFP8<E, M>::operator==(const FFP8& rhs) const noexcept
 {
     return (Data == 0 && rhs.Data == 0x80)
         || (Data == 0x80 && rhs.Data == 0)
         || (Data == rhs.Data);
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-bool UCommon::FFP8<E, M, B>::operator!=(const FFP8& rhs) const noexcept
+template<uint8_t E, uint8_t M>
+bool UCommon::FFP8<E, M>::operator!=(const FFP8& rhs) const noexcept
 {
     return !(*this == rhs);
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FUFP8<E, M, B>::FUFP8() noexcept : Data(0) {}
+template<uint8_t E, uint8_t M>
+UCommon::FUFP8<E, M>::FUFP8() noexcept : Data(0) {}
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FUFP8<E, M, B>::FUFP8(float Value, ERound Round) noexcept
+template<uint8_t E, uint8_t M>
+UCommon::FUFP8<E, M>::FUFP8(float Value, ERound Round) noexcept
 {
     const auto& Float = reinterpret_cast<const FFloat&>(Value);
 
@@ -250,8 +250,8 @@ UCommon::FUFP8<E, M, B>::FUFP8(float Value, ERound Round) noexcept
     Data = ((uint8_t)e << M) | m;
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-UCommon::FUFP8<E, M, B>::operator float() const noexcept
+template<uint8_t E, uint8_t M>
+UCommon::FUFP8<E, M>::operator float() const noexcept
 {
     const uint32_t frac = Components.Frac;
 
@@ -274,14 +274,14 @@ UCommon::FUFP8<E, M, B>::operator float() const noexcept
     }
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-bool UCommon::FUFP8<E, M, B>::operator==(const FUFP8& rhs) const noexcept
+template<uint8_t E, uint8_t M>
+bool UCommon::FUFP8<E, M>::operator==(const FUFP8& rhs) const noexcept
 {
     return Data == rhs.Data;
 }
 
-template<uint8_t E, uint8_t M, int8_t B>
-bool UCommon::FUFP8<E, M, B>::operator!=(const FUFP8& rhs) const noexcept
+template<uint8_t E, uint8_t M>
+bool UCommon::FUFP8<E, M>::operator!=(const FUFP8& rhs) const noexcept
 {
     return !(*this == rhs);
 }

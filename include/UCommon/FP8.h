@@ -29,8 +29,8 @@ SOFTWARE.
 #define UBPA_UCOMMON_FP8_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
-    template<uint32_t E, uint32_t M, int32_t B = 0> \
-	using FFP8 = UCommon::FFP8<E, M, B>; \
+    template<uint32_t E, uint32_t M> \
+	using FFP8 = UCommon::FFP8<E, M>; \
     using FFP8_E4M3 = UCommon::FFP8<4, 3>; \
     using FFP8_E5M2 = UCommon::FFP8<5, 2>; \
     using FUFP8_E4M4 = UCommon::FUFP8<4, 4>; \
@@ -53,12 +53,12 @@ namespace UCommon
         Up      = 2,
 	};
 
-    template<uint8_t E, uint8_t M, int8_t B = 0>
+    template<uint8_t E, uint8_t M>
     struct FFP8
     {
         static_assert(E + M == 7, "FFP8 must have E + M = 7");
 
-        static constexpr uint8_t BiasE = (1 << (E - 1)) - 1 + B;
+        static constexpr uint8_t BiasE = (1 << (E - 1)) - 1;
         static constexpr uint32_t SubNormalScale = 1 << (BiasE + M - 1);
         static constexpr uint8_t MaskE = (1 << E) - 1;
         static constexpr uint8_t MaskM = (1 << M) - 1;
@@ -85,12 +85,12 @@ namespace UCommon
         };
     };
 
-    template<uint8_t E, uint8_t M, int8_t B = 0>
+    template<uint8_t E, uint8_t M>
     struct FUFP8
     {
         static_assert(E + M == 8, "FUFP8 must have E + M = 8");
 
-        static constexpr uint8_t BiasE = (1 << (E - 1)) - 1 + B;
+        static constexpr uint8_t BiasE = (1 << (E - 1)) - 1;
         static constexpr uint32_t SubNormalScale = 1 << (BiasE + M - 1);
         static constexpr uint8_t MaskE = (1 << E) - 1;
         static constexpr uint8_t MaskM = (1 << M) - 1;
