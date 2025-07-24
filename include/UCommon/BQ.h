@@ -38,27 +38,22 @@ namespace UCommon
 {
 	struct UBPA_UCOMMON_API FBQBlock
 	{
-		static constexpr uint64_t Size = 16;
-		using ScaleType = FUFP8_E4M4;
-		using CenterType = FFP8_E4M3;
-		static_assert(((Size - sizeof(ScaleType) - sizeof(CenterType)) * 8) % Size == 0, "FBQBlock layout mismatch");
-		static constexpr uint64_t ElementBits = ((Size - sizeof(ScaleType) - sizeof(CenterType)) * 8) / Size;
 		union
 		{
 			struct
 			{
-				uint8_t Buffer0[ElementBits];
-				ScaleType Scale;
-				uint8_t Buffer1[ElementBits];
-				CenterType Center;
+				uint8_t Buffer0[7];
+				FUFP8_E4M4 Scale;
+				uint8_t Buffer1[7];
+				FFP8_E4M3 Center;
 			} Components;
 			uint64_t Data[2];
 		};
-		FBQBlock(const float(&Values)[Size]) noexcept;
+		FBQBlock(const float(&Values)[16]) noexcept;
 		FBQBlock(TSpan<const float> Values) noexcept;
 		float GetValue(uint64_t Index) const noexcept;
 	};
-	static_assert(sizeof(FBQBlock) == FBQBlock::Size, "FBQBlock size mismatch");
+	static_assert(sizeof(FBQBlock) == 16, "FBQBlock size mismatch");
 }
 
 UBPA_UCOMMON_BQ_TO_NAMESPACE(UCommonTest)
