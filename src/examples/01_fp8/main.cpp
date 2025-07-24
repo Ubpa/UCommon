@@ -44,14 +44,32 @@ void Test(ERound Round)
 
 int main()
 {
-    Test<FFP8_E5M2>(ERound::Nearest);
-    Test<FUFP8_E3M5>(ERound::Nearest);
-    Test<FUFP8_E4M4>(ERound::Nearest);
-    Test<FUFP8_E5M3>(ERound::Nearest);
-    Test<FFP8_E4M3>(ERound::Nearest);
-    Test<FFP8_E5M2>(ERound::Nearest);
-    Test<FUFP8_E4M4>(ERound::Nearest);
-    Test<FUFP8_E5M3>(ERound::Nearest);
+    //Test<FFP8_E5M2>(ERound::Nearest);
+    //Test<FUFP8_E3M5>(ERound::Nearest);
+    //Test<FUFP8_E4M4>(ERound::Nearest);
+    //Test<FUFP8_E5M3>(ERound::Nearest);
+    //Test<FFP8_E4M3>(ERound::Nearest);
+    //Test<FFP8_E5M2>(ERound::Nearest);
+    //Test<FUFP8_E4M4>(ERound::Nearest);
+    //Test<FUFP8_E5M3>(ERound::Nearest);
+
+    for (uint16_t A = 0; A < 128; A++)
+    {
+        for (uint16_t B = 0; B < 256; B++)
+        {
+            const double Ad = (2 * A - 127) / 127.0;
+            uint8_t B8 = (uint8_t)B;
+            FUFP8_E4M4 Bh = reinterpret_cast<const FUFP8_E4M4&>(B8);
+            const double Bd = (float)Bh;
+            const float Cf = float(Ad * Bd);
+            uint32_t Cx = reinterpret_cast<const uint32_t&>(Cf);
+            printf("0x%08X,", Cx);
+            if ((B + 1) % 8 == 0)
+            {
+                printf("\n");
+            }
+        }
+    }
 
     return 0;
 }

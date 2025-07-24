@@ -42,10 +42,10 @@ namespace UCommon
 		{
 			struct
 			{
-				uint8_t Buffer0[7];
 				FUFP8_E4M4 Scale;
-				uint8_t Buffer1[7];
+				uint8_t Buffer0[7];
 				FFP8_E4M3 Center;
+				uint8_t Buffer1[7];
 			} Components;
 			uint64_t Data[2];
 		};
