@@ -14,6 +14,13 @@ struct UCommon::IArchive::FImpl
 	{
 	}
 
+	struct FHeader
+	{
+		uint8_t Magic[4] = { 'U', 'b', 'p', 'a' };
+		uint32_t NumVerisonKeys = 0;
+		uint64_t VersionMapOffset = 0;
+	};
+
 	EState State;
 	std::vector<uint64_t> VersionKeys;
 	std::unordered_map<uint64_t, int64_t> VersionMap;
@@ -46,7 +53,7 @@ UCommon::IArchive::~IArchive()
 	}
 }
 
-void UCommon::IArchive::UseVersion(uint64_t Key, uint64_t Version)
+void UCommon::IArchive::UseVersion(uint64_t Key, int64_t Version)
 {
 	if (Impl->State == EState::Loading)
 	{
@@ -65,11 +72,53 @@ void UCommon::IArchive::UseVersion(uint64_t Key, uint64_t Version)
 	}
 }
 
-void UCommon::IArchive::LoadVersion(uint64_t Key, uint64_t Version)
+void UCommon::IArchive::LoadVersion(uint64_t Key, int64_t Version)
 {
 	UBPA_UCOMMON_ASSERT(Impl->VersionMap.find(Key) == Impl->VersionMap.end());
 	Impl->VersionKeys.push_back(Key);
 	Impl->VersionMap[Key] = Version;
+}
+
+void UCommon::IArchive::OnInit()
+{
+	FImpl::FHeader Header;
+	ByteSerialize(Header);
+	UBPA_UCOMMON_ASSERT(std::memcmp(Header.Magic, "Ubpa", 4) == 0);
+	if (GetState() == EState::Loading
+		&& Header.NumVerisonKeys > 0)
+	{
+		Seek(Header.VersionMapOffset);
+		for (uint32_t Index = 0; Index < Header.NumVerisonKeys; Index++)
+		{
+			uint64_t Key;
+			int64_t Version;
+			ByteSerialize(Key);
+			ByteSerialize(Version);
+			LoadVersion(Key, Version);
+		}
+		Seek(sizeof(FImpl::FHeader));
+	}
+}
+
+void UCommon::IArchive::OnDestroy()
+{
+	if (!Impl || GetState() != EState::Saving)
+	{
+		return;
+	}
+
+	FImpl::FHeader Header;
+	Header.VersionMapOffset = Tell();
+	Header.NumVerisonKeys = (uint32_t)GetVersionKeys().Num();
+	Seek(0);
+	ByteSerialize(Header);
+	Seek(Header.VersionMapOffset);
+	for (uint64_t Key : GetVersionKeys())
+	{
+		ByteSerialize(Key);
+		int64_t Version = GetVersion(Key);
+		ByteSerialize(Version);
+	}
 }
 
 int64_t UCommon::IArchive::GetVersion(uint64_t Key) const
@@ -104,14 +153,15 @@ struct UCommon::FMemoryArchive::FImpl
 	}
 
 	TSpan<const uint8_t> ReadStorage;
-	uint64_t ReadIndex = 0;
 	std::vector<uint8_t> WriteStorage;
+	uint64_t Index = 0;
 };
 
 UCommon::FMemoryArchive::FMemoryArchive(TSpan<const uint8_t> Storage)
 	: IArchive(Storage.Empty() ? EState::Saving : EState::Loading)
 	, Impl(new (UBPA_UCOMMON_MALLOC(sizeof(FImpl)))FImpl(Storage))
 {
+	OnInit();
 }
 
 UCommon::FMemoryArchive::FMemoryArchive(FMemoryArchive&& Other) noexcept
@@ -138,6 +188,7 @@ UCommon::FMemoryArchive::~FMemoryArchive()
 {
 	if (Impl)
 	{
+		OnDestroy();
 		Impl->~FImpl();
 		UBPA_UCOMMON_FREE(Impl);
 	}
@@ -147,15 +198,15 @@ void UCommon::FMemoryArchive::Serialize(void* Pointer, uint64_t Length)
 {
 	if (GetState() == EState::Loading)
 	{
-		UBPA_UCOMMON_ASSERT(Impl->ReadIndex + Length <= Impl->ReadStorage.Num());
-		std::memcpy(Pointer, Impl->ReadStorage.GetData() + Impl->ReadIndex, Length);
-		Impl->ReadIndex += Length;
+		UBPA_UCOMMON_ASSERT(Impl->Index + Length <= Impl->ReadStorage.Num());
+		std::memcpy(Pointer, Impl->ReadStorage.GetData() + Impl->Index, Length);
+		Impl->Index += Length;
 	}
 	else
 	{
 		const size_t OriginalSize = Impl->WriteStorage.size();
 		Impl->WriteStorage.resize(OriginalSize + Length);
-		std::memcpy(Impl->WriteStorage.data() + OriginalSize, Pointer, Length);
+		std::memcpy(Impl->WriteStorage.data() + Impl->Index, Pointer, Length);
 	}
 }
 
@@ -171,6 +222,16 @@ UCommon::TSpan<const uint8_t> UCommon::FMemoryArchive::GetStorage() const
 	}
 }
 
+void UCommon::FMemoryArchive::Seek(uint64_t Index)
+{
+	Impl->Index = Index;
+}
+
+uint64_t UCommon::FMemoryArchive::Tell() const
+{
+	return Impl->Index;
+}
+
 //////////////////
 // FFileArchive //
 //////////////////
@@ -179,8 +240,9 @@ struct UCommon::FFileArchive::FImpl
 {
 	struct FHeader
 	{
+		uint8_t Magic[4] = { 'U', 'b', 'p', 'a' };
+		uint32_t NumVerisonKeys = 0;
 		uint64_t VersionMapOffset = 0;
-		uint8_t Magic[8] = { 'U', 'B', 'P', 'A', '1', '2', '0', '6' };
 	};
 
 	FImpl(EState State, const char* FilePath)
@@ -202,27 +264,9 @@ UCommon::FFileArchive::FFileArchive(EState State, const char* FilePath)
 	: IArchive(State)
 	, Impl(new UBPA_UCOMMON_MALLOC(sizeof(FImpl))FImpl(State, FilePath))
 {
-	if (!IsValid())
+	if (IsValid())
 	{
-		return;
-	}
-	FImpl::FHeader Header;
-	ByteSerialize(Header);
-	if (GetState() == EState::Loading)
-	{
-		UBPA_UCOMMON_ASSERT(std::memcmp(Header.Magic, "UBPA1206", 8) == 0);
-		Impl->Ifs.seekg(Header.VersionMapOffset);
-		uint64_t Num;
-		ByteSerialize(Num);
-		for (uint64_t Index = 0; Index < Num; Index++)
-		{
-			uint64_t Key;
-			int64_t Version;
-			ByteSerialize(Key);
-			ByteSerialize(Version);
-			LoadVersion(Key, Version);
-		}
-		Impl->Ifs.seekg(sizeof(FImpl::FHeader));
+		OnInit();
 	}
 }
 
@@ -230,23 +274,7 @@ UCommon::FFileArchive::~FFileArchive()
 {
 	if (Impl)
 	{
-		if (GetState() == EState::Saving)
-		{
-			FImpl::FHeader Header;
-			Header.VersionMapOffset = Impl->Ofs.tellp();
-			Impl->Ofs.seekp(0);
-			ByteSerialize(Header);
-			Impl->Ofs.seekp(Header.VersionMapOffset);
-			uint64_t NumKeys = GetVersionKeys().Num();
-			ByteSerialize(NumKeys);
-			for (uint64_t Key : GetVersionKeys())
-			{
-				ByteSerialize(Key);
-				int64_t Version = GetVersion(Key);
-				ByteSerialize(Version);
-			}
-		}
-
+		OnDestroy();
 		Impl->~FImpl();
 		UBPA_UCOMMON_FREE(Impl);
 	}
@@ -279,6 +307,7 @@ bool UCommon::FFileArchive::IsValid() const
 
 void UCommon::FFileArchive::Serialize(void* Pointer, uint64_t Length)
 {
+	UBPA_UCOMMON_ASSERT(IsValid());
 	if (GetState() == EState::Loading)
 	{
 		Impl->Ifs.read((char*)Pointer, Length);
@@ -286,5 +315,31 @@ void UCommon::FFileArchive::Serialize(void* Pointer, uint64_t Length)
 	else
 	{
 		Impl->Ofs.write((const char*)Pointer, Length);
+	}
+}
+
+void UCommon::FFileArchive::Seek(uint64_t Index)
+{
+	UBPA_UCOMMON_ASSERT(IsValid());
+	if (GetState() == EState::Loading)
+	{
+		Impl->Ifs.seekg(Index);
+	}
+	else
+	{
+		Impl->Ofs.seekp(Index);
+	}
+}
+
+uint64_t UCommon::FFileArchive::Tell() const
+{
+	UBPA_UCOMMON_ASSERT(IsValid());
+	if (GetState() == EState::Loading)
+	{
+		return Impl->Ifs.tellg();
+	}
+	else
+	{
+		return Impl->Ofs.tellp();
 	}
 }

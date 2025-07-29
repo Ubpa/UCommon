@@ -53,7 +53,7 @@ namespace UCommon
 
 		virtual ~IArchive();
 
-		void UseVersion(uint64_t Key, uint64_t Version);
+		void UseVersion(uint64_t Key, int64_t Version);
 		int64_t GetVersion(uint64_t Key) const;
 		TSpan<const uint64_t> GetVersionKeys() const;
 
@@ -100,7 +100,12 @@ namespace UCommon
 		virtual void Serialize(void* Pointer, uint64_t Length) {}
 
 	protected:
-		void LoadVersion(uint64_t Key, uint64_t Version);
+		virtual void Seek(uint64_t Index) { UBPA_UCOMMON_NO_ENTRY(); }
+		virtual uint64_t Tell() const { UBPA_UCOMMON_NO_ENTRY(); return 0; }
+		void LoadVersion(uint64_t Key, int64_t Version);
+
+		void OnInit();
+		void OnDestroy();
 	};
 
 	class UBPA_UCOMMON_API FMemoryArchive : public IArchive
@@ -117,6 +122,10 @@ namespace UCommon
 		virtual void Serialize(void* Pointer, uint64_t Length) override;
 
 		TSpan<const uint8_t> GetStorage() const;
+
+	protected:
+		virtual void Seek(uint64_t Index) override;
+		virtual uint64_t Tell() const override;
 	};
 
 	class UBPA_UCOMMON_API FFileArchive : public IArchive
@@ -133,6 +142,10 @@ namespace UCommon
 		bool IsValid() const;
 
 		virtual void Serialize(void* Pointer, uint64_t Length) override;
+
+	protected:
+		virtual void Seek(uint64_t Index) override;
+		virtual uint64_t Tell() const override;
 	};
 }
 

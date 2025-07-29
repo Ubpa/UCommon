@@ -24,6 +24,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "Archive.h"
 #include "BQ.h"
 #include "Config.h"
 #include "Cpp17.h"
@@ -36,6 +37,7 @@ SOFTWARE.
 #include "Vector.h"
 
 #define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_ARCHIVE_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_FP8_TO_NAMESPACE(NameSpace) \
