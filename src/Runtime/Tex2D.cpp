@@ -631,3 +631,12 @@ void UCommon::FTex2D::Copy(FTex2D& Dst, const FUint64Vector2& DstPoint, const FT
 		std::memcpy(DstBuffer, SrcBuffer, PixelSize);
 	}
 }
+
+void UCommon::FTex2D::Serialize(IArchive& Archive)
+{
+	Archive.ByteSerialize(Grid2D);
+	Archive.ByteSerialize(NumChannels);
+	Archive.ByteSerialize(Ownership);
+	Archive.ByteSerialize(ElementType);
+	Archive.Serialize(Storage, GetStorageSizeInBytes());
+}

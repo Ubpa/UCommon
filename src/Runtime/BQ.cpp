@@ -73,5 +73,5 @@ float UCommon::FBQBlock::GetValue(uint64_t Index) const noexcept
 		8, 15, 22, 29, 36, 43, 50, 57,
 	};
 	const auto ValueUint7 = (Data[Index >> 3] >> MoveBits[Index]) & 0x7F;
-	return ElementUint7SNormToFloat(ValueUint7) * float(Components.Scale) + float(Components.Center);
+	return ElementUint7SNormToFloat((uint8_t)ValueUint7) * float(Components.Scale) + float(Components.Center);
 }

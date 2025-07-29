@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include "Utils.h"
+#include "Archive.h"
 
 #define UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
@@ -246,6 +247,8 @@ namespace UCommon
 		FTex2D& operator=(const FTex2D& Rhs);
 
 		FTex2D& operator=(FTex2D&& Rhs) noexcept;
+
+		void Serialize(IArchive& Archive);
 
 		static void Copy(FTex2D& Dst, const FUint64Vector2& DstPoint, const FTex2D& Src, const FUint64Vector2& SrcPoint, const FUint64Vector2& Range);
 
