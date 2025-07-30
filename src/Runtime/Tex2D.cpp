@@ -638,5 +638,19 @@ void UCommon::FTex2D::Serialize(IArchive& Archive)
 	Archive.ByteSerialize(NumChannels);
 	Archive.ByteSerialize(Ownership);
 	Archive.ByteSerialize(ElementType);
+	if (Archive.GetState() == IArchive::EState::Loading)
+	{
+		UBPA_UCOMMON_ASSERT(Storage == nullptr);
+		const uint64_t Size = GetStorageSizeInBytes();
+		if (Size == 0)
+		{
+			Storage = nullptr;
+		}
+		else
+		{
+			Storage = UBPA_UCOMMON_MALLOC(Size);
+			UBPA_UCOMMON_ASSERT(Storage);
+		}
+	}
 	Archive.Serialize(Storage, GetStorageSizeInBytes());
 }
