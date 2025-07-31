@@ -130,7 +130,7 @@ struct UCommon::FMemoryArchive::FImpl
 
 	TSpan<const uint8_t> ReadStorage;
 	std::vector<uint8_t> WriteStorage;
-	uint64_t Index = 0;
+	uint64_t ReadIndex = 0;
 };
 
 UCommon::FMemoryArchive::FMemoryArchive(TSpan<const uint8_t> Storage)
@@ -172,15 +172,15 @@ void UCommon::FMemoryArchive::Serialize(void* Pointer, uint64_t Length)
 {
 	if (GetState() == EState::Loading)
 	{
-		UBPA_UCOMMON_ASSERT(Impl->Index + Length <= Impl->ReadStorage.Num());
-		std::memcpy(Pointer, Impl->ReadStorage.GetData() + Impl->Index, Length);
-		Impl->Index += Length;
+		UBPA_UCOMMON_ASSERT(Impl->ReadIndex + Length <= Impl->ReadStorage.Num());
+		std::memcpy(Pointer, Impl->ReadStorage.GetData() + Impl->ReadIndex, Length);
+		Impl->ReadIndex += Length;
 	}
 	else
 	{
 		const size_t OriginalSize = Impl->WriteStorage.size();
 		Impl->WriteStorage.resize(OriginalSize + Length);
-		std::memcpy(Impl->WriteStorage.data() + Impl->Index, Pointer, Length);
+		std::memcpy(Impl->WriteStorage.data() + OriginalSize, Pointer, Length);
 	}
 }
 
