@@ -23,29 +23,38 @@ SOFTWARE.
 */
 
 #pragma once
-
-#include "Archive.h"
-#include "BQ.h"
 #include "Config.h"
-#include "Cpp17.h"
-#include "FP8.h"
-#include "Guid.h"
-#include "Half.h"
-#include "SH.h"
-#include "Tex2D.h"
-#include "ThreadPool.h"
-#include "Utils.h"
-#include "Vector.h"
 
-#define UBPA_UCOMMON_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_ARCHIVE_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_BQ_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_CPP17_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_FP8_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_GUID_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
-UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace)
+#include <cstdint>
+
+#define UBPA_UCOMMON_GUID_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+    using FGuid = UCommon::FGuid; \
+}
+
+namespace UCommon
+{
+	struct UBPA_UCOMMON_API FGuid
+	{
+		uint32_t A, B, C, D;
+
+		FGuid() : A(0), B(0), C(0), D(0) {}
+		FGuid(uint32_t InA, uint32_t InB, uint32_t InC, uint32_t InD)
+			: A(InA), B(InB), C(InC), D(InD) {}
+		static FGuid NewGuid();
+
+		uint32_t& operator[](uint64_t Index);
+		const uint32_t& operator[](uint64_t Index) const;
+
+		bool IsValid() const;
+
+		void ToString(char Buffer[32]) const;
+
+		UBPA_UCOMMON_API friend bool operator==(const FGuid& Lhs, const FGuid& Rhs);
+		UBPA_UCOMMON_API friend bool operator!=(const FGuid& Lhs, const FGuid& Rhs);
+	};
+	static_assert(sizeof(FGuid) == 16, "FGuid size mismatch");
+}
+
+UBPA_UCOMMON_GUID_TO_NAMESPACE(UCommonTest)
