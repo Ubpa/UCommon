@@ -52,6 +52,7 @@ namespace UCommon { namespace Details { template<int l, int m> constexpr float S
 namespace UCommon
 {
 	// SH normalization constants
+	// K(l,m) = sqrt((2l+1)/(4pi) * (l-|m|)!/(l+|m|)!)
 	template<int l, int m>
 	constexpr float SHK = Details::SHKImpl<l, m>();
 
