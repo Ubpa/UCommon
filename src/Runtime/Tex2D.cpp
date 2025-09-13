@@ -284,9 +284,9 @@ UCommon::FDoubleColor UCommon::FTex2D::GetDoubleColor(const FUint64Vector2& Poin
 	case UCommon::EElementType::Uint8:
 		return ElementColorToDoubleColor(At<FColor>(Point));
 	case UCommon::EElementType::Float:
-		return At<FDoubleColor>(Point);
+		return FDoubleColor(At<FLinearColor>(Point));
 	case UCommon::EElementType::Double:
-		return FDoubleColor(At<FDoubleColor>(Point));
+		return At<FDoubleColor>(Point);
 	default:
 		UBPA_UCOMMON_NO_ENTRY();
 		return FDoubleColor(0.f);

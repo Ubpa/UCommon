@@ -53,7 +53,7 @@ UCommon::FBQBlock::FBQBlock(const float(&Values)[16]) noexcept
 	{
 		UBPA_UCOMMON_ASSERT(Values[i] >= Min && Values[i] <= Max);
 
-		uint8_t Value = Scalef > 0.f ? ElementFloatClampToUint7(((Values[i] - Centerf) / Scalef + 1.f) / 2.f) : 64;
+		uint8_t Value = Scalef > 0.f ? ElementFloatClampToUint7(((Values[i] - Centerf) / Scalef + 1.f) / 2.f) : 0;
 		Data[i / 8] |= (uint64_t)Value << (8 + (i % 8) * 7);
 	}
 }
@@ -72,6 +72,6 @@ float UCommon::FBQBlock::GetValue(uint64_t Index) const noexcept
 		8, 15, 22, 29, 36, 43, 50, 57,
 		8, 15, 22, 29, 36, 43, 50, 57,
 	};
-	const auto ValueUint7 = (Data[Index >> 3] >> MoveBits[Index]) & 0x7F;
+	const auto ValueUint7 = Data[Index >> 3] >> MoveBits[Index];
 	return ElementUint7SNormToFloat((uint8_t)ValueUint7) * float(Components.Scale) + float(Components.Center);
 }
