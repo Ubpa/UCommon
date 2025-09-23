@@ -30,10 +30,7 @@ SOFTWARE.
 ///////////
 
 UCommon::FGrid2D::FGrid2D(uint64_t InWidth, uint64_t InHeight) noexcept :
-	Width(InWidth), Height(InHeight)
-{
-	UBPA_UCOMMON_ASSERT(Width <= MaxSize && Height <= MaxSize);
-}
+	Width(InWidth), Height(InHeight) {}
 
 UCommon::FGrid2D::FGrid2D(const FUint64Vector2& Size) noexcept : FGrid2D(Size.X, Size.Y) {}
 
@@ -323,7 +320,7 @@ void UCommon::FTex2D::SetFloat(const FUint64Vector2& Point, uint64_t C, float Va
 }
 
 uint64_t UCommon::FTex2D::GetNumChannels() const noexcept { return NumChannels; }
-UCommon::FGrid2D UCommon::FTex2D::GetGrid2D() const noexcept { return Grid2D; }
+const UCommon::FGrid2D& UCommon::FTex2D::GetGrid2D() const noexcept { return Grid2D; }
 uint64_t UCommon::FTex2D::GetNumElements() const noexcept { return GetNumElements(Grid2D, NumChannels); }
 uint64_t UCommon::FTex2D::GetStorageSizeInBytes() const noexcept { return GetRequiredStorageSizeInBytes(Grid2D, NumChannels, ElementType); }
 UCommon::EOwnership UCommon::FTex2D::GetStorageOwnership() const noexcept { return Ownership; }

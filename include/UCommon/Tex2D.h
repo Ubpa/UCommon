@@ -41,9 +41,6 @@ namespace UCommon
 
 	struct UBPA_UCOMMON_API FGrid2D
 	{
-		/** Width/Height <= MaxSize (max 48-bits number) */
-		static constexpr uint64_t MaxSize = 0xFFFFFFFFFFFF;
-
 		uint64_t Width;
 		uint64_t Height;
 
@@ -51,7 +48,7 @@ namespace UCommon
 		FGrid2D(const FUint64Vector2& Size) noexcept;
 		FGrid2D() noexcept;
 
-		/** Width x Height x Depth */
+		/** Width x Height */
 		uint64_t GetArea() const noexcept;
 
 		bool IsAreaEmpty() const noexcept;
@@ -102,7 +99,7 @@ namespace UCommon
 		friend bool operator!=(const FGrid2DIterator& Lhs, const FGrid2DIterator& Rhs) noexcept
 		{
 			UBPA_UCOMMON_ASSERT(Lhs.Grid2D == Rhs.Grid2D);
-			return Lhs.Point.X != Rhs.Point.X || Lhs.Point.Y != Rhs.Point.Y;
+			return Lhs.Point != Rhs.Point;
 		}
 	};
 
@@ -165,7 +162,7 @@ namespace UCommon
 
 		bool IsValid() const noexcept;
 
-		FGrid2D GetGrid2D() const noexcept;
+		const FGrid2D& GetGrid2D() const noexcept;
 
 		uint64_t GetNumChannels() const noexcept;
 

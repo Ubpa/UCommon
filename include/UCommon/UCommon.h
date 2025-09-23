@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Half.h"
 #include "SH.h"
 #include "Tex2D.h"
+#include "TexCube.h"
 #include "ThreadPool.h"
 #include "Utils.h"
 #include "Vector.h"
@@ -46,6 +47,7 @@ UBPA_UCOMMON_GUID_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_HALF_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_TEX2D_TO_NAMESPACE(NameSpace) \
+UBPA_UCOMMON_TEXCUBE_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_THREAD_POOL_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
 UBPA_UCOMMON_VECTOR_TO_NAMESPACE(NameSpace)
