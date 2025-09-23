@@ -60,8 +60,13 @@ namespace UCommon
 		FUint64Vector2 Flat(const FGridCube& GridCube) const noexcept;
 	};
 
-	struct FCubeTexcoord
+	struct UBPA_UCOMMON_API FCubeTexcoord
 	{
+		FCubeTexcoord() noexcept;
+		FCubeTexcoord(const FVector3f& Direction) noexcept;
+
+		FVector3f Direction() const noexcept;
+
 		ECubeFace Face = ECubeFace::PositiveX;
 		FVector2f Texcoord{ 0.f }; // [0,1]x[0,1]
 	};

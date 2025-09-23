@@ -24,6 +24,81 @@ SOFTWARE.
 
 #include <UCommon/TexCube.h>
 
+UCommon::FCubeTexcoord::FCubeTexcoord() noexcept = default;
+UCommon::FCubeTexcoord::FCubeTexcoord(const FVector3f& Direction) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Direction.IsAlmostUnit());
+	const FVector3f AbsDirection = Direction.Abs();
+	if (AbsDirection.X >= AbsDirection.Y && AbsDirection.X >= AbsDirection.Z)
+	{
+		if (Direction.X > 0) // +X
+		{
+			Face = ECubeFace::PositiveX;
+			Texcoord.X = 0.5f * (-Direction.Z / AbsDirection.X + 1.f);
+			Texcoord.Y = 0.5f * (-Direction.Y / AbsDirection.X + 1.f);
+		}
+		else // -X
+		{
+			Face = ECubeFace::NegativeX;
+			Texcoord.X = 0.5f * (Direction.Z / AbsDirection.X + 1.f);
+			Texcoord.Y = 0.5f * (-Direction.Y / AbsDirection.X + 1.f);
+		}
+	}
+	else if (AbsDirection.Y >= AbsDirection.X && AbsDirection.Y >= AbsDirection.Z)
+	{
+		if (Direction.Y > 0) // +Y
+		{
+			Face = ECubeFace::PositiveY;
+			Texcoord.X = 0.5f * (Direction.X / AbsDirection.Y + 1.f);
+			Texcoord.Y = 0.5f * (Direction.Z / AbsDirection.Y + 1.f);
+		}
+		else // -Y
+		{
+			Face = ECubeFace::NegativeY;
+			Texcoord.X = 0.5f * (Direction.X / AbsDirection.Y + 1.f);
+			Texcoord.Y = 0.5f * (-Direction.Z / AbsDirection.Y + 1.f);
+		}
+	}
+	else // Z is largest
+	{
+		if (Direction.Z > 0) // +Z
+		{
+			Face = ECubeFace::PositiveZ;
+			Texcoord.X = 0.5f * (Direction.X / AbsDirection.Z + 1.f);
+			Texcoord.Y = 0.5f * (-Direction.Y / AbsDirection.Z + 1.f);
+		}
+		else // -Z
+		{
+			Face = ECubeFace::NegativeZ;
+			Texcoord.X = 0.5f * (-Direction.X / AbsDirection.Z + 1.f);
+			Texcoord.Y = 0.5f * (-Direction.Y / AbsDirection.Z + 1.f);
+		}
+	}
+}
+
+UCommon::FVector3f UCommon::FCubeTexcoord::Direction() const noexcept
+{
+	const FVector2f CenteredTexcoord = Texcoord * 2.f - 1.f; // [-1,1]x[-1,1]
+	switch (Face)
+	{
+	case ECubeFace::PositiveX:
+		return FVector3f(1.f, -CenteredTexcoord.Y, -CenteredTexcoord.X).SafeNormalize();
+	case ECubeFace::NegativeX:
+		return FVector3f(-1.f, -CenteredTexcoord.Y, CenteredTexcoord.X).SafeNormalize();
+	case ECubeFace::PositiveY:
+		return FVector3f(CenteredTexcoord.X, 1.f, CenteredTexcoord.Y).SafeNormalize();
+	case ECubeFace::NegativeY:
+		return FVector3f(CenteredTexcoord.X, -1.f, -CenteredTexcoord.Y).SafeNormalize();
+	case ECubeFace::PositiveZ:
+		return FVector3f(CenteredTexcoord.X, -CenteredTexcoord.Y, 1.f).SafeNormalize();
+	case ECubeFace::NegativeZ:
+		return FVector3f(-CenteredTexcoord.X, -CenteredTexcoord.Y, -1.f).SafeNormalize();
+	default:
+		UBPA_UCOMMON_NO_ENTRY();
+		return FVector3f(0.f, 0.f, 0.f);
+	}
+}
+
 //
 // FGridCube
 //////////////
