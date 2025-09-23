@@ -523,12 +523,12 @@ namespace UCommon
 		TVector() noexcept {} //uninitilaized
 		explicit TVector(T V) noexcept : X(V), Y(V), Z(V) {}
 		TVector(T InX, T InY, T InZ) noexcept : X(InX), Y(InY), Z(InZ) {}
-		TVector(TVector2<T> InXY, T InZ) noexcept : X(InXY.X), Y(InXY.Y), Z(InZ) {}
-		TVector(T InX, TVector2<T> InYZ) noexcept : X(InX), Y(InYZ.X), Z(InYZ.Z) {}
+		TVector(const TVector2<T>& InXY, T InZ) noexcept : X(InXY.X), Y(InXY.Y), Z(InZ) {}
+		TVector(T InX, const TVector2<T>& InYZ) noexcept : X(InX), Y(InYZ.X), Z(InYZ.Y) {}
 		template<typename U, typename V, typename W>
 		TVector(U InX, V InY, W InZ) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(InY)), Z(static_cast<T>(InZ)) {}
 		template<typename U, typename V>
-		TVector(TVector2<U> InXY, V InZ) noexcept : X(static_cast<T>(InXY.X)), Y(static_cast<T>(InXY.Y)), Z(static_cast<T>(InZ)) {}
+		TVector(const TVector2<U>& InXY, V InZ) noexcept : X(static_cast<T>(InXY.X)), Y(static_cast<T>(InXY.Y)), Z(static_cast<T>(InZ)) {}
 		template<typename U, typename V>
 		TVector(U InX, TVector2<U> InYZ) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(InYZ.X)), Z(static_cast<T>(InYZ.Y)) {}
 		template<typename U>
@@ -833,13 +833,19 @@ namespace UCommon
 		template<typename U0, typename U1, typename U2, typename U3>
 		TVector4(U0 InX, U1 InY, U2 InZ, U3 InW) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(InY)), Z(static_cast<T>(InZ)), W(static_cast<T>(InW)) {}
 		template<typename U>
-		TVector4(TVector4<U> Vec) noexcept : X(static_cast<T>(Vec.X)), Y(static_cast<T>(Vec.Y)), Z(static_cast<T>(Vec.Z)), W(static_cast<T>(Vec.W)) {}
+		TVector4(const TVector4<U>& Vec) noexcept : X(static_cast<T>(Vec.X)), Y(static_cast<T>(Vec.Y)), Z(static_cast<T>(Vec.Z)), W(static_cast<T>(Vec.W)) {}
 		template<typename U0, typename U1>
-		TVector4(TVector<U0> Vec, U1 InW) noexcept : X(static_cast<T>(Vec.X)), Y(static_cast<T>(Vec.Y)), Z(static_cast<T>(Vec.Z)), W(static_cast<T>(InW)) {}
+		TVector4(const TVector<U0>& Vec, U1 InW) noexcept : X(static_cast<T>(Vec.X)), Y(static_cast<T>(Vec.Y)), Z(static_cast<T>(Vec.Z)), W(static_cast<T>(InW)) {}
 		template<typename U0, typename U1>
-		TVector4(U0 InX, TVector<U1> Vec) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(Vec.X)), Z(static_cast<T>(Vec.Y)), W(static_cast<T>(Vec.Z)) {}
+		TVector4(U0 InX, const TVector<U1>& Vec) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(Vec.X)), Z(static_cast<T>(Vec.Y)), W(static_cast<T>(Vec.Z)) {}
+		template<typename U0, typename U1, typename U2>
+		TVector4(const TVector2<U0>& VecXY, U1 InZ, U2 InW) noexcept : X(static_cast<T>(VecXY.X)), Y(static_cast<T>(VecXY.Y)), Z(static_cast<T>(InZ)), W(static_cast<T>(InW)) {}
+		template<typename U0, typename U1, typename U2>
+		TVector4(U0 InX, const TVector2<U1>& VecYZ, U2 InW) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(VecYZ.X)), Z(static_cast<T>(VecYZ.Y)), W(static_cast<T>(InW)) {}
+		template<typename U0, typename U1, typename U2>
+		TVector4(U0 InX, U1 InY, const TVector2<U2>& VecZW) noexcept : X(static_cast<T>(InX)), Y(static_cast<T>(InY)), Z(static_cast<T>(VecZW.X)), W(static_cast<T>(VecZW.Y)) {}
 		template<typename U0, typename U1>
-		TVector4(TVector2<U0> VecXY, TVector2<U1> VecZW) noexcept : X(static_cast<T>(VecXY.X)), Y(static_cast<T>(VecXY.Y)), Z(static_cast<T>(VecZW.X)), W(static_cast<T>(VecZW.Y)) {}
+		TVector4(const TVector2<U0>& VecXY, const TVector2<U1>& VecZW) noexcept : X(static_cast<T>(VecXY.X)), Y(static_cast<T>(VecXY.Y)), Z(static_cast<T>(VecZW.X)), W(static_cast<T>(VecZW.Y)) {}
 
 		T X;
 		T Y;

@@ -94,9 +94,9 @@ namespace UCommon
 
 		template<> struct SHImpl<3, -3> { static constexpr float Func(float x, float y, float z) { return -0.59004360f * y * (3.f * x * x - y * y); } };
 		template<> struct SHImpl<3, -2> { static constexpr float Func(float x, float y, float z) { return 2.8906114f * (x * y * z); } };
-		template<> struct SHImpl<3, -1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * y * (5.f * z * z - 1); } };
+		template<> struct SHImpl<3, -1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * y * (5.f * z * z - 1.f); } };
 		template<> struct SHImpl<3, 0> { static constexpr float Func(float x, float y, float z) { return 0.37317634f * (5.f * z * z - 3.f) * z; } };
-		template<> struct SHImpl<3, 1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * x * (5.f * z * z - 1);
+		template<> struct SHImpl<3, 1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * x * (5.f * z * z - 1.f);
 		} };
 		template<> struct SHImpl<3, 2> { static constexpr float Func(float x, float y, float z) { return 1.4453057f * (x * x - y * y) * z; } };
 		template<> struct SHImpl<3, 3> { static constexpr float Func(float x, float y, float z) { return -0.5900436f * x * (x * x - 3.f * y * y); } };

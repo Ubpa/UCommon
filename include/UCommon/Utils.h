@@ -232,7 +232,7 @@ namespace UCommon
 	constexpr float GlodenRatio = 1.618034f;
 
 	//Reference: https://zhuanlan.zhihu.com/p/25988652?group_id=828963677192491008
-	static inline FVector4f FibonacciSpherePoint(int N, int n)
+	static inline FVector4f FibonacciSpherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
 		const float Z = (2.f * n + 1.f) / N - 1.f;

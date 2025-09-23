@@ -39,12 +39,20 @@ namespace NameSpace \
 	template<int Order> using TSHVectorRGB = UCommon::TSHVectorRGB<Order>; \
 	using FSHBandVector2 = UCommon::FSHBandVector2; \
 	using FSHBandVector3 = UCommon::FSHBandVector3; \
+	using FSHBandVector4 = UCommon::FSHBandVector4; \
+	using FSHBandVector5 = UCommon::FSHBandVector5; \
 	using FSHVector2 = UCommon::FSHVector2; \
 	using FSHVector3 = UCommon::FSHVector3; \
+	using FSHVector4 = UCommon::FSHVector4; \
+	using FSHVector5 = UCommon::FSHVector5; \
 	using FSHBandVectorRGB2 = UCommon::FSHBandVectorRGB2; \
 	using FSHBandVectorRGB3 = UCommon::FSHBandVectorRGB3; \
+	using FSHBandVectorRGB4 = UCommon::FSHBandVectorRGB4; \
+	using FSHBandVectorRGB5 = UCommon::FSHBandVectorRGB5; \
 	using FSHVectorRGB2 = UCommon::FSHVectorRGB2; \
 	using FSHVectorRGB3 = UCommon::FSHVectorRGB3; \
+	using FSHVectorRGB4 = UCommon::FSHVectorRGB4; \
+	using FSHVectorRGB5 = UCommon::FSHVectorRGB5; \
 }
 
 namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
@@ -60,10 +68,10 @@ namespace UCommon
 	constexpr float SH(float x, float y, float z);
 
 	template<int i>
-	constexpr int SHIndexToL = i == 0 ? 0 : (i < 4 ? 1 : 2);
+	constexpr int SHIndexToL = i == 0 ? 0 : (i < 4 ? 1 : (i < 9 ? 2 : (i < 16 ? 3 : 4)));
 
 	template<int i>
-	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : i - 6);
+	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : (i < 9 ? i - 6 : (i < 16 ? i - 12 : i - 20)));
 
 	template<int Order> class TSHVectorRGB;
 	template<int Order> class TSHBandVectorRGB;
@@ -586,13 +594,21 @@ namespace UCommon
 
 	using FSHBandVector2 = TSHBandVector<2>;
 	using FSHBandVector3 = TSHBandVector<3>;
+	using FSHBandVector4 = TSHBandVector<4>;
+	using FSHBandVector5 = TSHBandVector<5>;
 	using FSHBandVectorRGB2 = TSHBandVectorRGB<2>;
 	using FSHBandVectorRGB3 = TSHBandVectorRGB<3>;
+	using FSHBandVectorRGB4 = TSHBandVectorRGB<4>;
+	using FSHBandVectorRGB5 = TSHBandVectorRGB<5>;
 
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;
+	using FSHVector4 = TSHVector<4>;
+	using FSHVector5 = TSHVector<5>;
 	using FSHVectorRGB2 = TSHVectorRGB<2>;
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
+	using FSHVectorRGB4 = TSHVectorRGB<4>;
+	using FSHVectorRGB5 = TSHVectorRGB<5>;
 
 	template<template<int> class SHVectorType, int Order>
 	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector3f& Color)
