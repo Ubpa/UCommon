@@ -291,6 +291,11 @@ namespace UCommon
 			return Dot(*this, Other);
 		}
 
+		T operator|(const TVector2& Other) const
+		{
+			return Dot(Other);
+		}
+
 		static T Cross(const TVector2& A, const TVector2& B)
 		{
 			return A.X * B.Y - A.Y * B.X;
@@ -383,6 +388,11 @@ namespace UCommon
 		TVector2 Clamp(const TVector2& Min, const TVector2& Max) const noexcept
 		{
 			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y) };
+		}
+
+		TVector2 Saturate() const noexcept
+		{
+			return Clamp(static_cast<T>(0), static_cast<T>(1));
 		}
 
 		TVector2 Abs() const noexcept
@@ -594,6 +604,11 @@ namespace UCommon
 			return Dot(*this, V);
 		}
 
+		T operator|(const TVector& Other) const
+		{
+			return Dot(Other);
+		}
+
 		static TVector Cross(const TVector& A, const TVector& B)
 		{
 			return TVector(
@@ -690,6 +705,11 @@ namespace UCommon
 		TVector Clamp(const TVector& Min, const TVector& Max) const noexcept
 		{
 			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y), UCommon::Clamp(Z, Min.Z, Max.Z) };
+		}
+
+		TVector Saturate() const noexcept
+		{
+			return Clamp(static_cast<T>(0), static_cast<T>(1));
 		}
 
 		TVector Abs() const noexcept
@@ -906,6 +926,11 @@ namespace UCommon
 			return Dot(*this, V);
 		}
 
+		T operator|(const TVector4& Other) const
+		{
+			return Dot(Other);
+		}
+
 		static T SquaredDistance(const TVector4& A, const TVector4& B)
 		{
 			const TVector4 Diff = A - B;
@@ -990,6 +1015,11 @@ namespace UCommon
 		TVector4 Clamp(const TVector4& Min, const TVector4& Max) const noexcept
 		{
 			return { UCommon::Clamp(X, Min.X, Max.X), UCommon::Clamp(Y, Min.Y, Max.Y), UCommon::Clamp(Z, Min.Z, Max.Z), UCommon::Clamp(W, Min.W, Max.W) };
+		}
+
+		TVector4 Saturate() const noexcept
+		{
+			return Clamp(static_cast<T>(0), static_cast<T>(1));
 		}
 
 		TVector4 Abs() const noexcept

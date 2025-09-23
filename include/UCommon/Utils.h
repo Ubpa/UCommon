@@ -41,6 +41,9 @@ namespace NameSpace \
 namespace UCommon
 {
 	template<typename T>
+	constexpr T Saturate(const T& V) noexcept { return V < 0 ? 0 : (V > 1 ? 1 : V); }
+
+	template<typename T>
 	constexpr T Pow2(const T& V) noexcept { return V * V; }
 
 	template<typename T>
@@ -241,6 +244,18 @@ namespace UCommon
 		const float Y = r * std::sin(Phi * n);
 
 		constexpr float PDF = 1.0f / (4.f * Pi);
+
+		return FVector4f(X, Y, Z, PDF);
+	}
+	static inline FVector4f FibonacciHemispherePoint(uint64_t N, uint64_t n)
+	{
+		constexpr float Phi = 2.f * Pi / GlodenRatio;
+		const float Z = (n + 0.5f) / N;
+		const float r = std::sqrt(1.f - Z * Z);
+		const float X = r * std::cos(Phi * n);
+		const float Y = r * std::sin(Phi * n);
+
+		constexpr float PDF = 1.0f / (2.f * Pi);
 
 		return FVector4f(X, Y, Z, PDF);
 	}

@@ -231,6 +231,26 @@ namespace UCommon
 		}
 
 		inline float operator()(const FVector3f& Vector) const;
+
+		inline DerivedType Exp() const
+		{
+			DerivedType Result;
+			for (int i = 0; i < MaxSHBasis; i++)
+			{
+				Result.V[i] = std::exp(V[i]);
+			}
+			return Result;
+		}
+
+		inline DerivedType Exp2() const
+		{
+			DerivedType Result;
+			for (int i = 0; i < MaxSHBasis; i++)
+			{
+				Result.V[i] = std::exp2(V[i]);
+			}
+			return Result;
+		}
 	};
 
 	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
