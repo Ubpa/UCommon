@@ -39,6 +39,9 @@ namespace NameSpace \
 
 namespace UCommon
 {
+	UBPA_UCOMMON_API FVector2f EquirectangularDirectionToUV(const FVector3f& Direction);
+	UBPA_UCOMMON_API FVector3f EquirectangularUVToDirection(const FVector2f& UV);
+
 	struct FGridCube;
 
 	enum class ECubeFace : std::uint64_t
@@ -63,6 +66,8 @@ namespace UCommon
 	struct UBPA_UCOMMON_API FCubeTexcoord
 	{
 		FCubeTexcoord() noexcept;
+		FCubeTexcoord(ECubeFace InFace, const FVector2f& InTexcoord) noexcept;
+		FCubeTexcoord(const FCubePoint& CubePoint, const FGridCube& GridCube) noexcept;
 		FCubeTexcoord(const FVector3f& Direction) noexcept;
 
 		FVector3f Direction() const noexcept;
@@ -81,7 +86,7 @@ namespace UCommon
 		explicit FGridCube(const FGrid2D& InGrid2D) noexcept;
 		FGridCube() noexcept;
 
-		FGrid2D GetFlatGrid2D() const noexcept;
+		FGrid2D Flat() const noexcept;
 
 		/** Width x Height x ECubeFace::NumCubeFaces */
 		uint64_t GetArea() const noexcept;

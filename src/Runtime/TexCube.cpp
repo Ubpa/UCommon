@@ -24,7 +24,34 @@ SOFTWARE.
 
 #include <UCommon/TexCube.h>
 
+UCommon::FVector2f UCommon::EquirectangularDirectionToUV(const FVector3f& Direction)
+{
+	const float U = 0.5f + std::atan2(Direction.Y, Direction.X) / (2 * UCommon::Pi);
+	const float V = 0.5f - std::asin(std::clamp(Direction.Z, -1.f, 1.f)) / UCommon::Pi;
+	return FVector2f(U, V).Saturate();
+}
+
+UCommon::FVector3f UCommon::EquirectangularUVToDirection(const FVector2f& UV)
+{
+	const FVector2f ClampedUV = UV.Saturate();
+
+	const float Azimuth = (ClampedUV.X - 0.5f) * 2 * UCommon::Pi;
+	const float Altitude = (0.5f - ClampedUV.Y) * UCommon::Pi;
+
+	const float CosAltitude = std::cos(Altitude);
+	const float X = CosAltitude * std::cos(Azimuth);
+	const float Y = CosAltitude * std::sin(Azimuth);
+	const float Z = std::sin(Altitude);
+
+	return FVector3f(X, Y, Z);
+}
+
 UCommon::FCubeTexcoord::FCubeTexcoord() noexcept = default;
+UCommon::FCubeTexcoord::FCubeTexcoord(ECubeFace InFace, const FVector2f& InTexcoord) noexcept
+	: Face{ InFace }, Texcoord{ InTexcoord } {}
+UCommon::FCubeTexcoord::FCubeTexcoord(const FCubePoint& CubePoint, const FGridCube& GridCube) noexcept
+	: Face{ CubePoint.Face }, Texcoord{ GridCube.Grid2D.GetTexcoord(CubePoint.Point) } {}
+
 UCommon::FCubeTexcoord::FCubeTexcoord(const FVector3f& Direction) noexcept
 {
 	UBPA_UCOMMON_ASSERT(Direction.IsAlmostUnit());
@@ -112,7 +139,7 @@ UCommon::FGridCube::FGridCube(const FGridCube& InGridCube) noexcept = default;
 UCommon::FGridCube::FGridCube(const FGrid2D& InGrid2D) noexcept : Grid2D{ InGrid2D } {}
 UCommon::FGridCube::FGridCube() noexcept = default;
 
-UCommon::FGrid2D UCommon::FGridCube::GetFlatGrid2D() const noexcept
+UCommon::FGrid2D UCommon::FGridCube::Flat() const noexcept
 {
 	return { Grid2D.Width, Grid2D.Height * (uint64_t)ECubeFace::NumCubeFaces };
 }
@@ -141,7 +168,7 @@ UCommon::FGridCubeIterator UCommon::FGridCube::GetIterator(const FCubePoint& Cub
 UCommon::FGridCubeIterator UCommon::FGridCube::GetIterator(uint64_t Index) const noexcept { return GetIterator(GetPoint(Index)); }
 
 UCommon::FGridCubeIterator UCommon::FGridCube::begin() const noexcept { return GetIterator(FCubePoint{ ECubeFace::PositiveX, { 0, 0 } }); }
-UCommon::FGridCubeIterator UCommon::FGridCube::end() const noexcept { return GetIterator(FCubePoint{ ECubeFace::NegativeZ, { 0, 0 } }); }
+UCommon::FGridCubeIterator UCommon::FGridCube::end() const noexcept { return GetIterator(FCubePoint{ ECubeFace::NumCubeFaces, { 0, 0 } }); }
 
 namespace UCommon
 {
