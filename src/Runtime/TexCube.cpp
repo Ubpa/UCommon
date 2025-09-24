@@ -215,6 +215,30 @@ void UCommon::FTexCube::BilinearSample(float* Result, const FCubeTexcoord& CubeT
 	FaceTex2D.BilinearSample(Result, CubeTexcoord.Texcoord);
 }
 
+void UCommon::FTexCube::ToEquirectangular(FTex2D& Equirectangular) const
+{
+	UBPA_UCOMMON_ASSERT(Equirectangular.IsValid());
+	std::unique_ptr<float[]> Buffer = std::make_unique<float[]>(Tex2D.GetNumChannels());
+	for (const auto& Point : Equirectangular.GetGrid2D())
+	{
+		const FVector2f UV = Equirectangular.GetGrid2D().GetTexcoord(Point);
+		const FVector3f Direction = EquirectangularUVToDirection(UV);
+		const FCubeTexcoord CubeTexcoord{ Direction };
+		BilinearSample(Buffer.get(), CubeTexcoord);
+		for (uint64_t ChannelIndex = 0; ChannelIndex < Equirectangular.GetNumChannels(); ChannelIndex++)
+		{
+			Equirectangular.SetFloat(Point, ChannelIndex, Buffer[ChannelIndex]);
+		}
+	}
+}
+
+UCommon::FTex2D UCommon::FTexCube::ToEquirectangular() const
+{
+	FTex2D Equirectangular({ Tex2D.GetGrid2D().Width * 4,Tex2D.GetGrid2D().Height / 3 }, Tex2D.GetNumChannels(), Tex2D.GetElementType());
+	ToEquirectangular(Equirectangular);
+	return Equirectangular;
+}
+
 UCommon::FTexCube& UCommon::FTexCube::operator=(FTexCube&& Rhs) noexcept
 {
 	Tex2D = std::move(Rhs.Tex2D);

@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 #include <UCommon/Tex2D.h>
+#include <UCommon/TexCube.h>
 
 
 //
@@ -76,6 +77,11 @@ UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(uint64_t Index) const noexcep
 UCommon::FUint64Vector2 UCommon::FGrid2D::GetExtent() const noexcept
 {
 	return FUint64Vector2(Width, Height);
+}
+
+uint64_t UCommon::FGrid2D::GetNumMips() const noexcept
+{
+	return std::min(MSB64(Width), MSB64(Height)) + TypedOne<uint8_t>;
 }
 
 UCommon::FGrid2DIterator UCommon::FGrid2D::GetIterator(const FUint64Vector2& Point) const noexcept
@@ -400,63 +406,56 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) c
 
 namespace UCommon
 {
-	template<typename T> struct TUpperType { using type = T; };
-	template<> struct TUpperType<uint8_t> { using type = uint16_t; };
-	template<typename T> using TUpperType_t = typename TUpperType<T>::type;
-
-	template<typename T> struct TToUpper
+	template<typename T>
+	constexpr auto ToUpperType(const T& Value) noexcept
 	{
-		static TUpperType_t<T> Apply(const T& Value) { return static_cast<TUpperType_t<T>>(Value); }
-	};
-
-	template<typename T> struct TTex2DAt;
-	template<> struct TTex2DAt<uint8_t>
+		if constexpr (std::is_same_v<T, uint8_t>)
+			return static_cast<uint16_t>(Value);
+		else
+			return Value;
+	}
+	template<typename T>
+	constexpr T DivideRound(const T& Value, const uint64_t& D) noexcept
 	{
-		static uint8_t& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<uint8_t>(Point, C); }
-		static const uint8_t& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<uint8_t>(Point, C); }
-	};
-	template<> struct TTex2DAt<float>
-	{
-		static float& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<float>(Point, C); }
-		static const float& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<float>(Point, C); }
-	};
-	template<> struct TTex2DAt<double>
-	{
-		static double& Run(FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<double>(Point, C); }
-		static const double& Run(const FTex2D& Tex, const FUint64Vector2& Point, uint64_t C) { return Tex.At<double>(Point, C); }
-	};
+		if constexpr (std::is_same_v<T, uint16_t>)
+			return (Value + (static_cast<T>(D) / 2)) / static_cast<T>(D);
+		else
+			return Value / static_cast<T>(D);
+	}
 
 	template<typename T>
 	static void DownSampleImpl(FTex2D& HalfTex, const FTex2D& SrcTex)
 	{
+		using UpperType = std::decay_t<decltype(ToUpperType(std::declval<T>()))>;
+		const auto Buffer = std::make_unique<UpperType[]>(HalfTex.GetNumChannels());
 		for (const FUint64Vector2& Point : HalfTex.GetGrid2D())
 		{
-			const uint64_t X = Point.X;
-			const uint64_t Y = Point.Y;
-
 			for (uint64_t C = 0; C < HalfTex.GetNumChannels(); ++C)
 			{
-				auto Sum = static_cast<TUpperType_t<T>>(0);
-				Sum += TToUpper<T>::Apply(TTex2DAt<T>::Run(SrcTex, { 2 * X + 0, 2 * Y + 0 }, C));
-				if (2 * X + 1 < SrcTex.GetGrid2D().Width)
+				Buffer[C] = static_cast<T>(0);
+			}
+			uint64_t Count = 0;
+			for (const FUint64Vector2& LocalPoint : FGrid2D(2, 2))
+			{
+				const FUint64Vector2 SrcPoint = 2 * Point + LocalPoint;
+				if (SrcTex.GetGrid2D().Contains(SrcPoint))
 				{
-					Sum += TToUpper<T>::Apply(TTex2DAt<T>::Run(SrcTex, { 2 * X + 1, 2 * Y + 0 }, C));
+					for (uint64_t C = 0; C < HalfTex.GetNumChannels(); ++C)
+					{
+						Buffer[C] += ToUpperType(SrcTex.At<T>(SrcPoint, C));
+					}
+					Count += 1;
 				}
-				if (2 * Y + 1 < SrcTex.GetGrid2D().Height)
-				{
-					Sum += TToUpper<T>::Apply(TTex2DAt<T>::Run(SrcTex, { 2 * X + 0, 2 * Y + 1 }, C));
-				}
-				if (2 * X + 1 < SrcTex.GetGrid2D().Width && 2 * Y + 1 < SrcTex.GetGrid2D().Height)
-				{
-					Sum += TToUpper<T>::Apply(TTex2DAt<T>::Run(SrcTex, { 2 * X + 1, 2 * Y + 1 }, C));
-				}
-				TTex2DAt<T>::Run(HalfTex, Point, C) = static_cast<T>(Sum / static_cast<TUpperType_t<T>>(4));
+			}
+			for (uint64_t C = 0; C < HalfTex.GetNumChannels(); ++C)
+			{
+				HalfTex.At<T>(Point, C) = static_cast<T>(DivideRound(Buffer[C], Count));
 			}
 		}
 	}
 }
 
-UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStorage)
+UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStorage) const
 {
 	const FGrid2D HalfGrid2D(std::max<uint64_t>(1, Grid2D.Width / 2), std::max<uint64_t>(1, Grid2D.Height / 2));
 
@@ -482,7 +481,7 @@ UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStor
 	return HalfTex;
 }
 
-UCommon::FTex2D UCommon::FTex2D::DownSample()
+UCommon::FTex2D UCommon::FTex2D::DownSample() const
 {
 	return DownSample(EOwnership::DoNotTakeOwnership, nullptr);
 }
@@ -534,6 +533,33 @@ UCommon::FTex2D UCommon::FTex2D::ToUint8() const
 	FTex2D Tex(Grid2D, NumChannels, EElementType::Uint8);
 	ToUint8(Tex);
 	return Tex;
+}
+
+void UCommon::FTex2D::ToTexCube(FTexCube& TexCube) const
+{
+	UBPA_UCOMMON_ASSERT(TexCube.Tex2D.IsValid());
+	const FGridCube GridCube = TexCube.GetGridCube();
+	std::unique_ptr<float[]> Buffer = std::make_unique<float[]>(NumChannels);
+	for (const auto& CubePoint : GridCube)
+	{
+		const FCubeTexcoord CubeTexcoord{ CubePoint, GridCube };
+		const FVector3f Direction = CubeTexcoord.Direction();
+		const FVector2f UV = EquirectangularDirectionToUV(Direction);
+		const FUint64Vector2 FlatPoint = CubePoint.Flat(GridCube);
+		BilinearSample(Buffer.get(), UV);
+		for (uint64_t ChannelIndex = 0; ChannelIndex < TexCube.Tex2D.GetNumChannels(); ChannelIndex++)
+		{
+			TexCube.Tex2D.SetFloat(FlatPoint, ChannelIndex, Buffer[ChannelIndex]);
+		}
+	}
+}
+
+UCommon::FTexCube UCommon::FTex2D::ToTexCube() const
+{
+	const FGridCube GridCube{ FGrid2D{Grid2D.Width / 4,Grid2D.Height / 2} };
+	FTexCube TexCube{ FTex2D{GridCube.Flat(), NumChannels, ElementType} };
+	ToTexCube(TexCube);
+	return TexCube;
 }
 
 UCommon::FTex2D& UCommon::FTex2D::operator=(FTex2D&& Rhs) noexcept

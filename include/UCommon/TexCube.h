@@ -161,6 +161,9 @@ namespace UCommon
 
 		void BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord) const noexcept;
 
+		void ToEquirectangular(FTex2D& Equirectangular) const;
+		FTex2D ToEquirectangular() const;
+
 		/**
 		 * If layout is same with Rhs's, just copy the storage,
 		 * else copy with propogated ownership.

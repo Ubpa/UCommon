@@ -40,6 +40,15 @@ namespace NameSpace \
 
 namespace UCommon
 {
+	template<typename T, int64_t V>
+	constexpr T TypedValue = static_cast<T>(V);
+	template<typename T>
+	constexpr T TypedZero = TypedValue<T, 0>;
+	template<typename T>
+	constexpr T TypedOne = TypedValue<T, 1>;
+	template<typename T>
+	constexpr T TypedInvalid = TypedValue<T, -1>;
+
 	template<typename T>
 	constexpr T Saturate(const T& V) noexcept { return V < 0 ? 0 : (V > 1 ? 1 : V); }
 
@@ -499,6 +508,28 @@ namespace UCommon
 		}
 		std::memcpy(NewBuffer, Buffer, SizeInBytes);
 		return NewBuffer;
+	}
+
+	static constexpr uint8_t MSB64(uint64_t Value) noexcept
+	{
+		constexpr uint8_t Table[256] =
+		{
+			TypedInvalid<uint8_t>,
+			0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
+			5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,
+			6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+			6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,
+			7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+			7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+			7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+			7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
+		};
+
+		uint8_t MSB = 0;
+		if (Value >> 32) { Value >>= 32; MSB |= 0x20; }
+		if (Value >> 16) { Value >>= 16; MSB |= 0x10; }
+		if (Value >> 8) { Value >>= 8;  MSB |= 0x8; }
+		return MSB + Table[Value];
 	}
 }
 

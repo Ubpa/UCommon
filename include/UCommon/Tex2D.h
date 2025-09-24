@@ -38,6 +38,7 @@ namespace NameSpace \
 namespace UCommon
 {
 	struct FGrid2DIterator;
+	class FTexCube;
 
 	struct UBPA_UCOMMON_API FGrid2D
 	{
@@ -64,11 +65,12 @@ namespace UCommon
 
 		FUint64Vector2 GetExtent() const noexcept;
 
+		uint64_t GetNumMips() const noexcept;
+
 		FGrid2DIterator GetIterator(const FUint64Vector2& Point) const noexcept;
 		FGrid2DIterator GetIterator(uint64_t Index) const noexcept;
 
 		FGrid2DIterator begin() const noexcept;
-
 		FGrid2DIterator end() const noexcept;
 
 		UBPA_UCOMMON_API friend bool operator==(const FGrid2D& Lhs, const FGrid2D& Rhs) noexcept;
@@ -222,19 +224,23 @@ namespace UCommon
 		 * @param InOwnership control the ownership of InStorage.
 		 * @param InStorage the storage of the texture, deleted by `free`.
 		 */
-		FTex2D DownSample(EOwnership InOwnership, void* InStorage);
+		FTex2D DownSample(EOwnership InOwnership, void* InStorage) const;
 
 		/**
 		 * Width = Width/2
 		 * Height = Height/2
 		 */
-		FTex2D DownSample();
+		FTex2D DownSample() const;
 
 		FTex2D ToFloat() const;
 
 		void ToUint8(FTex2D& Tex) const;
 
 		FTex2D ToUint8() const;
+
+		// Equirectangular
+		void ToTexCube(FTexCube& TexCube) const;
+		FTexCube ToTexCube() const;
 
 		/**
 		 * If layout is same with Rhs's, just copy the storage,
