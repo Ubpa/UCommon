@@ -118,6 +118,23 @@ namespace UCommon
 		TSpan<const uint8_t> GetStorage() const;
 	};
 
+	// RAII
+	class UBPA_UCOMMON_API FArchiveWrapper : public IArchive
+	{
+		struct FImpl;
+		FImpl* Impl;
+	public:
+		FArchiveWrapper(IArchive* InArchive);
+		FArchiveWrapper(FArchiveWrapper&& Other) noexcept;
+		FArchiveWrapper& operator=(FArchiveWrapper&& Other) noexcept;
+		void Swap(FArchiveWrapper& Other) noexcept;
+		virtual ~FArchiveWrapper();
+
+		bool IsValid() const noexcept;
+
+		virtual void Serialize(void* Pointer, uint64_t Length) override;
+	};
+
 	class UBPA_UCOMMON_API FFileArchive : public IArchive
 	{
 		struct FImpl;

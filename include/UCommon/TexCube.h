@@ -141,11 +141,11 @@ namespace UCommon
 	class UBPA_UCOMMON_API FTexCube
 	{
 	public:
-		FTex2D Tex2D;
+		FTex2D FlatTex2D;
 
 		FTexCube() noexcept;
 
-		FTexCube(FTex2D InTex2D) noexcept;
+		FTexCube(FTex2D InFlatTex2D) noexcept;
 
 		/**
 		 * Copy with propogated ownership.

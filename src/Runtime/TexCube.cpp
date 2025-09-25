@@ -189,36 +189,36 @@ namespace UCommon
 
 UCommon::FTexCube::FTexCube() noexcept = default;
 
-UCommon::FTexCube::FTexCube(FTex2D InTex2D) noexcept :
-	Tex2D{ std::move(InTex2D) } {}
+UCommon::FTexCube::FTexCube(FTex2D InFlatTex2D) noexcept :
+	FlatTex2D{ std::move(InFlatTex2D) } {}
 
 UCommon::FTexCube::FTexCube(FTexCube&& Other) noexcept :
-	Tex2D(std::move(Other.Tex2D)) {}
+	FlatTex2D(std::move(Other.FlatTex2D)) {}
 
 UCommon::FTexCube::FTexCube(const FTexCube& Other) :
-	Tex2D(Other.Tex2D) {}
+	FlatTex2D(Other.FlatTex2D) {}
 
 UCommon::FTexCube::~FTexCube() = default;
 
 UCommon::FGridCube UCommon::FTexCube::GetGridCube() const noexcept
 {
-	const FGrid2D Grid2D = Tex2D.GetGrid2D();
+	const FGrid2D Grid2D = FlatTex2D.GetGrid2D();
 	return FGridCube{ FGrid2D{ Grid2D.Width, Grid2D.Height / (uint64_t)ECubeFace::NumCubeFaces } };
 }
 
 void UCommon::FTexCube::BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord) const noexcept
 {
-	const void* Storage = Tex2D.GetStorage();
-	const uint64_t Offset = Tex2D.GetStorageSizeInBytes() / (uint64_t)ECubeFace::NumCubeFaces * (uint64_t)CubeTexcoord.Face;
+	const void* Storage = FlatTex2D.GetStorage();
+	const uint64_t Offset = FlatTex2D.GetStorageSizeInBytes() / (uint64_t)ECubeFace::NumCubeFaces * (uint64_t)CubeTexcoord.Face;
 	const void* OffsetedStorage = (const uint8_t*)Storage + Offset;
-	const FTex2D FaceTex2D(GetGridCube().Grid2D, Tex2D.GetNumChannels(), Tex2D.GetElementType(), OffsetedStorage);
+	const FTex2D FaceTex2D(GetGridCube().Grid2D, FlatTex2D.GetNumChannels(), FlatTex2D.GetElementType(), OffsetedStorage);
 	FaceTex2D.BilinearSample(Result, CubeTexcoord.Texcoord);
 }
 
 void UCommon::FTexCube::ToEquirectangular(FTex2D& Equirectangular) const
 {
 	UBPA_UCOMMON_ASSERT(Equirectangular.IsValid());
-	std::unique_ptr<float[]> Buffer = std::make_unique<float[]>(Tex2D.GetNumChannels());
+	std::unique_ptr<float[]> Buffer = std::make_unique<float[]>(FlatTex2D.GetNumChannels());
 	for (const auto& Point : Equirectangular.GetGrid2D())
 	{
 		const FVector2f UV = Equirectangular.GetGrid2D().GetTexcoord(Point);
@@ -234,19 +234,19 @@ void UCommon::FTexCube::ToEquirectangular(FTex2D& Equirectangular) const
 
 UCommon::FTex2D UCommon::FTexCube::ToEquirectangular() const
 {
-	FTex2D Equirectangular({ Tex2D.GetGrid2D().Width * 4,Tex2D.GetGrid2D().Height / 3 }, Tex2D.GetNumChannels(), Tex2D.GetElementType());
+	FTex2D Equirectangular({ FlatTex2D.GetGrid2D().Width * 4,FlatTex2D.GetGrid2D().Height / 3 }, FlatTex2D.GetNumChannels(), FlatTex2D.GetElementType());
 	ToEquirectangular(Equirectangular);
 	return Equirectangular;
 }
 
 UCommon::FTexCube& UCommon::FTexCube::operator=(FTexCube&& Rhs) noexcept
 {
-	Tex2D = std::move(Rhs.Tex2D);
+	FlatTex2D = std::move(Rhs.FlatTex2D);
 	return *this;
 }
 
 UCommon::FTexCube& UCommon::FTexCube::operator=(const FTexCube& Rhs)
 {
-	Tex2D = Rhs.Tex2D;
+	FlatTex2D = Rhs.FlatTex2D;
 	return *this;
 }

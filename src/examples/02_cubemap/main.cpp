@@ -17,7 +17,7 @@ int main()
 	const FTex2D Equirectangular = TexCube.ToEquirectangular();
 	SaveImage("Cubemap_128_Equirectangular.hdr", Equirectangular);
 	TexCube = Equirectangular.ToTexCube();
-	SaveImage("Cubemap_128_TexCube.hdr", TexCube.Tex2D);
+	SaveImage("Cubemap_128_TexCube.hdr", TexCube.FlatTex2D);
 
 	return 0;
 }
