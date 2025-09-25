@@ -430,6 +430,26 @@ namespace UCommon
 			return { 1 / X, 1 / Y };
 		}
 
+		TVector2 Log() const noexcept
+		{
+			return { std::log(X), std::log(Y) };
+		}
+
+		TVector2 Log2() const noexcept
+		{
+			return { std::log2(X), std::log2(Y) };
+		}
+
+		TVector2 Exp() const noexcept
+		{
+			return { std::exp(X), std::exp(Y) };
+		}
+
+		TVector2 Exp2() const noexcept
+		{
+			return { std::exp2(X), std::exp2(Y) };
+		}
+
 		static TVector2 Min(const TVector2& A, T B)
 		{
 			return { std::min(A.X, B), std::min(A.Y, B) };
@@ -747,6 +767,26 @@ namespace UCommon
 			return { 1 / X, 1 / Y, 1 / Z };
 		}
 
+		TVector Log() const noexcept
+		{
+			return { std::log(X), std::log(Y), std::log(Z) };
+		}
+
+		TVector Log2() const noexcept
+		{
+			return { std::log2(X), std::log2(Y), std::log2(Z) };
+		}
+
+		TVector Exp() const noexcept
+		{
+			return { std::exp(X), std::exp(Y), std::exp(Z) };
+		}
+
+		TVector Exp2() const noexcept
+		{
+			return { std::exp2(X), std::exp2(Y), std::exp2(Z) };
+		}
+
 		static TVector Min(const TVector& A, T B)
 		{
 			return { std::min(A.X, B), std::min(A.Y, B), std::min(A.Z, B) };
@@ -1055,6 +1095,26 @@ namespace UCommon
 		TVector4 Reciprocal() const noexcept
 		{
 			return { 1 / X, 1 / Y, 1 / Z, 1 / W };
+		}
+
+		TVector4 Log() const noexcept
+		{
+			return { std::log(X), std::log(Y), std::log(Z), std::log(W) };
+		}
+
+		TVector4 Log2() const noexcept
+		{
+			return { std::log2(X), std::log2(Y), std::log2(Z), std::log2(W) };
+		}
+
+		TVector4 Exp() const noexcept
+		{
+			return { std::exp(X), std::exp(Y), std::exp(Z), std::exp(W) };
+		}
+
+		TVector4 Exp2() const noexcept
+		{
+			return { std::exp2(X), std::exp2(Y), std::exp2(Z), std::exp2(W) };
 		}
 
 		static TVector4 Min(const TVector4& A, T B)
