@@ -96,8 +96,7 @@ namespace UCommon
 		template<> struct SHImpl<3, -2> { static constexpr float Func(float x, float y, float z) { return 2.8906114f * (x * y * z); } };
 		template<> struct SHImpl<3, -1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * y * (5.f * z * z - 1.f); } };
 		template<> struct SHImpl<3, 0> { static constexpr float Func(float x, float y, float z) { return 0.37317634f * (5.f * z * z - 3.f) * z; } };
-		template<> struct SHImpl<3, 1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * x * (5.f * z * z - 1.f);
-		} };
+		template<> struct SHImpl<3, 1> { static constexpr float Func(float x, float y, float z) { return -0.45704580f * x * (5.f * z * z - 1.f); } };
 		template<> struct SHImpl<3, 2> { static constexpr float Func(float x, float y, float z) { return 1.4453057f * (x * x - y * y) * z; } };
 		template<> struct SHImpl<3, 3> { static constexpr float Func(float x, float y, float z) { return -0.5900436f * x * (x * x - 3.f * y * y); } };
 
@@ -110,11 +109,9 @@ namespace UCommon
 			const float z2 = z * z;
 			return 0.10578555f * (35.f * z2 * z2 - 30.f * z2 + 3.f); }
 		};
-		template<> struct SHImpl<4, 1> { static constexpr float Func(float x, float y, float z) { return -0.66904650f * x * (7.f * z * z - 3.f) * z; }
-		};
+		template<> struct SHImpl<4, 1> { static constexpr float Func(float x, float y, float z) { return -0.66904650f * x * (7.f * z * z - 3.f) * z; } };
 		template<> struct SHImpl<4, 2> { static constexpr float Func(float x, float y, float z) { return 0.47308734f * (x * x - y * y) * (7.f * z * z - 1.f); } };
-		template<> struct SHImpl<4, 3> { static constexpr float Func(float x, float y, float z) { return -1.7701308f * x * (x * x - 3.f * y * y) * z; }
-		};
+		template<> struct SHImpl<4, 3> { static constexpr float Func(float x, float y, float z) { return -1.7701308f * x * (x * x - 3.f * y * y) * z; } };
 		template<> struct SHImpl<4, 4> { static constexpr float Func(float x, float y, float z)
 		{
 			const float x2 = x * x;

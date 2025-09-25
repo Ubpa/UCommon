@@ -537,7 +537,7 @@ UCommon::FTex2D UCommon::FTex2D::ToUint8() const
 
 void UCommon::FTex2D::ToTexCube(FTexCube& TexCube) const
 {
-	UBPA_UCOMMON_ASSERT(TexCube.Tex2D.IsValid());
+	UBPA_UCOMMON_ASSERT(TexCube.FlatTex2D.IsValid());
 	const FGridCube GridCube = TexCube.GetGridCube();
 	std::unique_ptr<float[]> Buffer = std::make_unique<float[]>(NumChannels);
 	for (const auto& CubePoint : GridCube)
@@ -547,9 +547,9 @@ void UCommon::FTex2D::ToTexCube(FTexCube& TexCube) const
 		const FVector2f UV = EquirectangularDirectionToUV(Direction);
 		const FUint64Vector2 FlatPoint = CubePoint.Flat(GridCube);
 		BilinearSample(Buffer.get(), UV);
-		for (uint64_t ChannelIndex = 0; ChannelIndex < TexCube.Tex2D.GetNumChannels(); ChannelIndex++)
+		for (uint64_t ChannelIndex = 0; ChannelIndex < TexCube.FlatTex2D.GetNumChannels(); ChannelIndex++)
 		{
-			TexCube.Tex2D.SetFloat(FlatPoint, ChannelIndex, Buffer[ChannelIndex]);
+			TexCube.FlatTex2D.SetFloat(FlatPoint, ChannelIndex, Buffer[ChannelIndex]);
 		}
 	}
 }
