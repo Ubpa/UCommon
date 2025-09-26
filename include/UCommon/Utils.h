@@ -269,6 +269,21 @@ namespace UCommon
 		return FVector4f(X, Y, Z, PDF);
 	}
 
+	static inline FVector2f Hammersley(uint64_t N, uint64_t n) {
+		const float X = float(n) / float(N);
+
+		// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html
+		// efficient VanDerCorpus calculation.
+		n = (n << 16u) | (n >> 16u);
+		n = ((n & 0x55555555u) << 1u) | ((n & 0xAAAAAAAAu) >> 1u);
+		n = ((n & 0x33333333u) << 2u) | ((n & 0xCCCCCCCCu) >> 2u);
+		n = ((n & 0x0F0F0F0Fu) << 4u) | ((n & 0xF0F0F0F0u) >> 4u);
+		n = ((n & 0x00FF00FFu) << 8u) | ((n & 0xFF00FF00u) >> 8u);
+		const float Y = float(n) * 2.3283064365386963e-10; // / 0x100000000
+
+		return { X,Y };
+	}
+
 	enum class EElementType : std::uint64_t
 	{
 		Unknown,
