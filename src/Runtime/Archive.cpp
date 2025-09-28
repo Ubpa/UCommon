@@ -294,7 +294,7 @@ UCommon::FArchiveWrapper::~FArchiveWrapper()
 
 bool UCommon::FArchiveWrapper::IsValid() const noexcept
 {
-	return Impl->Archive;
+	return Impl->Archive != nullptr;
 }
 
 void UCommon::FArchiveWrapper::Serialize(void* Pointer, uint64_t Length)

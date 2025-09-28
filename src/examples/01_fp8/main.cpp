@@ -77,14 +77,17 @@ int main()
     //    }
     //}
 
-    for (uint16_t A = 0; A < 256; A++)
+    for (int A = 0; A < 256; A++)
     {
-        auto Af = (float)((2 * A - 255) / 255.0);
-        uint32_t Ax = reinterpret_cast<const uint32_t&>(Af);
-        printf("0x%08X,", Ax);
+        int V = A;
+        printf("%4d.f/255.f,", 2 * V - 255);
         if ((A + 1) % 8 == 0)
         {
             printf("\n");
+        }
+        else
+        {
+            printf(" ");
         }
     }
 
