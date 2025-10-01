@@ -1,7 +1,5 @@
 message(STATUS "config @PROJECT_NAME@ @PROJECT_VERSION@...")
 
-find_package(Ceres REQUIRED)
-
 @PACKAGE_INIT@
 
 @UBPA_PACKAGE_INIT@

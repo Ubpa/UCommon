@@ -154,7 +154,7 @@ constexpr float UCommon::SH(float x, float y, float z)
 	}
 	else
 	{
-		static_assert(false, "SH<l,m> not support");
+		//UBPA_UCOMMON_NO_ENTRY();
 		return 0.f;
 	}
 }
