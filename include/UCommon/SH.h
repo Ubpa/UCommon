@@ -192,7 +192,7 @@ namespace UCommon
 			{
 				V[i] += B.V[i];
 			}
-			return *this;
+			return As<DerivedType>();
 		}
 
 		/** In-place subtraction operator. */
@@ -204,7 +204,7 @@ namespace UCommon
 			{
 				V[i] -= B.V[i];
 			}
-			return *this;
+			return As<DerivedType>();
 		}
 
 		/** In-place scalar multiplication operator. */
@@ -217,7 +217,7 @@ namespace UCommon
 			{
 				V[i] *= B;
 			}
-			return *this;
+			return As<DerivedType>();
 		}
 
 		/** In-place scalar division operator. */
@@ -411,7 +411,7 @@ namespace UCommon
 			G += InB.G;
 			B += InB.B;
 
-			return *this;
+			return As<DerivedType>();
 		}
 
 		/** In-place subtraction operator. */
@@ -423,7 +423,7 @@ namespace UCommon
 			G -= InB.G;
 			B -= InB.B;
 
-			return *this;
+			return As<DerivedType>();
 		}
 
 		/** In-place scalar multiplication operator. */
@@ -435,7 +435,7 @@ namespace UCommon
 			G *= Scalar;
 			B *= Scalar;
 
-			return *this;
+			return As<DerivedType>();
 		}
 
 		inline TElement<MaxSHOrder>& operator[](int Index)
