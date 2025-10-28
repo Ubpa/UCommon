@@ -438,13 +438,13 @@ namespace UCommon
 			return As<DerivedType>();
 		}
 
-		inline TElement<MaxSHOrder>& operator[](int Index)
+		inline TElement<MaxSHOrder>& operator[](uint64_t Index)
 		{
-			UBPA_UCOMMON_ASSERT(Index >= 0 && Index < 3);
+			UBPA_UCOMMON_ASSERT(Index < 3);
 			return (&R)[Index];
 		}
 
-		inline const TElement<MaxSHOrder>& operator[](int Index) const
+		inline const TElement<MaxSHOrder>& operator[](uint64_t Index) const
 		{
 			return const_cast<TSHVectorRGBBase*>(this)->operator[](Index);
 		}
