@@ -867,6 +867,38 @@ namespace UCommon
 		{
 			return { -X,-Y,-Z };
 		}
+		
+		/** Calculates luminance using standard RGB weights (0.3, 0.59, 0.11). */
+		T GetLuminance() const
+		{
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				return X * static_cast<T>(0.3) + Y * static_cast<T>(0.59) + Z * static_cast<T>(0.11);
+			}
+			else
+			{
+				using CalcType = std::conditional_t<std::is_signed_v<T>, int64_t, uint64_t>;
+				return static_cast<T>((static_cast<CalcType>(X) * 30 +
+				                       static_cast<CalcType>(Y) * 59 +
+				                       static_cast<CalcType>(Z) * 11) / 100);
+			}
+		}
+
+		/** Calculates luminance using sRGB weights (0.2126, 0.7152, 0.0722). */
+		T GetSrgbLuminance() const
+		{
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				return X * static_cast<T>(0.2126) + Y * static_cast<T>(0.7152) + Z * static_cast<T>(0.0722);
+			}
+			else
+			{
+				using CalcType = std::conditional_t<std::is_signed_v<T>, int64_t, uint64_t>;
+				return static_cast<T>((static_cast<CalcType>(X) * 2126 +
+				                       static_cast<CalcType>(Y) * 7152 +
+				                       static_cast<CalcType>(Z) * 722) / 10000);
+			}
+		}
 	};
 
 	using FVector3f = TVector<float>;
