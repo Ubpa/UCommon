@@ -268,33 +268,37 @@ void TestVectorToHemiOctLRoundtrip()
 {
 	std::cout << "Testing Vector <-> HemiOctL roundtrip conversion..." << std::endl;
 
-	// Test cases with various vectors (arbitrary direction and length)
+	// Test cases with various vectors (Z >= 0 only, upper hemisphere)
 	std::vector<FVector3f> TestVectors = {
-		// Unit vectors along axes
+		// Unit vectors along axes (Z >= 0)
 		FVector3f(1.0f, 0.0f, 0.0f),
 		FVector3f(0.0f, 1.0f, 0.0f),
 		FVector3f(0.0f, 0.0f, 1.0f),
 		FVector3f(-1.0f, 0.0f, 0.0f),
 		FVector3f(0.0f, -1.0f, 0.0f),
-		FVector3f(0.0f, 0.0f, -1.0f),
 
-		// Diagonal vectors
+		// Diagonal vectors (Z >= 0)
 		FVector3f(1.0f, 1.0f, 1.0f),
-		FVector3f(-1.0f, -1.0f, -1.0f),
 		FVector3f(1.0f, -1.0f, 1.0f),
-		FVector3f(-1.0f, 1.0f, -1.0f),
+		FVector3f(-1.0f, 1.0f, 1.0f),
+		FVector3f(-1.0f, -1.0f, 1.0f),
 
-		// Normalized vectors
+		// Normalized vectors (Z >= 0)
 		FVector3f(0.577f, 0.577f, 0.577f),  // Normalized (1,1,1)
 		FVector3f(0.707f, 0.707f, 0.0f),    // Normalized (1,1,0)
 		FVector3f(0.8f, 0.6f, 0.0f),
 		FVector3f(0.267f, 0.535f, 0.802f),
 
-		// Vectors with different lengths
+		// Vectors with different lengths (Z >= 0)
 		FVector3f(2.0f, 3.0f, 1.0f),
 		FVector3f(10.0f, 5.0f, 2.0f),
 		FVector3f(0.1f, 0.2f, 0.3f),
 		FVector3f(0.01f, 0.02f, 0.03f),
+
+		// Vectors on XY plane (Z = 0)
+		FVector3f(1.0f, 0.0f, 0.0f),
+		FVector3f(0.0f, 1.0f, 0.0f),
+		FVector3f(1.0f, 1.0f, 0.0f),
 
 		// Near-zero vector
 		FVector3f(1e-6f, 1e-6f, 1e-6f),

@@ -38,6 +38,7 @@ namespace NameSpace \
     template<typename T> constexpr bool IsSupported = UCommon::IsSupported<T>; \
     template<typename T> constexpr EElementType ElementTypeOf = UCommon::ElementTypeOf<T>; \
     using FPackedHue = UCommon::FPackedHue; \
+    using FPackedHemiOct = UCommon::FPackedHemiOct; \
 }
 
 namespace UCommon
@@ -600,26 +601,25 @@ namespace UCommon
 
 	static inline FVector3f VectorToHemiOctL(const FVector3f& V)
 	{
-		const float L = std::abs(V.X) + std::abs(V.Y) + std::abs(V.Z);
+		// Require Z >= 0 (upper hemisphere only)
+		UBPA_UCOMMON_ASSERT(V.Z >= 0.f);
+
+		const float L = std::abs(V.X) + std::abs(V.Y) + V.Z;
 		if (L < UBPA_UCOMMON_DELTA)
 		{
 			return FVector3f(0.f, 0.f, 0.f);
 		}
 
 		// Normalize by L1 norm to get hemispherical octahedral coordinates
-		// Direction always points to upper hemisphere (Z >= 0)
-		// If original Z < 0, negate L to encode the sign
-		const float SignedL = (V.Z >= 0.f) ? L : -L;
 		const float HemiOctX = V.X / L;
 		const float HemiOctY = V.Y / L;
 
-		return { HemiOctX, HemiOctY, SignedL };
+		return { HemiOctX, HemiOctY, L };
 	}
 
 	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
 	{
-		const float AbsL = std::abs(HemiOctL.Z);
-		if (AbsL < UBPA_UCOMMON_DELTA)
+		if (HemiOctL.Z < UBPA_UCOMMON_DELTA)
 		{
 			return FVector3f(0.f, 0.f, 0.f);
 		}
@@ -627,11 +627,8 @@ namespace UCommon
 		// Reconstruct Z from hemispherical octahedral constraint: |x| + |y| + z = 1
 		const float Z = 1.f - std::abs(HemiOctL.X) - std::abs(HemiOctL.Y);
 
-		// If L was negative, flip Z sign to recover lower hemisphere
-		const float ActualZ = (HemiOctL.Z >= 0.f) ? Z : -Z;
-
 		// Reconstruct vector with original length
-		return FVector3f(HemiOctL.X, HemiOctL.Y, ActualZ) * AbsL;
+		return FVector3f(HemiOctL.X, HemiOctL.Y, Z) * HemiOctL.Z;
 	}
 
 	struct FPackedHemiOct
