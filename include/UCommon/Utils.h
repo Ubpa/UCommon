@@ -30,16 +30,24 @@ SOFTWARE.
 #define UBPA_UCOMMON_UTILS_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
+    using EForceInit = UCommon::EForceInit; \
     constexpr float Pi = UCommon::Pi; \
     using EElementType = UCommon::EElementType; \
     using EOwnership = UCommon::EOwnership; \
     template<typename T> constexpr bool IsDirectSupported = UCommon::IsDirectSupported<T>; \
     template<typename T> constexpr bool IsSupported = UCommon::IsSupported<T>; \
     template<typename T> constexpr EElementType ElementTypeOf = UCommon::ElementTypeOf<T>; \
+    using FPackedHue = UCommon::FPackedHue; \
 }
 
 namespace UCommon
 {
+	enum class EForceInit
+	{
+		Default,
+		Zero
+	};
+
 	template<typename T, int64_t V>
 	constexpr T TypedValue = static_cast<T>(V);
 	template<typename T>
@@ -181,12 +189,13 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
+	// co in [-2, 2], cg in [-1, 1]
 	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
 	{
 		const float RB = R + B;
 		Y = (2 * G + RB) / 4;
-		Co = (R - B) / 2;
-		Cg = (2 * G - RB) / 4;
+		Co = (R - B) / Y / 2;
+		Cg = (2 * G - RB) / Y / 4;
 	}
 
 	static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
@@ -198,10 +207,10 @@ namespace UCommon
 
 	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
 	{
-		const float Tmp = Y - Cg;
-		R = Tmp + Co;
-		G = Y + Cg;
-		B = Tmp - Co;
+		const float Tmp = 1.f - Cg;
+		R = (Tmp + Co) * Y;
+		G = (1.f + Cg) * Y;
+		B = (Tmp - Co) * Y;
 	}
 
 	static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
@@ -545,6 +554,42 @@ namespace UCommon
 		if (Value >> 8) { Value >>= 8;  MSB |= 0x8; }
 		return MSB + Table[Value];
 	}
+
+	struct FPackedHue
+	{
+		FPackedHue() {} // uninitialize
+		FPackedHue(EForceInit) : Co(128), Cg(128) {} // zero hue
+		FPackedHue(uint8_t InCo, uint8_t InCg) : Co(InCo), Cg(InCg) {}
+		FPackedHue(FVector2f CoCg)
+		{
+			Co = ElementFloatClampToUint8((CoCg.X + 2.f) / 4.f);
+			Cg = ElementFloatClampToUint8((CoCg.Y + 2.f) / 4.f);
+		}
+		FPackedHue(const FVector3f& Hue)
+		{
+			//require R+2G+B==4
+			UBPA_UCOMMON_ASSERT(std::abs(Hue.X + 2.f * Hue.Y + Hue.Z - 4.f) < UBPA_UCOMMON_DELTA);
+			Co = ElementFloatClampToUint8((Hue.X - Hue.Z + 4.f) / 8.f);
+			Cg = ElementFloatClampToUint8((2.f * Hue.Y - (Hue.X + Hue.Z) + 4.f) / 8.f);
+		}
+
+		FVector3f Unpack() const
+		{
+			FVector3f Hue;
+			constexpr float Y = 1.f;
+			const float Cof = ElementUint8ToFloat(Co) * 4.f - 2.f;
+			const float Cgf = ElementUint8ToFloat(Cg) * 2.f - 1.f;
+			const float YSubCg = Y - Cgf;
+			Hue.X = YSubCg + Cof;
+			Hue.Y = Y + Cgf;
+			Hue.Z = YSubCg - Cof;
+			return Hue;
+		}
+
+		// (Y = (R+2G+B)/4) == 1
+		uint8_t Co; // / 255 * 4 - 2 => [-2,2]
+		uint8_t Cg; // / 255 * 4 - 2 => [-2,2]
+	};
 }
 
 UBPA_UCOMMON_UTILS_TO_NAMESPACE(UCommonTest)
