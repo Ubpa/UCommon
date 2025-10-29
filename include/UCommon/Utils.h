@@ -192,8 +192,15 @@ namespace UCommon
 	// co in [-2, 2], cg in [-1, 1]
 	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
 	{
+		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
 		const float RB = R + B;
 		Y = (2 * G + RB) / 4;
+		if (Y < UBPA_UCOMMON_DELTA)
+		{
+			Co = 0.f;
+			Cg = 0.f;
+			return;
+		}
 		Co = (R - B) / Y / 2;
 		Cg = (2 * G - RB) / Y / 4;
 	}
@@ -560,10 +567,10 @@ namespace UCommon
 		FPackedHue() {} // uninitialize
 		FPackedHue(EForceInit) : Co(128), Cg(128) {} // zero hue
 		FPackedHue(uint8_t InCo, uint8_t InCg) : Co(InCo), Cg(InCg) {}
-		FPackedHue(FVector2f CoCg)
+		FPackedHue(const FVector2f& CoCg)
 		{
 			Co = ElementFloatClampToUint8((CoCg.X + 2.f) / 4.f);
-			Cg = ElementFloatClampToUint8((CoCg.Y + 2.f) / 4.f);
+			Cg = ElementFloatClampToUint8((CoCg.Y + 1.f) / 2.f);
 		}
 		FPackedHue(const FVector3f& Hue)
 		{
@@ -588,7 +595,75 @@ namespace UCommon
 
 		// (Y = (R+2G+B)/4) == 1
 		uint8_t Co; // / 255 * 4 - 2 => [-2,2]
-		uint8_t Cg; // / 255 * 4 - 2 => [-2,2]
+		uint8_t Cg; // / 255 * 2 - 1 => [-1,1]
+	};
+
+	static inline FVector3f VectorToHemiOctL(const FVector3f& V)
+	{
+		const float L = std::abs(V.X) + std::abs(V.Y) + std::abs(V.Z);
+		if (L < UBPA_UCOMMON_DELTA)
+		{
+			return FVector3f(0.f, 0.f, 0.f);
+		}
+
+		// Normalize by L1 norm to get hemispherical octahedral coordinates
+		// Direction always points to upper hemisphere (Z >= 0)
+		// If original Z < 0, negate L to encode the sign
+		const float SignedL = (V.Z >= 0.f) ? L : -L;
+		const float HemiOctX = V.X / L;
+		const float HemiOctY = V.Y / L;
+
+		return { HemiOctX, HemiOctY, SignedL };
+	}
+
+	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
+	{
+		const float AbsL = std::abs(HemiOctL.Z);
+		if (AbsL < UBPA_UCOMMON_DELTA)
+		{
+			return FVector3f(0.f, 0.f, 0.f);
+		}
+
+		// Reconstruct Z from hemispherical octahedral constraint: |x| + |y| + z = 1
+		const float Z = 1.f - std::abs(HemiOctL.X) - std::abs(HemiOctL.Y);
+
+		// If L was negative, flip Z sign to recover lower hemisphere
+		const float ActualZ = (HemiOctL.Z >= 0.f) ? Z : -Z;
+
+		// Reconstruct vector with original length
+		return FVector3f(HemiOctL.X, HemiOctL.Y, ActualZ) * AbsL;
+	}
+
+	struct FPackedHemiOct
+	{
+		FPackedHemiOct() {} // uninitialize
+		FPackedHemiOct(EForceInit) : U(128), V(128) {}
+		FPackedHemiOct(uint8_t InU, uint8_t InV) : U(InU), V(InV) {}
+		FPackedHemiOct(const FVector2f& HemiOct)
+		{
+			// Rotate 45 degrees to map diamond [-1,1]x[-1,1] with |x|+|y|<=1 to square [0,1]x[0,1]
+			// u = (x + y) / 2 + 0.5  maps to [0, 1]
+			// v = (x - y) / 2 + 0.5  maps to [0, 1]
+			const float Uf = (HemiOct.X + HemiOct.Y) * 0.5f + 0.5f;
+			const float Vf = (HemiOct.X - HemiOct.Y) * 0.5f + 0.5f;
+			U = ElementFloatClampToUint8(Uf);
+			V = ElementFloatClampToUint8(Vf);
+		}
+
+		FVector3f Unpack() const
+		{
+			// Inverse rotation: recover HemiOct.X and HemiOct.Y from U and V
+			// x = u + v - 1
+			// y = u - v
+			const float Uf = ElementUint8ToFloat(U);
+			const float Vf = ElementUint8ToFloat(V);
+			const float HemiOctX = Uf + Vf - 1.f;
+			const float HemiOctY = Uf - Vf;
+			const float HemiOctZ = 1.f - std::abs(HemiOctX) - std::abs(HemiOctY);
+			return { HemiOctX, HemiOctY, HemiOctZ };
+		}
+
+		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
 	};
 }
 

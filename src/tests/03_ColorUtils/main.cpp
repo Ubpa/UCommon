@@ -167,9 +167,9 @@ void TestFPackedHue()
 	{
 		std::vector<FVector2f> CoCgTestCases = {
 			FVector2f(0.0f, 0.0f),    // Center
-			FVector2f(-2.0f, -2.0f),  // Min corner
-			FVector2f(2.0f, 2.0f),    // Max corner
-			FVector2f(-1.0f, 1.0f),   // Mixed
+			FVector2f(-2.0f, -1.0f),  // Min corner (Co: [-2,2], Cg: [-1,1])
+			FVector2f(2.0f, 1.0f),    // Max corner
+			FVector2f(-1.0f, 0.5f),   // Mixed
 			FVector2f(1.5f, -0.5f),   // Mixed
 		};
 
@@ -177,21 +177,22 @@ void TestFPackedHue()
 		for (const auto& CoCg : CoCgTestCases)
 		{
 			FPackedHue Packed(CoCg);
-			
-			// Unpack and check (note: Unpack returns full RGB with Y=4)
+
+			// Unpack and check (note: Unpack returns full RGB with Y=1)
 			FVector3f UnpackedRGB = Packed.Unpack();
-			
+
 			// Extract Co and Cg from unpacked RGB
 			// From the Unpack implementation:
-			// Cof = Co / 255 * 4 - 2
-			// Cgf = Cg / 255 * 4 - 2
+			// Cof = Co / 255 * 4 - 2  (Co range: [-2, 2])
+			// Cgf = Cg / 255 * 2 - 1  (Cg range: [-1, 1])
 			float UnpackedCo = ElementUint8ToFloat(Packed.Co) * 4.0f - 2.0f;
-			float UnpackedCg = ElementUint8ToFloat(Packed.Cg) * 4.0f - 2.0f;
-			
+			float UnpackedCg = ElementUint8ToFloat(Packed.Cg) * 2.0f - 1.0f;
+
 			// Check if roundtrip is close (with quantization tolerance)
-			float Tolerance = 4.0f / 255.0f; // One quantization step
-			if (IsNearlyEqual(CoCg.X, UnpackedCo, Tolerance) &&
-			    IsNearlyEqual(CoCg.Y, UnpackedCg, Tolerance))
+			float ToleranceCo = 4.0f / 255.0f; // One quantization step for Co
+			float ToleranceCg = 2.0f / 255.0f; // One quantization step for Cg
+			if (IsNearlyEqual(CoCg.X, UnpackedCo, ToleranceCo) &&
+			    IsNearlyEqual(CoCg.Y, UnpackedCg, ToleranceCg))
 			{
 				PassedCount++;
 			}
@@ -202,7 +203,7 @@ void TestFPackedHue()
 				std::cout << "    Unpacked: Co=" << UnpackedCo << ", Cg=" << UnpackedCg << std::endl;
 			}
 		}
-		
+
 		std::cout << "  CoCg vector roundtrip: " << PassedCount << "/" << CoCgTestCases.size() << " PASSED" << std::endl;
 		assert(PassedCount == CoCgTestCases.size());
 	}
@@ -263,21 +264,273 @@ void TestFPackedHue()
 	}
 }
 
+void TestVectorToHemiOctLRoundtrip()
+{
+	std::cout << "Testing Vector <-> HemiOctL roundtrip conversion..." << std::endl;
+
+	// Test cases with various vectors (arbitrary direction and length)
+	std::vector<FVector3f> TestVectors = {
+		// Unit vectors along axes
+		FVector3f(1.0f, 0.0f, 0.0f),
+		FVector3f(0.0f, 1.0f, 0.0f),
+		FVector3f(0.0f, 0.0f, 1.0f),
+		FVector3f(-1.0f, 0.0f, 0.0f),
+		FVector3f(0.0f, -1.0f, 0.0f),
+		FVector3f(0.0f, 0.0f, -1.0f),
+
+		// Diagonal vectors
+		FVector3f(1.0f, 1.0f, 1.0f),
+		FVector3f(-1.0f, -1.0f, -1.0f),
+		FVector3f(1.0f, -1.0f, 1.0f),
+		FVector3f(-1.0f, 1.0f, -1.0f),
+
+		// Normalized vectors
+		FVector3f(0.577f, 0.577f, 0.577f),  // Normalized (1,1,1)
+		FVector3f(0.707f, 0.707f, 0.0f),    // Normalized (1,1,0)
+		FVector3f(0.8f, 0.6f, 0.0f),
+		FVector3f(0.267f, 0.535f, 0.802f),
+
+		// Vectors with different lengths
+		FVector3f(2.0f, 3.0f, 1.0f),
+		FVector3f(10.0f, 5.0f, 2.0f),
+		FVector3f(0.1f, 0.2f, 0.3f),
+		FVector3f(0.01f, 0.02f, 0.03f),
+
+		// Near-zero vector
+		FVector3f(1e-6f, 1e-6f, 1e-6f),
+
+		// Zero vector
+		FVector3f(0.0f, 0.0f, 0.0f),
+	};
+
+	int PassedCount = 0;
+	int FailedCount = 0;
+
+	for (size_t i = 0; i < TestVectors.size(); ++i)
+	{
+		const FVector3f& OriginalVector = TestVectors[i];
+
+		// Convert Vector to HemiOctL
+		FVector3f HemiOctL = VectorToHemiOctL(OriginalVector);
+
+		// Convert back to Vector
+		FVector3f RecoveredVector = HemiOctLToVector(HemiOctL);
+
+		// For zero or near-zero vectors, use absolute tolerance
+		float Length = std::sqrt(OriginalVector.X * OriginalVector.X +
+		                         OriginalVector.Y * OriginalVector.Y +
+		                         OriginalVector.Z * OriginalVector.Z);
+		float Tolerance = (Length < 1e-5f) ? 1e-5f : Length * 1e-4f;
+
+		// Check if roundtrip is successful
+		if (IsNearlyEqual(OriginalVector, RecoveredVector, Tolerance))
+		{
+			PassedCount++;
+		}
+		else
+		{
+			FailedCount++;
+			std::cout << "  [FAILED] Test case " << i << ": Vector("
+			          << OriginalVector.X << ", " << OriginalVector.Y << ", " << OriginalVector.Z << ")" << std::endl;
+			std::cout << "    HemiOctL: (" << HemiOctL.X << ", " << HemiOctL.Y << ", " << HemiOctL.Z << ")" << std::endl;
+			std::cout << "    Recovered Vector: (" << RecoveredVector.X << ", " << RecoveredVector.Y << ", " << RecoveredVector.Z << ")" << std::endl;
+			std::cout << "    Difference: ("
+			          << (RecoveredVector.X - OriginalVector.X) << ", "
+			          << (RecoveredVector.Y - OriginalVector.Y) << ", "
+			          << (RecoveredVector.Z - OriginalVector.Z) << ")" << std::endl;
+		}
+	}
+
+	std::cout << "  Passed: " << PassedCount << "/" << TestVectors.size() << std::endl;
+	std::cout << "  Failed: " << FailedCount << "/" << TestVectors.size() << std::endl;
+
+	assert(FailedCount == 0 && "Some Vector <-> HemiOctL roundtrip tests failed!");
+}
+
+void TestHemiOctLProperties()
+{
+	std::cout << "Testing HemiOctL properties..." << std::endl;
+
+	// Test that HemiOct.X and HemiOct.Y are in [-1, 1] range for normalized vectors
+	std::vector<FVector3f> TestVectors = {
+		FVector3f(1.0f, 0.0f, 0.0f),
+		FVector3f(0.0f, 1.0f, 0.0f),
+		FVector3f(0.0f, 0.0f, 1.0f),
+		FVector3f(0.577f, 0.577f, 0.577f),
+		FVector3f(0.707f, 0.707f, 0.0f),
+		FVector3f(-0.8f, 0.6f, 0.0f),
+	};
+
+	bool bAllInRange = true;
+	for (const auto& Vector : TestVectors)
+	{
+		FVector3f HemiOctL = VectorToHemiOctL(Vector);
+
+		// Check HemiOct.X and HemiOct.Y are in [-1, 1]
+		if (std::abs(HemiOctL.X) > 1.0f || std::abs(HemiOctL.Y) > 1.0f)
+		{
+			bAllInRange = false;
+			std::cout << "  [WARNING] Vector(" << Vector.X << ", " << Vector.Y << ", " << Vector.Z
+			          << ") -> HemiOctL(" << HemiOctL.X << ", " << HemiOctL.Y << ", " << HemiOctL.Z
+			          << ") - HemiOct.X or HemiOct.Y out of [-1, 1] range" << std::endl;
+		}
+
+		// Check that |HemiOct.X| + |HemiOct.Y| <= 1 for unit vectors
+		float VectorLength = std::sqrt(Vector.X * Vector.X + Vector.Y * Vector.Y + Vector.Z * Vector.Z);
+		if (std::abs(VectorLength - 1.0f) < 0.01f)  // If approximately unit length
+		{
+			float HemiOctSum = std::abs(HemiOctL.X) + std::abs(HemiOctL.Y);
+			if (HemiOctSum > 1.01f)  // Allow small tolerance
+			{
+				bAllInRange = false;
+				std::cout << "  [WARNING] Unit vector produces |HemiOct.X| + |HemiOct.Y| = " << HemiOctSum
+				          << " > 1.0" << std::endl;
+			}
+		}
+	}
+
+	if (bAllInRange)
+	{
+		std::cout << "  All vectors produce valid hemispherical octahedral coordinates" << std::endl;
+	}
+}
+
+void TestFPackedHemiOct()
+{
+	std::cout << "Testing FPackedHemiOct..." << std::endl;
+
+	// Test 1: Zero initialization
+	{
+		FPackedHemiOct ZeroHemiOct(EForceInit::Default);
+		assert(ZeroHemiOct.U == 128 && ZeroHemiOct.V == 128);
+		std::cout << "  Zero initialization: PASSED" << std::endl;
+	}
+
+	// Test 2: Direct uint8_t construction
+	{
+		FPackedHemiOct DirectHemiOct(100, 200);
+		assert(DirectHemiOct.U == 100 && DirectHemiOct.V == 200);
+		std::cout << "  Direct uint8_t construction: PASSED" << std::endl;
+	}
+
+	// Test 3: HemiOct vector roundtrip (HemiOct.X, HemiOct.Y in [-1, 1] with |x|+|y|<=1)
+	{
+		std::vector<FVector2f> HemiOctTestCases = {
+			FVector2f(0.0f, 0.0f),
+			FVector2f(1.0f, 0.0f),
+			FVector2f(0.0f, 1.0f),
+			FVector2f(-1.0f, 0.0f),
+			FVector2f(0.0f, -1.0f),
+			FVector2f(0.5f, 0.5f),
+			FVector2f(-0.5f, -0.5f),
+			FVector2f(0.7f, -0.3f),
+		};
+
+		int PassedCount = 0;
+		for (const auto& HemiOct : HemiOctTestCases)
+		{
+			FPackedHemiOct Packed(HemiOct);
+
+			// Unpack and check
+			FVector3f Unpacked = Packed.Unpack();
+
+			// Extract HemiOct.X and HemiOct.Y from unpacked
+			float UnpackedHemiOctX = Unpacked.X;
+			float UnpackedHemiOctY = Unpacked.Y;
+
+			// Check if roundtrip is close (with quantization tolerance)
+			float Tolerance = 2.0f / 255.0f; // One quantization step
+			if (IsNearlyEqual(HemiOct.X, UnpackedHemiOctX, Tolerance) &&
+			    IsNearlyEqual(HemiOct.Y, UnpackedHemiOctY, Tolerance))
+			{
+				PassedCount++;
+			}
+			else
+			{
+				std::cout << "  [FAILED] HemiOct(" << HemiOct.X << ", " << HemiOct.Y << ")" << std::endl;
+				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
+				std::cout << "    Unpacked: (" << Unpacked.X << ", " << Unpacked.Y << ", " << Unpacked.Z << ")" << std::endl;
+			}
+		}
+
+		std::cout << "  HemiOct vector roundtrip: " << PassedCount << "/" << HemiOctTestCases.size() << " PASSED" << std::endl;
+		assert(PassedCount == HemiOctTestCases.size());
+	}
+
+	// Test 4: Full pipeline - Vector -> HemiOctL -> FPackedHemiOct -> Unpack -> HemiOctLToVector
+	{
+		std::vector<FVector3f> TestVectors = {
+			FVector3f(1.0f, 0.0f, 0.0f),
+			FVector3f(0.0f, 1.0f, 0.0f),
+			FVector3f(0.0f, 0.0f, 1.0f),
+			FVector3f(0.577f, 0.577f, 0.577f),
+			FVector3f(0.707f, 0.707f, 0.0f),
+			FVector3f(2.0f, 3.0f, 1.0f),
+		};
+
+		int PassedCount = 0;
+		for (const auto& Vector : TestVectors)
+		{
+			// Convert to HemiOctL
+			FVector3f HemiOctL = VectorToHemiOctL(Vector);
+
+			// Pack HemiOct coordinates
+			FPackedHemiOct Packed(FVector2f(HemiOctL.X, HemiOctL.Y));
+
+			// Unpack
+			FVector3f UnpackedHemiOct = Packed.Unpack();
+
+			// Reconstruct vector (need to restore length)
+			FVector3f RecoveredVector = FVector3f(UnpackedHemiOct.X, UnpackedHemiOct.Y, UnpackedHemiOct.Z) * HemiOctL.Z;
+
+			// Check roundtrip
+			float Length = std::sqrt(Vector.X * Vector.X + Vector.Y * Vector.Y + Vector.Z * Vector.Z);
+			float Tolerance = Length * 0.01f; // 1% tolerance due to quantization
+
+			if (IsNearlyEqual(Vector, RecoveredVector, Tolerance))
+			{
+				PassedCount++;
+			}
+			else
+			{
+				std::cout << "  [FAILED] Full pipeline for Vector("
+				          << Vector.X << ", " << Vector.Y << ", " << Vector.Z << ")" << std::endl;
+				std::cout << "    HemiOctL: (" << HemiOctL.X << ", " << HemiOctL.Y << ", " << HemiOctL.Z << ")" << std::endl;
+				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
+				std::cout << "    Unpacked HemiOct: (" << UnpackedHemiOct.X << ", " << UnpackedHemiOct.Y << ", " << UnpackedHemiOct.Z << ")" << std::endl;
+				std::cout << "    Recovered Vector: (" << RecoveredVector.X << ", " << RecoveredVector.Y << ", " << RecoveredVector.Z << ")" << std::endl;
+			}
+		}
+
+		std::cout << "  Full pipeline roundtrip: " << PassedCount << "/" << TestVectors.size() << " PASSED" << std::endl;
+		assert(PassedCount == TestVectors.size());
+	}
+}
+
 int main(int argc, char** argv)
 {
 	std::cout << std::fixed << std::setprecision(6);
-	
+
 	TestRGBToYCoCgRoundtrip();
 	std::cout << std::endl;
-	
+
 	TestYCoCgProperties();
 	std::cout << std::endl;
-	
+
 	TestFPackedHue();
 	std::cout << std::endl;
-	
+
+	TestVectorToHemiOctLRoundtrip();
+	std::cout << std::endl;
+
+	TestHemiOctLProperties();
+	std::cout << std::endl;
+
+	TestFPackedHemiOct();
+	std::cout << std::endl;
+
 	std::cout << "All tests passed!" << std::endl;
-	
+
 	return 0;
 }
 
