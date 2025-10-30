@@ -67,6 +67,9 @@ namespace UCommon
 
 		uint64_t GetNumMips() const noexcept;
 
+		uint64_t& operator[](uint64_t Index) noexcept;
+		const uint64_t& operator[](uint64_t Index) const noexcept;
+
 		FGrid2DIterator GetIterator(const FUint64Vector2& Point) const noexcept;
 		FGrid2DIterator GetIterator(uint64_t Index) const noexcept;
 

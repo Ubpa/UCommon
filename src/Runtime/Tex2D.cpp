@@ -84,6 +84,17 @@ uint64_t UCommon::FGrid2D::GetNumMips() const noexcept
 	return std::min(MSB64(Width), MSB64(Height)) + TypedOne<uint8_t>;
 }
 
+uint64_t& UCommon::FGrid2D::operator[](uint64_t Index) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Index < 2);
+	return reinterpret_cast<uint64_t*>(this)[Index];
+}
+
+const uint64_t& UCommon::FGrid2D::operator[](uint64_t Index) const noexcept
+{
+	return const_cast<FGrid2D*>(this)->operator[](Index);
+}
+
 UCommon::FGrid2DIterator UCommon::FGrid2D::GetIterator(const FUint64Vector2& Point) const noexcept
 {
 	FGrid2DIterator Iterator;

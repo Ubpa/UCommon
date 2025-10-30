@@ -617,18 +617,18 @@ namespace UCommon
 		return { HemiOctX, HemiOctY, L };
 	}
 
-	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
+	static inline FVector3f HemiOctToDir(const FVector2f& HemiOct)
 	{
-		if (HemiOctL.Z < UBPA_UCOMMON_DELTA)
-		{
-			return FVector3f(0.f, 0.f, 0.f);
-		}
-
 		// Reconstruct Z from hemispherical octahedral constraint: |x| + |y| + z = 1
-		const float Z = 1.f - std::abs(HemiOctL.X) - std::abs(HemiOctL.Y);
+		const float Z = 1.f - std::abs(HemiOct.X) - std::abs(HemiOct.Y);
 
 		// Reconstruct vector with original length
-		return FVector3f(HemiOctL.X, HemiOctL.Y, Z) * HemiOctL.Z;
+		return FVector3f(HemiOct.X, HemiOct.Y, Z);
+	}
+
+	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
+	{
+		return HemiOctToDir(HemiOctL) * HemiOctL.Z;
 	}
 
 	struct FPackedHemiOct
