@@ -647,7 +647,7 @@ namespace UCommon
 			V = ElementFloatClampToUint8(Vf);
 		}
 
-		FVector3f Unpack() const
+		FVector2f Unpack() const
 		{
 			// Inverse rotation: recover HemiOct.X and HemiOct.Y from U and V
 			// x = u + v - 1
@@ -656,8 +656,7 @@ namespace UCommon
 			const float Vf = ElementUint8ToFloat(V);
 			const float HemiOctX = Uf + Vf - 1.f;
 			const float HemiOctY = Uf - Vf;
-			const float HemiOctZ = 1.f - std::abs(HemiOctX) - std::abs(HemiOctY);
-			return { HemiOctX, HemiOctY, HemiOctZ };
+			return { HemiOctX, HemiOctY };
 		}
 
 		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
