@@ -36,7 +36,9 @@ namespace NameSpace \
 	template<int Order> using TSHBandVector = UCommon::TSHBandVector<Order>; \
 	template<int Order> using TSHBandVectorRGB = UCommon::TSHBandVectorRGB<Order>; \
 	template<int Order> using TSHVector = UCommon::TSHVector<Order>; \
+	template<int Order> using TSHVectorAC = UCommon::TSHVectorAC<Order>; \
 	template<int Order> using TSHVectorRGB = UCommon::TSHVectorRGB<Order>; \
+	template<int Order> using TSHVectorACRGB = UCommon::TSHVectorACRGB<Order>; \
 	using FSHBandVector2 = UCommon::FSHBandVector2; \
 	using FSHBandVector3 = UCommon::FSHBandVector3; \
 	using FSHBandVector4 = UCommon::FSHBandVector4; \
@@ -74,6 +76,7 @@ namespace UCommon
 	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : (i < 9 ? i - 6 : (i < 16 ? i - 12 : i - 20)));
 
 	template<int Order> class TSHVectorRGB;
+	template<int Order> class TSHVectorACRGB;
 	template<int Order> class TSHBandVectorRGB;
 
 	template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
@@ -566,6 +569,69 @@ namespace UCommon
 		}
 	};
 
+	/** A vector of spherical harmonic coefficients without DC. */
+	template<int Order>
+	class TSHVectorAC : public TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>
+	{
+	public:
+		using Super = TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>;
+		using TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>::TSHVectorBase;
+
+		using RGBType = TSHVectorACRGB<Order>;
+
+		TSHVectorAC(float V1, float V2, float V3) : Super{ V1,V2,V3 } {}
+
+		explicit TSHVectorAC(const FVector3f& Vector) : TSHVectorAC(Vector.X, Vector.Y, Vector.Z) {}
+
+		template<int OtherOrder>
+		explicit TSHVectorAC(const TSHVectorAC<OtherOrder>& Other)
+		{
+			if (Super::MaxSHBasis <= TSHVectorAC<OtherOrder>::Super::MaxSHBasis)
+			{
+				for (int i = 0; i < Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = Other.V[i];
+				}
+			}
+			else
+			{
+				for (int i = 0; i < TSHVectorAC<OtherOrder>::Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = Other.V[i];
+				}
+				for (int i = TSHVectorAC<OtherOrder>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+				{
+					Super::V[i] = 0.f;
+				}
+			}
+		}
+
+		TSHVectorAC(const TSHVectorAC<Order - 1>& Other, const TSHBandVector<Order>& Band)
+		{
+			for (int i = 0; i < TSHVectorAC<Order - 1>::Super::MaxSHBasis; i++)
+			{
+				Super::V[i] = Other.V[i];
+			}
+			for (int i = TSHVectorAC<Order - 1>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+			{
+				Super::V[i] = Band.V[i - TSHVectorAC<Order - 1>::Super::MaxSHBasis];
+			}
+		}
+
+		template<int BandOrder>
+		TSHBandVector<BandOrder>& GetBand()
+		{
+			constexpr int IndexBase = Pow2(BandOrder - 1);
+			return *reinterpret_cast<TSHBandVector<BandOrder>*>(&Super::V[IndexBase]);
+		}
+
+		template<int BandOrder>
+		const TSHBandVector<BandOrder>& GetBand() const
+		{
+			return const_cast<TSHVector*>(this)->GetBand<BandOrder>();
+		}
+	};
+
 	/** A vector of colored spherical harmonic coefficients. */
 	template<int Order>
 	class TSHVectorRGB : public TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order * Order>
@@ -612,6 +678,52 @@ namespace UCommon
 		}
 	};
 
+	/** A vector of colored spherical harmonic coefficients without DC. */
+	template<int Order>
+	class TSHVectorACRGB : public TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>
+	{
+	public:
+		using Super = TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>;
+		using TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>::TSHVectorRGBBase;
+
+		template<int OtherOrder>
+		explicit TSHVectorACRGB(const TSHVectorACRGB<OtherOrder>& Other)
+		{
+			Super::R = (TSHVectorAC<Order>)Other.R;
+			Super::G = (TSHVectorAC<Order>)Other.G;
+			Super::B = (TSHVectorAC<Order>)Other.B;
+		}
+
+		template<int OtherOrder>
+		explicit TSHVectorACRGB(const TSHVectorAC<OtherOrder>& Other)
+		{
+			Super::R = (TSHVectorAC<Order>)Other;
+			Super::G = (TSHVectorAC<Order>)Other;
+			Super::B = (TSHVectorAC<Order>)Other;
+		}
+
+		TSHVectorACRGB(const TSHVectorACRGB<Order - 1>& Other, const TSHBandVectorRGB<Order>& Band)
+		{
+			Super::R = TSHVector<Order>(Other.R, Band.R);
+			Super::G = TSHVector<Order>(Other.G, Band.G);
+			Super::B = TSHVector<Order>(Other.B, Band.B);
+		}
+
+		template<int BandOrder>
+		const TSHBandVectorRGB<BandOrder> GetBand() const
+		{
+			return { Super::R.template GetBand<BandOrder>(),Super::G.template GetBand<BandOrder>(),Super::B.template GetBand<BandOrder>() };
+		}
+
+		template<int BandOrder>
+		void SetBand(const TSHBandVectorRGB<BandOrder>& SHBandVectorRGB)
+		{
+			Super::R.template GetBand<BandOrder>() = SHBandVectorRGB.R;
+			Super::G.template GetBand<BandOrder>() = SHBandVectorRGB.G;
+			Super::B.template GetBand<BandOrder>() = SHBandVectorRGB.B;
+		}
+	};
+
 	using FSHBandVector2 = TSHBandVector<2>;
 	using FSHBandVector3 = TSHBandVector<3>;
 	using FSHBandVector4 = TSHBandVector<4>;
@@ -625,10 +737,18 @@ namespace UCommon
 	using FSHVector3 = TSHVector<3>;
 	using FSHVector4 = TSHVector<4>;
 	using FSHVector5 = TSHVector<5>;
+	using FSHVectorAC2 = TSHVectorAC<2>;
+	using FSHVectorAC3 = TSHVectorAC<3>;
+	using FSHVectorAC4 = TSHVectorAC<4>;
+	using FSHVectorAC5 = TSHVectorAC<5>;
 	using FSHVectorRGB2 = TSHVectorRGB<2>;
 	using FSHVectorRGB3 = TSHVectorRGB<3>;
 	using FSHVectorRGB4 = TSHVectorRGB<4>;
 	using FSHVectorRGB5 = TSHVectorRGB<5>;
+	using FSHVectorACRGB2 = TSHVectorACRGB<2>;
+	using FSHVectorACRGB3 = TSHVectorACRGB<3>;
+	using FSHVectorACRGB4 = TSHVectorACRGB<4>;
+	using FSHVectorACRGB5 = TSHVectorACRGB<5>;
 
 	template<template<int> class SHVectorType, int Order>
 	typename SHVectorType<Order>::RGBType operator*(const SHVectorType<Order>& SHVector, const FVector3f& Color)
