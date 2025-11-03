@@ -628,7 +628,7 @@ namespace UCommon
 		template<int BandOrder>
 		const TSHBandVector<BandOrder>& GetBand() const
 		{
-			return const_cast<TSHVector*>(this)->GetBand<BandOrder>();
+			return const_cast<TSHVectorAC*>(this)->GetBand<BandOrder>();
 		}
 	};
 
