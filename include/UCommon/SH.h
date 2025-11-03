@@ -84,7 +84,7 @@ namespace UCommon
 		static constexpr int MaxSHBasis = InMaxSHBasis;
 		float V[MaxSHBasis];
 
-		static_assert(MaxSHOrder > 0, "Invalid MaxSHOrder");
+		static_assert(MaxSHOrder > 0 && MaxSHBasis > 0, "Invalid MaxSHOrder or MaxSHBasis");
 
 		/** Default constructor. */
 		TSHVectorBase() : V{ 0 } {}

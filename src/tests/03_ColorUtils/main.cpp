@@ -436,7 +436,7 @@ void TestFPackedHemiOct()
 			FPackedHemiOct Packed(HemiOct);
 
 			// Unpack and check
-			FVector3f Unpacked = Packed.Unpack();
+			FVector2f Unpacked = Packed.Unpack();
 
 			// Extract HemiOct.X and HemiOct.Y from unpacked
 			float UnpackedHemiOctX = Unpacked.X;
@@ -453,7 +453,7 @@ void TestFPackedHemiOct()
 			{
 				std::cout << "  [FAILED] HemiOct(" << HemiOct.X << ", " << HemiOct.Y << ")" << std::endl;
 				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
-				std::cout << "    Unpacked: (" << Unpacked.X << ", " << Unpacked.Y << ", " << Unpacked.Z << ")" << std::endl;
+				std::cout << "    Unpacked: (" << Unpacked.X << ", " << Unpacked.Y << ")" << std::endl;
 			}
 		}
 
@@ -482,10 +482,10 @@ void TestFPackedHemiOct()
 			FPackedHemiOct Packed(FVector2f(HemiOctL.X, HemiOctL.Y));
 
 			// Unpack
-			FVector3f UnpackedHemiOct = Packed.Unpack();
+			FVector2f UnpackedHemiOct = Packed.Unpack();
 
 			// Reconstruct vector (need to restore length)
-			FVector3f RecoveredVector = FVector3f(UnpackedHemiOct.X, UnpackedHemiOct.Y, UnpackedHemiOct.Z) * HemiOctL.Z;
+			FVector3f RecoveredVector = UCommon::HemiOctToDir(UnpackedHemiOct) * HemiOctL.Z;
 
 			// Check roundtrip
 			float Length = std::sqrt(Vector.X * Vector.X + Vector.Y * Vector.Y + Vector.Z * Vector.Z);
@@ -501,7 +501,7 @@ void TestFPackedHemiOct()
 				          << Vector.X << ", " << Vector.Y << ", " << Vector.Z << ")" << std::endl;
 				std::cout << "    HemiOctL: (" << HemiOctL.X << ", " << HemiOctL.Y << ", " << HemiOctL.Z << ")" << std::endl;
 				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
-				std::cout << "    Unpacked HemiOct: (" << UnpackedHemiOct.X << ", " << UnpackedHemiOct.Y << ", " << UnpackedHemiOct.Z << ")" << std::endl;
+				std::cout << "    Unpacked HemiOct: (" << UnpackedHemiOct.X << ", " << UnpackedHemiOct.Y << ")" << std::endl;
 				std::cout << "    Recovered Vector: (" << RecoveredVector.X << ", " << RecoveredVector.Y << ", " << RecoveredVector.Z << ")" << std::endl;
 			}
 		}
