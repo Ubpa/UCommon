@@ -47,6 +47,10 @@ namespace NameSpace \
 	using FSHVector3 = UCommon::FSHVector3; \
 	using FSHVector4 = UCommon::FSHVector4; \
 	using FSHVector5 = UCommon::FSHVector5; \
+	using FSHVectorAC2 = UCommon::FSHVectorAC2; \
+	using FSHVectorAC3 = UCommon::FSHVectorAC3; \
+	using FSHVectorAC4 = UCommon::FSHVectorAC4; \
+	using FSHVectorAC5 = UCommon::FSHVectorAC5; \
 	using FSHBandVectorRGB2 = UCommon::FSHBandVectorRGB2; \
 	using FSHBandVectorRGB3 = UCommon::FSHBandVectorRGB3; \
 	using FSHBandVectorRGB4 = UCommon::FSHBandVectorRGB4; \
@@ -55,6 +59,10 @@ namespace NameSpace \
 	using FSHVectorRGB3 = UCommon::FSHVectorRGB3; \
 	using FSHVectorRGB4 = UCommon::FSHVectorRGB4; \
 	using FSHVectorRGB5 = UCommon::FSHVectorRGB5; \
+	using FSHVectorACRGB2 = UCommon::FSHVectorACRGB2; \
+	using FSHVectorACRGB3 = UCommon::FSHVectorACRGB3; \
+	using FSHVectorACRGB4 = UCommon::FSHVectorACRGB4; \
+	using FSHVectorACRGB5 = UCommon::FSHVectorACRGB5; \
 }
 
 namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
