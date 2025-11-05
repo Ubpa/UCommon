@@ -301,6 +301,19 @@ namespace UCommon
 		return { X,Y };
 	}
 
+	// [Jarzynski 2020, "Hash Functions for GPU Rendering"]
+	static inline uint32_t PCGHash(uint32_t Input)
+	{
+		uint32_t state = Input * 747796405u + 2891336453u;
+		uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+		return (word >> 22u) ^ word;
+	}
+
+	static inline float PCGHashRand(uint32_t Input)
+	{
+		return (PCGHash(Input) % 0x7FFF) / (float)0x7FFF;
+	}
+
 	enum class EElementType : std::uint64_t
 	{
 		Unknown,
