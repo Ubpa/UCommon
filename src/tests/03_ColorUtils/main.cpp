@@ -406,7 +406,7 @@ void TestFPackedHemiOct()
 	// Test 1: Zero initialization
 	{
 		FPackedHemiOct ZeroHemiOct(EForceInit::Default);
-		assert(ZeroHemiOct.U == 128 && ZeroHemiOct.V == 128);
+		assert(ZeroHemiOct.U == 213 && ZeroHemiOct.V == 128);
 		std::cout << "  Zero initialization: PASSED" << std::endl;
 	}
 

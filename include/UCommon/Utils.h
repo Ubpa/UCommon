@@ -647,7 +647,7 @@ namespace UCommon
 	struct FPackedHemiOct
 	{
 		FPackedHemiOct() {} // uninitialize
-		FPackedHemiOct(EForceInit) : U(128), V(128) {}
+		FPackedHemiOct(EForceInit) : U(213), V(128) {} // ~(1/3,1/3,1/3)
 		FPackedHemiOct(uint8_t InU, uint8_t InV) : U(InU), V(InV) {}
 		FPackedHemiOct(const FVector2f& HemiOct)
 		{
