@@ -634,6 +634,7 @@ namespace UCommon
 	{
 		// Reconstruct Z from hemispherical octahedral constraint: |x| + |y| + z = 1
 		const float Z = 1.f - std::abs(HemiOct.X) - std::abs(HemiOct.Y);
+		UBPA_UCOMMON_ASSERT(Z > -UBPA_UCOMMON_DELTA);
 
 		// Reconstruct vector with original length
 		return FVector3f(HemiOct.X, HemiOct.Y, Z);
