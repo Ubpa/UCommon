@@ -99,19 +99,19 @@ uint64_t UCommon::ApplyAddressMode(int64_t Coord, uint64_t Size, ETextureAddress
 	}
 }
 
-UCommon::FVector2f UCommon::ApplyAddressMode(const FVector2f& Coord, ETextureAddress AddressMode)
+UCommon::FVector2f UCommon::ApplyAddressMode(const FVector2f& Coord, ETextureAddress AddressModeX, ETextureAddress AddressModeY)
 {
 	return FVector2f(
-		ApplyAddressMode(Coord.X, AddressMode),
-		ApplyAddressMode(Coord.Y, AddressMode)
+		ApplyAddressMode(Coord.X, AddressModeX),
+		ApplyAddressMode(Coord.Y, AddressModeY)
 	);
 }
 
-UCommon::FUint64Vector2 UCommon::ApplyAddressMode(const FInt64Vector2& Coord, const FUint64Vector2& Size, ETextureAddress AddressMode)
+UCommon::FUint64Vector2 UCommon::ApplyAddressMode(const FInt64Vector2& Coord, const FUint64Vector2& Size, ETextureAddress AddressModeX, ETextureAddress AddressModeY)
 {
 	return FUint64Vector2(
-		ApplyAddressMode(Coord.X, Size.X, AddressMode),
-		ApplyAddressMode(Coord.Y, Size.Y, AddressMode)
+		ApplyAddressMode(Coord.X, Size.X, AddressModeX),
+		ApplyAddressMode(Coord.Y, Size.Y, AddressModeY)
 	);
 }
 

@@ -206,13 +206,14 @@ UCommon::FGridCube UCommon::FTexCube::GetGridCube() const noexcept
 	return FGridCube{ FGrid2D{ Grid2D.Width, Grid2D.Height / (uint64_t)ECubeFace::NumCubeFaces } };
 }
 
-void UCommon::FTexCube::BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord, ETextureAddress AddressMode) const noexcept
+void UCommon::FTexCube::BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord) const noexcept
 {
 	const void* Storage = FlatTex2D.GetStorage();
 	const uint64_t Offset = FlatTex2D.GetStorageSizeInBytes() / (uint64_t)ECubeFace::NumCubeFaces * (uint64_t)CubeTexcoord.Face;
 	const void* OffsetedStorage = (const uint8_t*)Storage + Offset;
 	const FTex2D FaceTex2D(GetGridCube().Grid2D, FlatTex2D.GetNumChannels(), EOwnership::DoNotTakeOwnership, FlatTex2D.GetElementType(), const_cast<void*>(OffsetedStorage));
-	FaceTex2D.BilinearSample(Result, CubeTexcoord.Texcoord, AddressMode);
+	// Cube map faces are discontinuous at edges, so we must use Clamp mode
+	FaceTex2D.BilinearSample(Result, CubeTexcoord.Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
 }
 
 void UCommon::FTexCube::ToEquirectangular(FTex2D& Equirectangular) const

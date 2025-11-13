@@ -369,7 +369,7 @@ bool UCommon::FTex2D::IsLayoutSameWith(const FTex2D& Other) const noexcept
 		&& NumChannels == Other.NumChannels;
 }
 
-void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord, ETextureAddress AddressMode) const noexcept
+void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord, ETextureAddress AddressModeX, ETextureAddress AddressModeY) const noexcept
 {
 	const FVector2f PointT = Texcoord * FVector2f(Grid2D.GetExtent());
 	const FVector2f PointTOffset = PointT - 0.5f;
@@ -379,8 +379,8 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord, E
 	// Apply address mode to integer coordinates
 	const FUint64Vector2 Points[2] =
 	{
-		ApplyAddressMode(IntPoint0, Grid2D.GetExtent(), AddressMode),
-		ApplyAddressMode(IntPoint1, Grid2D.GetExtent(), AddressMode),
+		ApplyAddressMode(IntPoint0, Grid2D.GetExtent(), AddressModeX, AddressModeY),
+		ApplyAddressMode(IntPoint1, Grid2D.GetExtent(), AddressModeX, AddressModeY),
 	};
 
 	const FVector2f LocalTexcoord = (PointT - (FVector2f(IntPoint0) + 0.5f)).Clamp(0.f, 1.f);

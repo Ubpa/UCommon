@@ -63,9 +63,9 @@ namespace UCommon
 	UBPA_UCOMMON_API float ApplyAddressMode(float Coord, ETextureAddress AddressMode);
 	UBPA_UCOMMON_API uint64_t ApplyAddressMode(int64_t Coord, uint64_t Size, ETextureAddress AddressMode);
 
-	// Vector versions
-	UBPA_UCOMMON_API FVector2f ApplyAddressMode(const FVector2f& Coord, ETextureAddress AddressMode);
-	UBPA_UCOMMON_API FUint64Vector2 ApplyAddressMode(const FInt64Vector2& Coord, const FUint64Vector2& Size, ETextureAddress AddressMode);
+	// Vector versions - separate address modes for X and Y
+	UBPA_UCOMMON_API FVector2f ApplyAddressMode(const FVector2f& Coord, ETextureAddress AddressModeX, ETextureAddress AddressModeY);
+	UBPA_UCOMMON_API FUint64Vector2 ApplyAddressMode(const FInt64Vector2& Coord, const FUint64Vector2& Size, ETextureAddress AddressModeX, ETextureAddress AddressModeY);
 
 	template<typename T, int64_t V>
 	constexpr T TypedValue = static_cast<T>(V);
