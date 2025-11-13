@@ -159,7 +159,7 @@ namespace UCommon
 
 		FGridCube GetGridCube() const noexcept;
 
-		void BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord) const noexcept;
+		void BilinearSample(float* Result, const FCubeTexcoord& CubeTexcoord, ETextureAddress AddressMode = ETextureAddress::Wrap) const noexcept;
 
 		void ToEquirectangular(FTex2D& Equirectangular) const;
 		FTex2D ToEquirectangular() const;

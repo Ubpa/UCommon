@@ -218,7 +218,7 @@ namespace UCommon
 		/** Whether `Grid2D`, `NumChannels` and `ElementType` are the same as `Other`'s. */
 		bool IsLayoutSameWith(const FTex2D& Other) const noexcept;
 
-		void BilinearSample(float* Result, const FVector2f& Texcoord) const noexcept;
+		void BilinearSample(float* Result, const FVector2f& Texcoord, ETextureAddress AddressMode = ETextureAddress::Wrap) const noexcept;
 
 		/**
 		 * Width = Width/2

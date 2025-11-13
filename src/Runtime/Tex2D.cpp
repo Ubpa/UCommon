@@ -61,7 +61,8 @@ UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(const FVector2f& Texcoord) co
 	UBPA_UCOMMON_ASSERT(FVector2f(0.f) <= Texcoord && Texcoord <= FVector2f(1.f));
 	UBPA_UCOMMON_ASSERT(!IsAreaEmpty());
 
-	return FUint64Vector2(FInt64Vector2(Texcoord - 0.5f).Clamp(FInt64Vector2(0), FInt64Vector2(GetExtent() - 1)));
+	const FVector2f PointT = Texcoord * FVector2f(GetExtent());
+	return FUint64Vector2(FInt64Vector2((PointT - 0.5f).Floor()).Clamp(FInt64Vector2(0), FInt64Vector2(GetExtent() - 1)));
 }
 
 UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(uint64_t Index) const noexcept
@@ -368,20 +369,18 @@ bool UCommon::FTex2D::IsLayoutSameWith(const FTex2D& Other) const noexcept
 		&& NumChannels == Other.NumChannels;
 }
 
-void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord) const noexcept
+void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord, ETextureAddress AddressMode) const noexcept
 {
-	UBPA_UCOMMON_ASSERT(FVector2f(0.f) <= Texcoord && Texcoord <= FVector2f(1.f));
-
 	const FVector2f PointT = Texcoord * FVector2f(Grid2D.GetExtent());
-	const FInt64Vector2 IntPoint0 = FInt64Vector2(PointT - 0.5f);
-	const FInt64Vector2 IntPoint1 = (IntPoint0 + 1).Min(FInt64Vector2(Grid2D.GetExtent() - 1));
+	const FVector2f PointTOffset = PointT - 0.5f;
+	const FInt64Vector2 IntPoint0 = FInt64Vector2(PointTOffset.Floor());
+	const FInt64Vector2 IntPoint1 = IntPoint0 + 1;
 
-	UBPA_UCOMMON_ASSERT(IntPoint1 >= FInt64Vector2(0));
-
+	// Apply address mode to integer coordinates
 	const FUint64Vector2 Points[2] =
 	{
-		FUint64Vector2(IntPoint0.Max(0)),
-		FUint64Vector2(IntPoint1),
+		ApplyAddressMode(IntPoint0, Grid2D.GetExtent(), AddressMode),
+		ApplyAddressMode(IntPoint1, Grid2D.GetExtent(), AddressMode),
 	};
 
 	const FVector2f LocalTexcoord = (PointT - (FVector2f(IntPoint0) + 0.5f)).Clamp(0.f, 1.f);

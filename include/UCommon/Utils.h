@@ -31,6 +31,7 @@ SOFTWARE.
 namespace NameSpace \
 { \
     using EForceInit = UCommon::EForceInit; \
+    using ETextureAddress = UCommon::ETextureAddress; \
     constexpr float Pi = UCommon::Pi; \
     using EElementType = UCommon::EElementType; \
     using EOwnership = UCommon::EOwnership; \
@@ -48,6 +49,23 @@ namespace UCommon
 		Default,
 		Zero
 	};
+
+	enum class ETextureAddress
+	{
+		Wrap,
+		Clamp,
+		Mirror,
+	};
+
+	// Apply texture address mode to a coordinate
+	// For float: Coord is normalized coordinate, returns wrapped coordinate in [0, 1]
+	// For int64_t: Coord is integer coordinate, Size is texture size, returns wrapped coordinate in [0, Size-1]
+	UBPA_UCOMMON_API float ApplyAddressMode(float Coord, ETextureAddress AddressMode);
+	UBPA_UCOMMON_API uint64_t ApplyAddressMode(int64_t Coord, uint64_t Size, ETextureAddress AddressMode);
+
+	// Vector versions
+	UBPA_UCOMMON_API FVector2f ApplyAddressMode(const FVector2f& Coord, ETextureAddress AddressMode);
+	UBPA_UCOMMON_API FUint64Vector2 ApplyAddressMode(const FInt64Vector2& Coord, const FUint64Vector2& Size, ETextureAddress AddressMode);
 
 	template<typename T, int64_t V>
 	constexpr T TypedValue = static_cast<T>(V);
