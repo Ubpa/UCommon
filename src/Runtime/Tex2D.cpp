@@ -556,7 +556,7 @@ void UCommon::FTex2D::ToTexCube(FTexCube& TexCube) const
 		const FVector3f Direction = CubeTexcoord.Direction();
 		const FVector2f UV = EquirectangularDirectionToUV(Direction);
 		const FUint64Vector2 FlatPoint = CubePoint.Flat(GridCube);
-		BilinearSample(Buffer.get(), UV);
+		BilinearSample(Buffer.get(), UV, ETextureAddress::Wrap, ETextureAddress::Clamp);
 		for (uint64_t ChannelIndex = 0; ChannelIndex < TexCube.FlatTex2D.GetNumChannels(); ChannelIndex++)
 		{
 			TexCube.FlatTex2D.SetFloat(FlatPoint, ChannelIndex, Buffer[ChannelIndex]);
