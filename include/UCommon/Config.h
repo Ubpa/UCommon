@@ -41,6 +41,8 @@ SOFTWARE.
 #define UBPA_UCOMMON_TVECTOR_DEFINE
 #define UBPA_UCOMMON_TVECTOR4_DEFINE
 
+#define UBPA_UCOMMON_WITH_EDITOR 1
+
 //----------------------------------------------------------
 
 //#define UCOMMON_COMPATIBLE_CPP14
