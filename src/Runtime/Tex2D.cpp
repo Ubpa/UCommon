@@ -545,6 +545,427 @@ UCommon::FTex2D UCommon::FTex2D::ToUint8() const
 	return Tex;
 }
 
+void UCommon::FTex2D::Clamp(float MinValue, float MaxValue) noexcept
+{
+	UBPA_UCOMMON_ASSERT(MinValue <= MaxValue);
+
+	switch (ElementType)
+	{
+	case UCommon::EElementType::Uint8:
+	{
+		const uint8_t MinUint8 = ElementFloatClampToUint8(MinValue);
+		const uint8_t MaxUint8 = ElementFloatClampToUint8(MaxValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			uint8_t& Value = reinterpret_cast<uint8_t*>(Storage)[Index];
+			Value = UCommon::Clamp(Value, MinUint8, MaxUint8);
+		}
+		break;
+	}
+	case UCommon::EElementType::Half:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			FHalf& Value = reinterpret_cast<FHalf*>(Storage)[Index];
+			Value = static_cast<FHalf>(UCommon::Clamp(static_cast<float>(Value), MinValue, MaxValue));
+		}
+		break;
+	}
+	case UCommon::EElementType::Float:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			float& Value = reinterpret_cast<float*>(Storage)[Index];
+			Value = UCommon::Clamp(Value, MinValue, MaxValue);
+		}
+		break;
+	}
+	case UCommon::EElementType::Double:
+	{
+		const double MinDouble = static_cast<double>(MinValue);
+		const double MaxDouble = static_cast<double>(MaxValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			double& Value = reinterpret_cast<double*>(Storage)[Index];
+			Value = UCommon::Clamp(Value, MinDouble, MaxDouble);
+		}
+		break;
+	}
+	default:
+		UBPA_UCOMMON_NO_ENTRY();
+		break;
+	}
+}
+
+void UCommon::FTex2D::Min(float MinValue) noexcept
+{
+	switch (ElementType)
+	{
+	case UCommon::EElementType::Uint8:
+	{
+		const uint8_t MinUint8 = ElementFloatClampToUint8(MinValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			uint8_t& Value = reinterpret_cast<uint8_t*>(Storage)[Index];
+			if (Value < MinUint8)
+			{
+				Value = MinUint8;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Half:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			FHalf& Value = reinterpret_cast<FHalf*>(Storage)[Index];
+			const float ValueFloat = static_cast<float>(Value);
+			if (ValueFloat < MinValue)
+			{
+				Value = static_cast<FHalf>(MinValue);
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Float:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			float& Value = reinterpret_cast<float*>(Storage)[Index];
+			if (Value < MinValue)
+			{
+				Value = MinValue;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Double:
+	{
+		const double MinDouble = static_cast<double>(MinValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			double& Value = reinterpret_cast<double*>(Storage)[Index];
+			if (Value < MinDouble)
+			{
+				Value = MinDouble;
+			}
+		}
+		break;
+	}
+	default:
+		UBPA_UCOMMON_NO_ENTRY();
+		break;
+	}
+}
+
+void UCommon::FTex2D::Max(float MaxValue) noexcept
+{
+	switch (ElementType)
+	{
+	case UCommon::EElementType::Uint8:
+	{
+		const uint8_t MaxUint8 = ElementFloatClampToUint8(MaxValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			uint8_t& Value = reinterpret_cast<uint8_t*>(Storage)[Index];
+			if (Value > MaxUint8)
+			{
+				Value = MaxUint8;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Half:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			FHalf& Value = reinterpret_cast<FHalf*>(Storage)[Index];
+			const float ValueFloat = static_cast<float>(Value);
+			if (ValueFloat > MaxValue)
+			{
+				Value = static_cast<FHalf>(MaxValue);
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Float:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			float& Value = reinterpret_cast<float*>(Storage)[Index];
+			if (Value > MaxValue)
+			{
+				Value = MaxValue;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Double:
+	{
+		const double MaxDouble = static_cast<double>(MaxValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			double& Value = reinterpret_cast<double*>(Storage)[Index];
+			if (Value > MaxDouble)
+			{
+				Value = MaxDouble;
+			}
+		}
+		break;
+	}
+	default:
+		UBPA_UCOMMON_NO_ENTRY();
+		break;
+	}
+}
+
+void UCommon::FTex2D::Threshold(float ThresholdValue) noexcept
+{
+	switch (ElementType)
+	{
+	case UCommon::EElementType::Uint8:
+	{
+		const uint8_t ThresholdUint8 = ElementFloatClampToUint8(ThresholdValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			uint8_t& Value = reinterpret_cast<uint8_t*>(Storage)[Index];
+			if (Value < ThresholdUint8)
+			{
+				Value = 0;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Half:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			FHalf& Value = reinterpret_cast<FHalf*>(Storage)[Index];
+			const float ValueFloat = static_cast<float>(Value);
+			if (ValueFloat < ThresholdValue)
+			{
+				Value = static_cast<FHalf>(0.f);
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Float:
+	{
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			float& Value = reinterpret_cast<float*>(Storage)[Index];
+			if (Value < ThresholdValue)
+			{
+				Value = 0.f;
+			}
+		}
+		break;
+	}
+	case UCommon::EElementType::Double:
+	{
+		const double ThresholdDouble = static_cast<double>(ThresholdValue);
+		for (uint64_t Index = 0; Index < GetNumElements(); ++Index)
+		{
+			double& Value = reinterpret_cast<double*>(Storage)[Index];
+			if (Value < ThresholdDouble)
+			{
+				Value = 0.0;
+			}
+		}
+		break;
+	}
+	default:
+		UBPA_UCOMMON_NO_ENTRY();
+		break;
+	}
+}
+
+void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
+{
+	UBPA_UCOMMON_ASSERT(Grid2D == CoverageData.Grid2D);
+	UBPA_UCOMMON_ASSERT(NumChannels == CoverageData.NumChannels);
+	UBPA_UCOMMON_ASSERT(CoverageData.ElementType != EElementType::Uint8);
+
+	const uint64_t MaxSize = std::max(Grid2D.Width, Grid2D.Height);
+
+	uint64_t NumMips = 0;
+	while ((MaxSize >> NumMips) != 0)
+	{
+		NumMips++;
+	}
+
+	std::vector<FTex2D> MipDataBuffer;
+	std::vector<FTex2D> CoverageDataBuffer;
+
+	MipDataBuffer.reserve(NumMips - 1);
+	CoverageDataBuffer.reserve(NumMips - 1);
+
+	std::vector<FTex2D*> MipDatas;
+	std::vector<FTex2D*> MipCoverageDatas;
+
+	MipDatas.push_back(this);
+	MipCoverageDatas.push_back(&CoverageData);
+
+	// Step 1: Generate mipmap chain with coverage-aware downsampling
+	for (uint64_t MipIndex = 1; MipIndex < NumMips; MipIndex++)
+	{
+		const uint64_t SourceMipSizeX = MipDatas[MipIndex - 1]->Grid2D.Width;
+		const uint64_t SourceMipSizeY = MipDatas[MipIndex - 1]->Grid2D.Height;
+		const uint64_t DestMipSizeX = (SourceMipSizeX + 1) >> 1;
+		const uint64_t DestMipSizeY = (SourceMipSizeY + 1) >> 1;
+
+		MipDataBuffer.emplace_back(FGrid2D(DestMipSizeX, DestMipSizeY), NumChannels, ElementType);
+		CoverageDataBuffer.emplace_back(FGrid2D(DestMipSizeX, DestMipSizeY), NumChannels, CoverageData.ElementType);
+
+		MipDatas.push_back(&MipDataBuffer.back());
+		MipCoverageDatas.push_back(&CoverageDataBuffer.back());
+
+		// Downsample the previous mip-level, taking into account which texels are mapped
+		FTex2D* NextMipData = MipDatas[MipIndex];
+		FTex2D* LastMipData = MipDatas[MipIndex - 1];
+
+		FTex2D* NextMipCoverageData = MipCoverageDatas[MipIndex];
+		FTex2D* LastMipCoverageData = MipCoverageDatas[MipIndex - 1];
+
+		for (const FUint64Vector2& Point : NextMipData->Grid2D)
+		{
+			for (uint64_t C = 0; C < NumChannels; C++)
+			{
+				float AccumulatedColor = 0.f;
+				float Coverage = 0.f;
+
+				const uint64_t MinSourceY = (Point.Y + 0) * 2;
+				const uint64_t MaxSourceY = (Point.Y + 1) * 2;
+				for (uint64_t SourceY = MinSourceY; SourceY < MaxSourceY; SourceY++)
+				{
+					const uint64_t ClampedSourceY = std::min(SourceY, LastMipData->Grid2D.Height - 1);
+					const uint64_t MinSourceX = (Point.X + 0) * 2;
+					const uint64_t MaxSourceX = (Point.X + 1) * 2;
+					for (uint64_t SourceX = MinSourceX; SourceX < MaxSourceX; SourceX++)
+					{
+						const uint64_t ClampedSourceX = std::min(SourceX, LastMipData->Grid2D.Width - 1);
+						const float SourceColor = LastMipData->GetFloat(FUint64Vector2(ClampedSourceX, ClampedSourceY), C);
+						const float SourceCoverage = LastMipCoverageData->GetFloat(FUint64Vector2(ClampedSourceX, ClampedSourceY), C);
+						if (SourceCoverage > 0.f)
+						{
+							AccumulatedColor += SourceColor * SourceCoverage;
+							Coverage += SourceCoverage;
+						}
+					}
+				}
+
+				float DestColor;
+				float DestCoverage;
+				if (Coverage > 0.f)
+				{
+					DestColor = AccumulatedColor / Coverage;
+					DestCoverage = Coverage / 4.f; // 2D: divide by 4 (2x2)
+				}
+				else
+				{
+					DestColor = 0.f;
+					DestCoverage = 0.f;
+				}
+
+				NextMipData->SetFloat(Point, C, DestColor);
+				NextMipCoverageData->SetFloat(Point, C, DestCoverage);
+			}
+		}
+	}
+
+	// Step 2: Expand texels which are mapped into adjacent texels which are not mapped
+	for (uint64_t MipIndex = 0; MipIndex < NumMips; MipIndex++)
+	{
+		FTex2D* MipLevelData = MipDatas[MipIndex];
+		FTex2D* MipLevelCoverageData = MipCoverageDatas[MipIndex];
+
+		for (const FUint64Vector2& Point : MipLevelData->Grid2D)
+		{
+			for (uint64_t C = 0; C < NumChannels; C++)
+			{
+				const float DestCoverage = MipLevelCoverageData->GetFloat(Point, C);
+				if (DestCoverage == 0.f)
+				{
+					float AccumulatedColor = 0.f;
+					float Coverage = 0.f;
+
+					const uint64_t MinSourceY = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.Y) - 1, static_cast<int64_t>(0)));
+					const uint64_t MaxSourceY = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.Y) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Height - 1)));
+					for (uint64_t SourceY = MinSourceY; SourceY <= MaxSourceY; SourceY++)
+					{
+						const uint64_t MinSourceX = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.X) - 1, static_cast<int64_t>(0)));
+						const uint64_t MaxSourceX = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.X) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Width - 1)));
+						for (uint64_t SourceX = MinSourceX; SourceX <= MaxSourceX; SourceX++)
+						{
+							const float SourceColor = MipLevelData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
+							const float SourceCoverage = MipLevelCoverageData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
+							if (SourceCoverage > 0.f)
+							{
+								// Weight matrix for 2D (3x3)
+								static const float Weights[3][3] =
+								{
+									{ 1.f, 255.f, 1.f },
+									{ 255.f, 0.f, 255.f },
+									{ 1.f, 255.f, 1.f },
+								};
+								const float Weight = Weights[SourceY - Point.Y + 1][SourceX - Point.X + 1];
+								AccumulatedColor += SourceColor * SourceCoverage * Weight;
+								Coverage += SourceCoverage * Weight;
+							}
+						}
+					}
+
+					if (Coverage > 0.f)
+					{
+						MipLevelData->SetFloat(Point, C, AccumulatedColor / Coverage);
+						MipLevelCoverageData->SetFloat(Point, C, -1.f); // Mark as filled
+					}
+				}
+			}
+		}
+	}
+
+	// Step 3: Fill zero coverage texels with closest colors using mips
+	for (uint64_t MipIndexOffset = 2; MipIndexOffset <= NumMips; MipIndexOffset++)
+	{
+		const uint64_t MipIndex = NumMips - MipIndexOffset;
+
+		// Source from higher mip, taking into account which texels are mapped
+		FTex2D* DstMipData = MipDatas[MipIndex];
+		FTex2D* SrcMipData = MipDatas[MipIndex + 1];
+
+		FTex2D* DstMipCoverageData = MipCoverageDatas[MipIndex];
+		FTex2D* SrcMipCoverageData = MipCoverageDatas[MipIndex + 1];
+
+		const std::unique_ptr<float[]> SampleBuffer = std::make_unique<float[]>(NumChannels);
+
+		for (const FUint64Vector2& Point : DstMipData->Grid2D)
+		{
+			const FVector2f Texcoord = DstMipData->Grid2D.GetTexcoord(Point);
+
+			for (uint64_t C = 0; C < NumChannels; C++)
+			{
+				const float DstCoverage = DstMipCoverageData->GetFloat(Point, C);
+
+				// Point upsample mip data for zero coverage texels
+				if (DstCoverage == 0.f)
+				{
+					// Use bilinear sampling for smoother results
+					SrcMipData->BilinearSample(SampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
+					const float SrcColor = SampleBuffer[C];
+
+					DstMipData->SetFloat(Point, C, SrcColor);
+
+					// Also sample coverage
+					SrcMipCoverageData->BilinearSample(SampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
+					const float SrcCoverage = SampleBuffer[C];
+					DstMipCoverageData->SetFloat(Point, C, SrcCoverage);
+				}
+			}
+		}
+	}
+}
+
 void UCommon::FTex2D::ToTexCube(FTexCube& TexCube) const
 {
 	UBPA_UCOMMON_ASSERT(TexCube.FlatTex2D.IsValid());

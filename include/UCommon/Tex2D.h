@@ -241,6 +241,47 @@ namespace UCommon
 
 		FTex2D ToUint8() const;
 
+		/**
+		 * Clamp all elements to [MinValue, MaxValue].
+		 * Only supports Uint8 (as unorm), Half, Float, Double.
+		 *
+		 * @param MinValue minimum value to clamp to
+		 * @param MaxValue maximum value to clamp to
+		 */
+		void Clamp(float MinValue, float MaxValue) noexcept;
+
+		/**
+		 * Clamp all elements to minimum value.
+		 * Only supports Uint8 (as unorm), Half, Float, Double.
+		 *
+		 * @param MinValue minimum value to clamp to
+		 */
+		void Min(float MinValue) noexcept;
+
+		/**
+		 * Clamp all elements to maximum value.
+		 * Only supports Uint8 (as unorm), Half, Float, Double.
+		 *
+		 * @param MaxValue maximum value to clamp to
+		 */
+		void Max(float MaxValue) noexcept;
+
+		/**
+		 * Set all elements below threshold to zero.
+		 * Only supports Uint8 (as unorm), Half, Float, Double.
+		 *
+		 * @param ThresholdValue threshold value, elements < ThresholdValue will be set to 0
+		 */
+		void Threshold(float ThresholdValue) noexcept;
+
+		/**
+		 * Image inpainting algorithm to fill uncovered (coverage = 0) regions.
+		 * Uses mipmap-based approach to propagate valid pixels into invalid regions.
+		 *
+		 * @param CoverageData texture with same layout indicating coverage (0 = uncovered, >0 = covered)
+		 */
+		void ImageInpainting(FTex2D CoverageData);
+
 		// Equirectangular
 		void ToTexCube(FTexCube& TexCube) const;
 		FTexCube ToTexCube() const;
