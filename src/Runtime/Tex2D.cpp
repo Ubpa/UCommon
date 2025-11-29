@@ -25,6 +25,7 @@ SOFTWARE.
 #include <UCommon/Tex2D.h>
 #include <UCommon/TexCube.h>
 
+#include <vector>
 
 //
 // FGrid2D
