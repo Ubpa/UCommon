@@ -208,20 +208,20 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
-	// co in [-2, 2], cg in [-1, 1]
+	// co in [-1, 1], cg in [-1, 1]
 	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
 	{
 		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
 		const float RB = R + B;
-		Y = (2 * G + RB) / 4;
+		Y = (2.f * G + RB) / 4.f;
 		if (Y < UBPA_UCOMMON_DELTA)
 		{
 			Co = 0.f;
 			Cg = 0.f;
 			return;
 		}
-		Co = (R - B) / Y / 2;
-		Cg = (2 * G - RB) / Y / 4;
+		Co = (R - B) / Y / 4.f;
+		Cg = (2.f * G - RB) / Y / 4.f;
 	}
 
 	static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
@@ -234,9 +234,9 @@ namespace UCommon
 	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
 	{
 		const float Tmp = 1.f - Cg;
-		R = (Tmp + Co) * Y;
+		R = (Tmp + 2.f * Co) * Y;
 		G = (1.f + Cg) * Y;
-		B = (Tmp - Co) * Y;
+		B = (Tmp - 2.f * Co) * Y;
 	}
 
 	static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
@@ -601,7 +601,7 @@ namespace UCommon
 		FPackedHue(uint8_t InCo, uint8_t InCg) : Co(InCo), Cg(InCg) {}
 		FPackedHue(const FVector2f& CoCg)
 		{
-			Co = ElementFloatClampToUint8((CoCg.X + 2.f) / 4.f);
+			Co = ElementFloatClampToUint8((CoCg.X + 1.f) / 2.f);
 			Cg = ElementFloatClampToUint8((CoCg.Y + 1.f) / 2.f);
 		}
 		FPackedHue(const FVector3f& Hue)
@@ -616,7 +616,7 @@ namespace UCommon
 		{
 			FVector3f Hue;
 			constexpr float Y = 1.f;
-			const float Cof = ElementUint8ToFloat(Co) * 4.f - 2.f;
+			const float Cof = ElementUint8ToFloat(Co) * 4.f - 2.f; // *2
 			const float Cgf = ElementUint8ToFloat(Cg) * 2.f - 1.f;
 			const float YSubCg = Y - Cgf;
 			Hue.X = YSubCg + Cof;
