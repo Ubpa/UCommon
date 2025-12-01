@@ -36,6 +36,16 @@ else()
   set(mode STATIC)
 endif()
 
+# Add __STDC_LIB_EXT1__ for platforms that support sprintf_s
+if(MSVC)
+  # MSVC supports sprintf_s
+  list(APPEND private_defines "__STDC_LIB_EXT1__")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # Check if the platform supports sprintf_s (e.g., some modern glibc versions)
+  # For now, we only enable it on MSVC by default
+  # Other platforms can be added here if needed
+endif()
+
 Ubpa_AddTarget(
   MODE ${mode}
   CXX_STANDARD 17
