@@ -46,7 +46,7 @@ float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Bu
 		return 0.f;
 	}
 
-	const float MaxL1 = std::sqrt(3.f) * (1.f - t) * 0.975f;
+	const float MaxL1 = 3.f / 2.f * (1.f - t) * 0.975f * L0;
 	if (MaxL1 <= UBPA_UCOMMON_DELTA)
 	{
 		return 0.f;
@@ -54,11 +54,11 @@ float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Bu
 	float Scale = 1.f;
 	if (L1 >= MaxL1)
 	{
-		L1 = MaxL1;
 		Scale = MaxL1 / L1;
+		L1 = MaxL1;
 	}
 	constexpr float Factor1 = 2.f / 3.f * 0.48860252f;
-	const float p = L1 / SHVector2.V[0];
+	const float p = L1 / L0;
 	const float L2 = (0.6f * p * p + 0.08f * p) * L0;
 
 	constexpr float Factor2 = 1.f / 4.f * 0.31539157f;
