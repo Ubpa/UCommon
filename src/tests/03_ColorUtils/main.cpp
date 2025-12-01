@@ -101,7 +101,7 @@ void TestYCoCgProperties()
 {
 	std::cout << "Testing YCoCg properties..." << std::endl;
 
-	// Test that Co and Cg are in expected range [-2, 2] for normalized hue (Y=4)
+	// Test that Co and Cg are in expected range [-1, 1] for normalized hue (Y=4)
 	std::vector<FVector3f> TestRGBs = {
 		FVector3f(1.0f, 0.0f, 0.0f),
 		FVector3f(0.0f, 1.0f, 0.0f),
@@ -128,20 +128,20 @@ void TestYCoCgProperties()
 			bAllInRange = false;
 		}
 
-		// Check Co and Cg are in [-2, 2]
-		if (std::abs(YCoCg.Y) > 2.0f || std::abs(YCoCg.Z) > 2.0f)
+		// Check Co and Cg are in [-1, 1]
+		if (std::abs(YCoCg.Y) > 1.0f || std::abs(YCoCg.Z) > 1.0f)
 		{
 			bAllInRange = false;
 			std::cout << "  [WARNING] RGB(" << RGB.X << ", " << RGB.Y << ", " << RGB.Z
 			          << ") -> Normalized(" << NormalizedHue.X << ", " << NormalizedHue.Y << ", " << NormalizedHue.Z << ")"
 			          << " -> YCoCg(" << YCoCg.X << ", " << YCoCg.Y << ", " << YCoCg.Z
-			          << ") - Co or Cg out of [-2, 2] range" << std::endl;
+			          << ") - Co or Cg out of [-1, 1] range" << std::endl;
 		}
 	}
 
 	if (bAllInRange)
 	{
-		std::cout << "  All normalized hue values produce Y=4 and Co, Cg in [-2, 2] range" << std::endl;
+		std::cout << "  All normalized hue values produce Y=4 and Co, Cg in [-1, 1] range" << std::endl;
 	}
 }
 
@@ -167,10 +167,10 @@ void TestFPackedHue()
 	{
 		std::vector<FVector2f> CoCgTestCases = {
 			FVector2f(0.0f, 0.0f),    // Center
-			FVector2f(-2.0f, -1.0f),  // Min corner (Co: [-2,2], Cg: [-1,1])
-			FVector2f(2.0f, 1.0f),    // Max corner
-			FVector2f(-1.0f, 0.5f),   // Mixed
-			FVector2f(1.5f, -0.5f),   // Mixed
+			FVector2f(-1.0f, -1.0f),  // Min corner (Co: [-1,1], Cg: [-1,1])
+			FVector2f(1.0f, 1.0f),    // Max corner
+			FVector2f(-0.5f, 0.5f),   // Mixed
+			FVector2f(0.75f, -0.5f),  // Mixed
 		};
 
 		int PassedCount = 0;
@@ -183,13 +183,13 @@ void TestFPackedHue()
 
 			// Extract Co and Cg from unpacked RGB
 			// From the Unpack implementation:
-			// Cof = Co / 255 * 4 - 2  (Co range: [-2, 2])
+			// Cof = Co / 255 * 2 - 1  (Co range: [-1, 1])
 			// Cgf = Cg / 255 * 2 - 1  (Cg range: [-1, 1])
-			float UnpackedCo = ElementUint8ToFloat(Packed.Co) * 4.0f - 2.0f;
+			float UnpackedCo = ElementUint8ToFloat(Packed.Co) * 2.0f - 1.0f;
 			float UnpackedCg = ElementUint8ToFloat(Packed.Cg) * 2.0f - 1.0f;
 
 			// Check if roundtrip is close (with quantization tolerance)
-			float ToleranceCo = 4.0f / 255.0f; // One quantization step for Co
+			float ToleranceCo = 2.0f / 255.0f; // One quantization step for Co
 			float ToleranceCg = 2.0f / 255.0f; // One quantization step for Cg
 			if (IsNearlyEqual(CoCg.X, UnpackedCo, ToleranceCo) &&
 			    IsNearlyEqual(CoCg.Y, UnpackedCg, ToleranceCg))
