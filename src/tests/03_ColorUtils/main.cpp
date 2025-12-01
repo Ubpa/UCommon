@@ -163,34 +163,46 @@ void TestFPackedHue()
 		std::cout << "  Direct uint8_t construction: PASSED" << std::endl;
 	}
 
-	// Test 3: CoCg vector construction and roundtrip
+	// Test 3: CoCg vector construction and roundtrip (using triangle mapping)
 	{
+		// Valid CoCg values must satisfy: Cg - 1 <= 2*Co <= 1 - Cg
 		std::vector<FVector2f> CoCgTestCases = {
-			FVector2f(0.0f, 0.0f),    // Center
-			FVector2f(-1.0f, -1.0f),  // Min corner (Co: [-1,1], Cg: [-1,1])
-			FVector2f(1.0f, 1.0f),    // Max corner
-			FVector2f(-0.5f, 0.5f),   // Mixed
-			FVector2f(0.75f, -0.5f),  // Mixed
+			FVector2f(0.0f, 0.0f),     // Center
+			FVector2f(0.0f, -1.0f),    // Bottom vertex (Co=0, Cg=-1)
+			FVector2f(0.5f, 0.0f),     // Right edge (Co=0.5, Cg=0)
+			FVector2f(-0.5f, 0.0f),    // Left edge (Co=-0.5, Cg=0)
+			FVector2f(0.0f, 1.0f),     // Top vertex (Co=0, Cg=1)
+			FVector2f(0.25f, 0.5f),    // Inside triangle
+			FVector2f(-0.25f, 0.5f),   // Inside triangle
+			FVector2f(0.4f, -0.2f),    // Inside triangle
 		};
 
 		int PassedCount = 0;
 		for (const auto& CoCg : CoCgTestCases)
 		{
+			// Verify the input is in valid triangle
+			const bool bIsValid = (CoCg.Y - 1.0f <= 2.0f * CoCg.X) && (2.0f * CoCg.X <= 1.0f - CoCg.Y);
+			if (!bIsValid)
+			{
+				std::cout << "  [SKIPPED] CoCg(" << CoCg.X << ", " << CoCg.Y << ") is outside valid triangle" << std::endl;
+				continue;
+			}
+
 			FPackedHue Packed(CoCg);
 
 			// Unpack and check (note: Unpack returns full RGB with Y=1)
 			FVector3f UnpackedRGB = Packed.Unpack();
 
-			// Extract Co and Cg from unpacked RGB
-			// From the Unpack implementation:
-			// Cof = Co / 255 * 2 - 1  (Co range: [-1, 1])
-			// Cgf = Cg / 255 * 2 - 1  (Cg range: [-1, 1])
-			float UnpackedCo = ElementUint8ToFloat(Packed.Co) * 2.0f - 1.0f;
-			float UnpackedCg = ElementUint8ToFloat(Packed.Cg) * 2.0f - 1.0f;
+			// Convert unpacked RGB back to CoCg to verify roundtrip
+			float Y, UnpackedCo, UnpackedCg;
+			RGBToYCoCg(UnpackedRGB.X, UnpackedRGB.Y, UnpackedRGB.Z, Y, UnpackedCo, UnpackedCg);
 
 			// Check if roundtrip is close (with quantization tolerance)
-			float ToleranceCo = 2.0f / 255.0f; // One quantization step for Co
-			float ToleranceCg = 2.0f / 255.0f; // One quantization step for Cg
+			// Triangle mapping has variable quantization depending on position
+			const float CoRange = (1.0f - CoCg.Y) - (CoCg.Y - 1.0f); // Width of valid Co range at this Cg
+			const float ToleranceCo = std::max(CoRange / 255.0f * 2.0f, 0.01f); // Quantization step for Co at this Cg, with minimum tolerance
+			const float ToleranceCg = 2.0f / 255.0f; // Quantization step for Cg
+
 			if (IsNearlyEqual(CoCg.X, UnpackedCo, ToleranceCo) &&
 			    IsNearlyEqual(CoCg.Y, UnpackedCg, ToleranceCg))
 			{
@@ -201,6 +213,7 @@ void TestFPackedHue()
 				std::cout << "  [FAILED] CoCg(" << CoCg.X << ", " << CoCg.Y << ")" << std::endl;
 				std::cout << "    Packed: Co=" << (int)Packed.Co << ", Cg=" << (int)Packed.Cg << std::endl;
 				std::cout << "    Unpacked: Co=" << UnpackedCo << ", Cg=" << UnpackedCg << std::endl;
+				std::cout << "    Tolerance: Co=" << ToleranceCo << ", Cg=" << ToleranceCg << std::endl;
 			}
 		}
 
