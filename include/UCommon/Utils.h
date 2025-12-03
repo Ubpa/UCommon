@@ -597,8 +597,8 @@ namespace UCommon
 	struct FPackedHue
 	{
 		FPackedHue() {} // uninitialize
-		FPackedHue(EForceInit) : Co(128), Cg(128) {} // zero hue (Co=0.5, Cg=0.5 in UV space)
-		FPackedHue(uint8_t InCo, uint8_t InCg) : Co(InCo), Cg(InCg) {}
+		FPackedHue(EForceInit) : U(128), V(128) {} // zero hue (U=0.5, V=0.5 in UV space)
+		FPackedHue(uint8_t InU, uint8_t InV) : U(InU), V(InV) {}
 		FPackedHue(const FVector2f& CoCg)
 		{
 			// Triangle mapping: map (Co, Cg) in valid triangle to UV [0,1]x[0,1]
@@ -606,26 +606,26 @@ namespace UCommon
 			// Inverse mapping: given (Co, Cg), find UV
 
 			// Step 1: Quantize Cg first
-			const float V = (CoCg.Y + 1.f) * 0.5f;
-			Cg = ElementFloatClampToUint8(V);
+			const float Vf = (CoCg.Y + 1.f) * 0.5f;
+			V = ElementFloatClampToUint8(Vf);
 
 			// Step 2: Map Co to U within valid range based on quantized Cg
-			// Note: Cg = 255 (triangle top vertex) is degenerate case where CoRange = 0
-			float U;
-			if (Cg != 255)
+			// Note: V = 255 (triangle top vertex) is degenerate case where CoRange = 0
+			float Uf;
+			if (V != 255)
 			{
 				// Use quantized Cg to compute Co range for better accuracy
 				// CoRange is symmetric: Co in [-CoRange/2, CoRange/2]
-				const float QuantizedCg = ElementUint8ToFloat(Cg) * 2.f - 1.f;
+				const float QuantizedCg = ElementUint8ToFloat(V) * 2.f - 1.f;
 				const float CoRange = 1.f - QuantizedCg;
-				U = (CoCg.X + 0.5f * CoRange) / CoRange;
+				Uf = (CoCg.X + 0.5f * CoRange) / CoRange;
 			}
 			else
 			{
-				U = 0.5f; // Degenerate case: triangle top vertex, Co must be 0
+				Uf = 0.5f; // Degenerate case: triangle top vertex, Co must be 0
 			}
 
-			Co = ElementFloatClampToUint8(U);
+			U = ElementFloatClampToUint8(Uf);
 		}
 		FPackedHue(const FVector3f& Hue)
 		{
@@ -640,24 +640,20 @@ namespace UCommon
 			*this = FPackedHue(FVector2f(CoValue, CgValue));
 		}
 
-		FVector3f Unpack() const
+		FVector2f Unpack() const
 		{
 			// Triangle mapping: map UV [0,1]x[0,1] to valid (Co, Cg) triangle
-			const float U = ElementUint8ToFloat(Co);
-			const float V = ElementUint8ToFloat(Cg);
+			const float Uf = ElementUint8ToFloat(U);
+			const float Vf = ElementUint8ToFloat(V);
 
 			// Map V to Cg: [0, 1] -> [-1, 1]
-			const float CgValue = V * 2.f - 1.f;
+			const float CgValue = Vf * 2.f - 1.f;
 
 			// CoRange is symmetric: Co in [-CoRange/2, CoRange/2]
 			const float CoRange = 1.f - CgValue;
-			const float CoValue = (U - 0.5f) * CoRange;
+			const float CoValue = (Uf - 0.5f) * CoRange;
 
-			// Convert YCoCg to RGB
-			FVector3f Hue;
-			constexpr float Y = 1.f;
-			YCoCgToRGB(Y, CoValue, CgValue, Hue.X, Hue.Y, Hue.Z);
-			return Hue;
+			return { CoValue, CgValue };
 		}
 
 		// Triangle mapping: UV [0,1]x[0,1] -> Valid CoCg triangle
@@ -665,8 +661,8 @@ namespace UCommon
 		// V maps to Cg in [-1, 1]
 		// Valid region: Cg - 1 <= 2*Co <= 1 - Cg
 		// Space utilization: 100%
-		uint8_t Co; // U coordinate in triangle mapping
-		uint8_t Cg; // V coordinate in triangle mapping
+		uint8_t U; // U coordinate in triangle mapping (maps to Co)
+		uint8_t V; // V coordinate in triangle mapping (maps to Cg)
 	};
 
 	static inline FVector3f VectorToHemiOctL(const FVector3f& V)

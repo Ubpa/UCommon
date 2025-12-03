@@ -152,14 +152,14 @@ void TestFPackedHue()
 	// Test 1: Zero hue initialization
 	{
 		FPackedHue ZeroHue(EForceInit::Default);
-		assert(ZeroHue.Co == 128 && ZeroHue.Cg == 128);
+		assert(ZeroHue.U == 128 && ZeroHue.V == 128);
 		std::cout << "  Zero hue initialization: PASSED" << std::endl;
 	}
 
 	// Test 2: Direct uint8_t construction
 	{
 		FPackedHue DirectHue(100, 200);
-		assert(DirectHue.Co == 100 && DirectHue.Cg == 200);
+		assert(DirectHue.U == 100 && DirectHue.V == 200);
 		std::cout << "  Direct uint8_t construction: PASSED" << std::endl;
 	}
 
@@ -190,12 +190,8 @@ void TestFPackedHue()
 
 			FPackedHue Packed(CoCg);
 
-			// Unpack and check (note: Unpack returns full RGB with Y=1)
-			FVector3f UnpackedRGB = Packed.Unpack();
-
-			// Convert unpacked RGB back to CoCg to verify roundtrip
-			float Y, UnpackedCo, UnpackedCg;
-			RGBToYCoCg(UnpackedRGB.X, UnpackedRGB.Y, UnpackedRGB.Z, Y, UnpackedCo, UnpackedCg);
+			// Unpack and check (Unpack now returns CoCg directly)
+			FVector2f UnpackedCoCg = Packed.Unpack();
 
 			// Check if roundtrip is close (with quantization tolerance)
 			// Triangle mapping has variable quantization depending on position
@@ -203,16 +199,16 @@ void TestFPackedHue()
 			const float ToleranceCo = std::max(CoRange / 255.0f * 2.0f, 0.01f); // Quantization step for Co at this Cg, with minimum tolerance
 			const float ToleranceCg = 2.0f / 255.0f; // Quantization step for Cg
 
-			if (IsNearlyEqual(CoCg.X, UnpackedCo, ToleranceCo) &&
-			    IsNearlyEqual(CoCg.Y, UnpackedCg, ToleranceCg))
+			if (IsNearlyEqual(CoCg.X, UnpackedCoCg.X, ToleranceCo) &&
+			    IsNearlyEqual(CoCg.Y, UnpackedCoCg.Y, ToleranceCg))
 			{
 				PassedCount++;
 			}
 			else
 			{
 				std::cout << "  [FAILED] CoCg(" << CoCg.X << ", " << CoCg.Y << ")" << std::endl;
-				std::cout << "    Packed: Co=" << (int)Packed.Co << ", Cg=" << (int)Packed.Cg << std::endl;
-				std::cout << "    Unpacked: Co=" << UnpackedCo << ", Cg=" << UnpackedCg << std::endl;
+				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
+				std::cout << "    Unpacked: Co=" << UnpackedCoCg.X << ", Cg=" << UnpackedCoCg.Y << std::endl;
 				std::cout << "    Tolerance: Co=" << ToleranceCo << ", Cg=" << ToleranceCg << std::endl;
 			}
 		}
@@ -252,7 +248,11 @@ void TestFPackedHue()
 			assert(IsNearlyEqual(Sum, 4.0f, 0.001f) && "Hue should satisfy R + 2G + B = 4");
 
 			FPackedHue Packed(Hue);
-			FVector3f Unpacked = Packed.Unpack();
+			FVector2f UnpackedCoCg = Packed.Unpack();
+
+			// Convert CoCg back to RGB with Y=1 for comparison
+			FVector3f Unpacked;
+			YCoCgToRGB(1.f, UnpackedCoCg.X, UnpackedCoCg.Y, Unpacked.X, Unpacked.Y, Unpacked.Z);
 
 			// Check roundtrip with quantization tolerance
 			float Tolerance = 8.0f / 255.0f; // Quantization tolerance
@@ -263,8 +263,9 @@ void TestFPackedHue()
 			else
 			{
 				std::cout << "  [FAILED] Hue(" << Hue.X << ", " << Hue.Y << ", " << Hue.Z << ")" << std::endl;
-				std::cout << "    Packed: Co=" << (int)Packed.Co << ", Cg=" << (int)Packed.Cg << std::endl;
-				std::cout << "    Unpacked: (" << Unpacked.X << ", " << Unpacked.Y << ", " << Unpacked.Z << ")" << std::endl;
+				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
+				std::cout << "    Unpacked CoCg: (" << UnpackedCoCg.X << ", " << UnpackedCoCg.Y << ")" << std::endl;
+				std::cout << "    Unpacked RGB: (" << Unpacked.X << ", " << Unpacked.Y << ", " << Unpacked.Z << ")" << std::endl;
 				std::cout << "    Difference: ("
 				          << (Unpacked.X - Hue.X) << ", "
 				          << (Unpacked.Y - Hue.Y) << ", "
