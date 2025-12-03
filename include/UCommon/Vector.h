@@ -1303,3 +1303,125 @@ namespace UCommon
 }
 
 UBPA_UCOMMON_VECTOR_TO_NAMESPACE(UCommonTest)
+
+// Structured binding support for TVector2, TVector, TVector4
+namespace std
+{
+	// TVector2
+	template<typename T>
+	struct tuple_size<UCommon::TVector2<T>> : integral_constant<size_t, 2> {};
+
+	template<size_t I, typename T>
+	struct tuple_element<I, UCommon::TVector2<T>>
+	{
+		using type = T;
+	};
+
+	// TVector (3D)
+	template<typename T>
+	struct tuple_size<UCommon::TVector<T>> : integral_constant<size_t, 3> {};
+
+	template<size_t I, typename T>
+	struct tuple_element<I, UCommon::TVector<T>>
+	{
+		using type = T;
+	};
+
+	// TVector4
+	template<typename T>
+	struct tuple_size<UCommon::TVector4<T>> : integral_constant<size_t, 4> {};
+
+	template<size_t I, typename T>
+	struct tuple_element<I, UCommon::TVector4<T>>
+	{
+		using type = T;
+	};
+}
+
+// get functions for structured binding
+namespace UCommon
+{
+	// TVector2 get functions
+	template<size_t I, typename T>
+	constexpr T& get(TVector2<T>& V) noexcept
+	{
+		static_assert(I < 2, "Index out of bounds for TVector2");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+	}
+
+	template<size_t I, typename T>
+	constexpr const T& get(const TVector2<T>& V) noexcept
+	{
+		static_assert(I < 2, "Index out of bounds for TVector2");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+	}
+
+	template<size_t I, typename T>
+	constexpr T&& get(TVector2<T>&& V) noexcept
+	{
+		static_assert(I < 2, "Index out of bounds for TVector2");
+		if constexpr (I == 0) return std::move(V.X);
+		else if constexpr (I == 1) return std::move(V.Y);
+	}
+
+	// TVector (3D) get functions
+	template<size_t I, typename T>
+	constexpr T& get(TVector<T>& V) noexcept
+	{
+		static_assert(I < 3, "Index out of bounds for TVector");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+		else if constexpr (I == 2) return V.Z;
+	}
+
+	template<size_t I, typename T>
+	constexpr const T& get(const TVector<T>& V) noexcept
+	{
+		static_assert(I < 3, "Index out of bounds for TVector");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+		else if constexpr (I == 2) return V.Z;
+	}
+
+	template<size_t I, typename T>
+	constexpr T&& get(TVector<T>&& V) noexcept
+	{
+		static_assert(I < 3, "Index out of bounds for TVector");
+		if constexpr (I == 0) return std::move(V.X);
+		else if constexpr (I == 1) return std::move(V.Y);
+		else if constexpr (I == 2) return std::move(V.Z);
+	}
+
+	// TVector4 get functions
+	template<size_t I, typename T>
+	constexpr T& get(TVector4<T>& V) noexcept
+	{
+		static_assert(I < 4, "Index out of bounds for TVector4");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+		else if constexpr (I == 2) return V.Z;
+		else if constexpr (I == 3) return V.W;
+	}
+
+	template<size_t I, typename T>
+	constexpr const T& get(const TVector4<T>& V) noexcept
+	{
+		static_assert(I < 4, "Index out of bounds for TVector4");
+		if constexpr (I == 0) return V.X;
+		else if constexpr (I == 1) return V.Y;
+		else if constexpr (I == 2) return V.Z;
+		else if constexpr (I == 3) return V.W;
+	}
+
+	template<size_t I, typename T>
+	constexpr T&& get(TVector4<T>&& V) noexcept
+	{
+		static_assert(I < 4, "Index out of bounds for TVector4");
+		if constexpr (I == 0) return std::move(V.X);
+		else if constexpr (I == 1) return std::move(V.Y);
+		else if constexpr (I == 2) return std::move(V.Z);
+		else if constexpr (I == 3) return std::move(V.W);
+	}
+}
