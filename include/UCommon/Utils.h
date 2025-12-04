@@ -208,16 +208,12 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
-	static inline void ClampCoCg(float& Co, float& Cg)
+	static inline [[nodiscard]] FVector2f ClampCoCg(const FVector2f& CoCg)
 	{
-		Cg = Clamp(Cg, -1.f, 1.f);
+		float Cg = Clamp(CoCg[1], -1.f, 1.f);
 		const float HalfCoRange = (1.f - Cg) / 2;
-		Co = Clamp(Co, -HalfCoRange, HalfCoRange);
-	}
-
-	static inline void ClampCoCg(FVector2f& CoCg)
-	{
-		ClampCoCg(CoCg[0], CoCg[1]);
+		float Co = Clamp(CoCg[0], -HalfCoRange, HalfCoRange);
+		return { Co,Cg };
 	}
 
 	// co in [-1, 1], cg in [-1, 1]
@@ -259,7 +255,7 @@ namespace UCommon
 		return CoCg;
 	}
 
-	static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
+	static inline [[nodiscard]] FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
 	{
 		FLinearColorRGB YCoCg;
 		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
@@ -289,7 +285,7 @@ namespace UCommon
 		return RGB;
 	}
 
-	static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
+	static inline [[nodiscard]] FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
 	{
 		FLinearColorRGB RGB;
 		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
