@@ -1302,6 +1302,8 @@ namespace UCommon
 	using FBox4 = TBox4<float>;
 }
 
+UBPA_UCOMMON_VECTOR_TRAITS_DEFINE
+
 UBPA_UCOMMON_VECTOR_TO_NAMESPACE(UCommonTest)
 
 // Structured binding support for TVector2, TVector, TVector4

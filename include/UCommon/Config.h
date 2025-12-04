@@ -32,14 +32,12 @@ SOFTWARE.
 //#define UBPA_UCOMMON_REALLOC(ptr,size) <Your-Realloc>
 //#define UBPA_UCOMMON_FREE(ptr) <Your-Free>
 
-/** Uncomment this code for forward compatibility. */
-//#define UBPA_UCOMMON_ELEMENT_TYPE_TEX_C_DEFAULT = EElementType::Uint8
-
 #define UBPA_UCOMMON_DELTA 0.000001f
 
 #define UBPA_UCOMMON_TVECTOR2_DEFINE
 #define UBPA_UCOMMON_TVECTOR_DEFINE
 #define UBPA_UCOMMON_TVECTOR4_DEFINE
+#define UBPA_UCOMMON_VECTOR_TRAITS_DEFINE
 
 #define UBPA_UCOMMON_WITH_EDITOR 1
 

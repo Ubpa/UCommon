@@ -4,7 +4,7 @@ project(UCommon VERSION 2.5.0)
 message(STATUS "[Project] ${PROJECT_NAME}")
 
 include(cmake/InitUCMake.cmake)
-Ubpa_InitUCMake(VERSION 0.6.4)
+Ubpa_InitUCMake(VERSION 0.7.0)
 
 Ubpa_InitProject()
 

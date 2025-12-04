@@ -216,66 +216,6 @@ void TestFPackedHue()
 		std::cout << "  CoCg vector roundtrip: " << PassedCount << "/" << CoCgTestCases.size() << " PASSED" << std::endl;
 		assert(PassedCount == CoCgTestCases.size());
 	}
-
-	// Test 4: RGB hue construction (normalized to Y=4)
-	{
-		// Test cases: start with arbitrary positive RGB, then normalize to R + 2G + B = 4
-		std::vector<FVector3f> TestRGBs = {
-			FVector3f(1.0f, 0.0f, 0.0f),    // Red
-			FVector3f(0.0f, 1.0f, 0.0f),    // Green
-			FVector3f(0.0f, 0.0f, 1.0f),    // Blue
-			FVector3f(1.0f, 1.0f, 1.0f),    // White
-			FVector3f(0.8f, 0.3f, 0.2f),    // Orange
-			FVector3f(0.2f, 0.6f, 0.9f),    // Sky blue
-		};
-
-		std::vector<FVector3f> HueTestCases;
-		for (const auto& RGB : TestRGBs)
-		{
-			// Normalize to R + 2G + B = 4
-			float Sum = RGB.X + 2.0f * RGB.Y + RGB.Z;
-			FVector3f NormalizedHue = RGB / Sum * 4.0f;
-			HueTestCases.push_back(NormalizedHue);
-		}
-
-		int PassedCount = 0;
-		for (size_t i = 0; i < HueTestCases.size(); ++i)
-		{
-			const FVector3f& Hue = HueTestCases[i];
-
-			// Verify constraint
-			float Sum = Hue.X + 2.0f * Hue.Y + Hue.Z;
-			assert(IsNearlyEqual(Sum, 4.0f, 0.001f) && "Hue should satisfy R + 2G + B = 4");
-
-			FPackedHue Packed(Hue);
-			FVector2f UnpackedCoCg = Packed.Unpack();
-
-			// Convert CoCg back to RGB with Y=1 for comparison
-			FVector3f Unpacked;
-			YCoCgToRGB(1.f, UnpackedCoCg.X, UnpackedCoCg.Y, Unpacked.X, Unpacked.Y, Unpacked.Z);
-
-			// Check roundtrip with quantization tolerance
-			float Tolerance = 8.0f / 255.0f; // Quantization tolerance
-			if (IsNearlyEqual(Hue, Unpacked, Tolerance))
-			{
-				PassedCount++;
-			}
-			else
-			{
-				std::cout << "  [FAILED] Hue(" << Hue.X << ", " << Hue.Y << ", " << Hue.Z << ")" << std::endl;
-				std::cout << "    Packed: U=" << (int)Packed.U << ", V=" << (int)Packed.V << std::endl;
-				std::cout << "    Unpacked CoCg: (" << UnpackedCoCg.X << ", " << UnpackedCoCg.Y << ")" << std::endl;
-				std::cout << "    Unpacked RGB: (" << Unpacked.X << ", " << Unpacked.Y << ", " << Unpacked.Z << ")" << std::endl;
-				std::cout << "    Difference: ("
-				          << (Unpacked.X - Hue.X) << ", "
-				          << (Unpacked.Y - Hue.Y) << ", "
-				          << (Unpacked.Z - Hue.Z) << ")" << std::endl;
-			}
-		}
-
-		std::cout << "  RGB hue roundtrip: " << PassedCount << "/" << HueTestCases.size() << " PASSED" << std::endl;
-		assert(PassedCount == HueTestCases.size());
-	}
 }
 
 void TestVectorToHemiOctLRoundtrip()

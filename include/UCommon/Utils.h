@@ -208,6 +208,34 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
+	static inline void ClampCoCg(float& Co, float& Cg)
+	{
+		Cg = Clamp(Cg, -1.f, 1.f);
+		const float HalfCoRange = (1.f - Cg) / 2;
+		Co = Clamp(Co, -HalfCoRange, HalfCoRange);
+	}
+
+	static inline void ClampCoCg(FVector2f& CoCg)
+	{
+		ClampCoCg(CoCg[0], CoCg[1]);
+	}
+
+	// co in [-1, 1], cg in [-1, 1]
+	static inline void RGBToCoCg(float R, float G, float B, float& Co, float& Cg)
+	{
+		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
+		const float RB = R + B;
+		const float Y = (2.f * G + RB) / 4.f;
+		if (Y < UBPA_UCOMMON_DELTA)
+		{
+			Co = 0.f;
+			Cg = 0.f;
+			return;
+		}
+		Co = (R - B) / Y / 4.f;
+		Cg = (2.f * G - RB) / Y / 4.f;
+	}
+
 	// co in [-1, 1], cg in [-1, 1]
 	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
 	{
@@ -224,6 +252,13 @@ namespace UCommon
 		Cg = (2.f * G - RB) / Y / 4.f;
 	}
 
+	static inline FVector2f RGBToCoCg(const FLinearColorRGB& RGB)
+	{
+		FVector2f CoCg;
+		RGBToCoCg(RGB.X, RGB.Y, RGB.Z, CoCg[0], CoCg[1]);
+		return CoCg;
+	}
+
 	static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
 	{
 		FLinearColorRGB YCoCg;
@@ -231,12 +266,27 @@ namespace UCommon
 		return YCoCg;
 	}
 
-	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
+	static inline void CoCgToRGB(float Co, float Cg, float& R, float& G, float& B)
 	{
 		const float Tmp = 1.f - Cg;
-		R = (Tmp + 2.f * Co) * Y;
-		G = (1.f + Cg) * Y;
-		B = (Tmp - 2.f * Co) * Y;
+		R = (Tmp + 2.f * Co);
+		G = (1.f + Cg);
+		B = (Tmp - 2.f * Co);
+	}
+
+	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
+	{
+		CoCgToRGB(Co, Cg, R, G, B);
+		R *= Y;
+		G *= Y;
+		B *= Y;
+	}
+
+	static inline FLinearColorRGB CoCgToRGB(const FVector2f& CoCg)
+	{
+		FLinearColorRGB RGB;
+		CoCgToRGB(CoCg[0], CoCg[1], RGB.X, RGB.Y, RGB.Z);
+		return RGB;
 	}
 
 	static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
@@ -627,18 +677,6 @@ namespace UCommon
 
 			U = ElementFloatClampToUint8(Uf);
 		}
-		FPackedHue(const FVector3f& Hue)
-		{
-			//require R+2G+B==4
-			UBPA_UCOMMON_ASSERT(std::abs(Hue.X + 2.f * Hue.Y + Hue.Z - 4.f) < UBPA_UCOMMON_DELTA);
-
-			// Convert RGB to normalized YCoCg
-			float Y, CoValue, CgValue;
-			RGBToYCoCg(Hue.X, Hue.Y, Hue.Z, Y, CoValue, CgValue);
-
-			// Use triangle mapping
-			*this = FPackedHue(FVector2f(CoValue, CgValue));
-		}
 
 		FVector2f Unpack() const
 		{
@@ -655,6 +693,8 @@ namespace UCommon
 
 			return { CoValue, CgValue };
 		}
+
+		operator FUint8Vector2() const { return reinterpret_cast<const FUint8Vector2&>(*this); }
 
 		// Triangle mapping: UV [0,1]x[0,1] -> Valid CoCg triangle
 		// U maps to Co position within valid range for given Cg
@@ -725,6 +765,8 @@ namespace UCommon
 			const float HemiOctY = Uf - Vf;
 			return { HemiOctX, HemiOctY };
 		}
+
+		operator FUint8Vector2() const { return reinterpret_cast<const FUint8Vector2&>(*this); }
 
 		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
 	};
