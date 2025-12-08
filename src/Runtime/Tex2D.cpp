@@ -466,12 +466,11 @@ namespace UCommon
 	}
 }
 
-UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStorage) const
+UCommon::FTex2D UCommon::FTex2D::DownSample() const
 {
 	const FGrid2D HalfGrid2D(std::max<uint64_t>(1, Grid2D.Width / 2), std::max<uint64_t>(1, Grid2D.Height / 2));
 
-	FTex2D HalfTex = InStorage ? FTex2D(HalfGrid2D, NumChannels, InOwnership, ElementType, InStorage)
-		: FTex2D(HalfGrid2D, NumChannels, ElementType);
+	FTex2D HalfTex(HalfGrid2D, NumChannels, ElementType);
 
 	switch (ElementType)
 	{
@@ -492,9 +491,53 @@ UCommon::FTex2D UCommon::FTex2D::DownSample(EOwnership InOwnership, void* InStor
 	return HalfTex;
 }
 
-UCommon::FTex2D UCommon::FTex2D::DownSample() const
+UCommon::FTex2D UCommon::FTex2D::Resize(const FGrid2D& InGrid2D) const
 {
-	return DownSample(EOwnership::DoNotTakeOwnership, nullptr);
+	UBPA_UCOMMON_ASSERT(IsValid());
+	UBPA_UCOMMON_ASSERT(!InGrid2D.IsAreaEmpty());
+	// InGrid2D size must be >= 0.5x of current Grid2D size (no upper limit)
+	UBPA_UCOMMON_ASSERT(InGrid2D.Width >= Grid2D.Width / 2);
+	UBPA_UCOMMON_ASSERT(InGrid2D.Height >= Grid2D.Height / 2);
+
+	// If we've already reached the target size, return a copy
+	if (Grid2D == InGrid2D)
+	{
+		return FTex2D(*this);
+	}
+
+	// Use bilinear interpolation to resize
+	FTex2D ResultTex(InGrid2D, NumChannels, ElementType);
+	const auto SampleBuffer = std::make_unique<float[]>(NumChannels);
+
+	for (const FUint64Vector2& Point : InGrid2D)
+	{
+		const FVector2f Texcoord = InGrid2D.GetTexcoord(Point);
+		BilinearSample(SampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
+
+		for (uint64_t C = 0; C < NumChannels; ++C)
+		{
+			ResultTex.SetFloat(Point, C, SampleBuffer[C]);
+		}
+	}
+
+	return ResultTex;
+}
+
+UCommon::FTex2D UCommon::FTex2D::DownSample(const FGrid2D& InGrid2D) const
+{
+	UBPA_UCOMMON_ASSERT(IsValid());
+	UBPA_UCOMMON_ASSERT(!InGrid2D.IsAreaEmpty());
+	UBPA_UCOMMON_ASSERT(InGrid2D.Width <= Grid2D.Width && InGrid2D.Height <= Grid2D.Height);
+
+	// Continuously call DownSample() until the next call would make it smaller than InGrid2D
+	FTex2D CurrentTex(*this);
+	while (CurrentTex.Grid2D.Width / 2 >= InGrid2D.Width && CurrentTex.Grid2D.Height / 2 >= InGrid2D.Height)
+	{
+		CurrentTex = CurrentTex.DownSample();
+	}
+
+	// Use Resize to reach the final target size (already handles equality case)
+	return CurrentTex.Resize(InGrid2D);
 }
 
 UCommon::FTex2D UCommon::FTex2D::ToFloat() const

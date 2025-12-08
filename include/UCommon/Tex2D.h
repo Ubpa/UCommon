@@ -223,17 +223,26 @@ namespace UCommon
 		/**
 		 * Width = Width/2
 		 * Height = Height/2
-		 *
-		 * @param InOwnership control the ownership of InStorage.
-		 * @param InStorage the storage of the texture, deleted by `free`.
-		 */
-		FTex2D DownSample(EOwnership InOwnership, void* InStorage) const;
-
-		/**
-		 * Width = Width/2
-		 * Height = Height/2
 		 */
 		FTex2D DownSample() const;
+
+		/**
+		 * Resize texture using bilinear interpolation.
+		 * InGrid2D size must be >= 0.5x of current Grid2D size (no upper limit).
+		 *
+		 * @param InGrid2D the target Grid2D, must satisfy:
+		 *        - InGrid2D.Width >= Width/2
+		 *        - InGrid2D.Height >= Height/2
+		 */
+		FTex2D Resize(const FGrid2D& InGrid2D) const;
+
+		/**
+		 * Downsample texture to target size.
+		 * Uses repeated DownSample() calls followed by Resize().
+		 *
+		 * @param InGrid2D the target Grid2D, must be smaller or equal to current size
+		 */
+		FTex2D DownSample(const FGrid2D& InGrid2D) const;
 
 		FTex2D ToFloat() const;
 
