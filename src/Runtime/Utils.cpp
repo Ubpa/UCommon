@@ -115,3 +115,16 @@ UCommon::FUint64Vector2 UCommon::ApplyAddressMode(const FInt64Vector2& Coord, co
 	);
 }
 
+void UCommon::MatrixMulVec(float* Result, const float* Matrix, const float* Vector, uint64_t N)
+{
+	UBPA_UCOMMON_ASSERT(Matrix && Vector && Result);
+	for (uint64_t RowIndex = 0; RowIndex < N; RowIndex++)
+	{
+		float Acc = 0.f;
+		for (uint64_t ColIndex = 0; ColIndex < N; ColIndex++)
+		{
+			Acc += Matrix[RowIndex * N + ColIndex] * Vector[ColIndex];
+		}
+		Result[RowIndex] = Acc;
+	}
+}

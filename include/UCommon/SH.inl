@@ -159,6 +159,12 @@ constexpr float UCommon::SH(float x, float y, float z)
 	}
 }
 
+template<int l, int m>
+float UCommon::SH(const FVector3f& w)
+{
+	return SH<l, m>(w.X, w.Y, w.Z);
+}
+
 template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
 DerivedType UCommon::TSHVectorBase<DerivedType, InMaxSHOrder, InMaxSHBasis>::SHBasisFunction(const FVector3f& Vector)
 {

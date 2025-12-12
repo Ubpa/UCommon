@@ -72,3 +72,80 @@ float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Bu
 
 	return Factor2 * L2 * 3.f / (L1 * L1 / (3.f * Pi));
 }
+
+void UCommon::ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const float* RotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(SHBand2RotateMatrix && RotateMatrix);
+	//http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
+	// w0 = (1,0,0)
+	// w1 = (0,1,0)
+	// w2 = (0,0,1)
+	constexpr float k = 2.0466533f;
+	// invY = [ 0  0 -k;
+	//         -k  0  0;
+	//          0  k  0]
+	const FVector3f Rws[3] =
+	{
+		{ RotateMatrix[0 * 3 + 0], RotateMatrix[1 * 3 + 0], RotateMatrix[2 * 3 + 0] },
+		{ RotateMatrix[0 * 3 + 1], RotateMatrix[1 * 3 + 1], RotateMatrix[2 * 3 + 1] },
+		{ RotateMatrix[0 * 3 + 2], RotateMatrix[1 * 3 + 2], RotateMatrix[2 * 3 + 2] },
+	};
+	float Yrws[3][3];
+	for (uint64_t Index = 0; Index < 3; Index++)
+	{
+		Yrws[Index][0] = SH<1, -1>(Rws[Index]);
+		Yrws[Index][1] = SH<1,  0>(Rws[Index]);
+		Yrws[Index][2] = SH<1,  1>(Rws[Index]);
+	}
+	for (uint64_t ColIndex = 0; ColIndex < 3; ColIndex++)
+	{
+		SHBand2RotateMatrix[0 * 3 + ColIndex] = -k * Yrws[ColIndex][2];
+		SHBand2RotateMatrix[1 * 3 + ColIndex] = -k * Yrws[ColIndex][0];
+		SHBand2RotateMatrix[2 * 3 + ColIndex] =  k * Yrws[ColIndex][1];
+	}
+}
+
+void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(SHBand3RotateMatrix && RotateMatrix);
+	//http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
+	constexpr float k = 0.70710677f;
+	// w0 = (1,0,0)
+	// w1 = (0,0,1)
+	// w2 = (k,k,0)
+	// w2 = (k,0,k)
+	// w2 = (0,k,k)
+	const FVector3f Rws[5] =
+	{
+		{ RotateMatrix[0 * 3 + 0], RotateMatrix[1 * 3 + 0], RotateMatrix[2 * 3 + 0] },
+		{ RotateMatrix[0 * 3 + 2], RotateMatrix[1 * 3 + 2], RotateMatrix[2 * 3 + 2] },
+		FVector3f{ (RotateMatrix[0 * 3 + 0] + RotateMatrix[0 * 3 + 1]), (RotateMatrix[1 * 3 + 0] + RotateMatrix[1 * 3 + 1]), (RotateMatrix[2 * 3 + 0] + RotateMatrix[2 * 3 + 1]) } *k,
+		FVector3f{ (RotateMatrix[0 * 3 + 0] + RotateMatrix[0 * 3 + 2]), (RotateMatrix[1 * 3 + 0] + RotateMatrix[1 * 3 + 2]), (RotateMatrix[2 * 3 + 0] + RotateMatrix[2 * 3 + 2]) } *k,
+		FVector3f{ (RotateMatrix[0 * 3 + 1] + RotateMatrix[0 * 3 + 2]), (RotateMatrix[1 * 3 + 1] + RotateMatrix[1 * 3 + 2]), (RotateMatrix[2 * 3 + 1] + RotateMatrix[2 * 3 + 2]) } *k,
+	};
+	float Yrws[5][5];
+	for (uint64_t Index = 0; Index < 5; Index++)
+	{
+		Yrws[Index][0] = SH<2, -2>(Rws[Index]);
+		Yrws[Index][1] = SH<2, -1>(Rws[Index]);
+		Yrws[Index][2] = SH<2,  0>(Rws[Index]);
+		Yrws[Index][3] = SH<2,  1>(Rws[Index]);
+		Yrws[Index][4] = SH<2,  2>(Rws[Index]);
+	}
+	// invY = [  0 -k0   0  k0  k1;
+	//          k0   0  k2  k0  k0;
+	//          k1   0   0   0   0;
+	//           0   0   0 -k1   0;
+	//           0 -k1   0   0   0]
+	constexpr float k0 = 0.9152912f;
+	constexpr float k1 = 1.8305824f;
+	constexpr float k2 = 1.5853308f;
+	for (uint64_t ColIndex = 0; ColIndex < 3; ColIndex++)
+	{
+		SHBand3RotateMatrix[0 * 5 + ColIndex] = k0 * (-Yrws[ColIndex][1] + Yrws[ColIndex][3]) + k1 * Yrws[ColIndex][4];
+		SHBand3RotateMatrix[1 * 5 + ColIndex] = k0 * (Yrws[ColIndex][0] + Yrws[ColIndex][3] + Yrws[ColIndex][4]) + k2 * Yrws[ColIndex][2];
+		SHBand3RotateMatrix[2 * 5 + ColIndex] = k1 * Yrws[ColIndex][0];
+		SHBand3RotateMatrix[3 * 5 + ColIndex] = -k1 * Yrws[ColIndex][3];
+		SHBand3RotateMatrix[4 * 5 + ColIndex] = -k1 * Yrws[ColIndex][1];
+	}
+}

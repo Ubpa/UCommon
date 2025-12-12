@@ -208,7 +208,7 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
-	static inline [[nodiscard]] FVector2f ClampCoCg(const FVector2f& CoCg)
+	[[nodiscard]] static inline FVector2f ClampCoCg(const FVector2f& CoCg)
 	{
 		float Cg = Clamp(CoCg[1], -1.f, 1.f);
 		const float HalfCoRange = (1.f - Cg) / 2;
@@ -255,7 +255,7 @@ namespace UCommon
 		return CoCg;
 	}
 
-	static inline [[nodiscard]] FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
+	[[nodiscard]] static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
 	{
 		FLinearColorRGB YCoCg;
 		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
@@ -285,7 +285,7 @@ namespace UCommon
 		return RGB;
 	}
 
-	static inline [[nodiscard]] FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
+	[[nodiscard]] static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
 	{
 		FLinearColorRGB RGB;
 		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
@@ -766,6 +766,11 @@ namespace UCommon
 
 		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
 	};
+
+	// Matrix: (N, N)
+	// Vector: (N, 1)
+	// Result: (N, 1)
+	UBPA_UCOMMON_API void MatrixMulVec(float* Result, const float* Matrix, const float* Vector, uint64_t N);
 }
 
 UBPA_UCOMMON_UTILS_TO_NAMESPACE(UCommonTest)

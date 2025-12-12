@@ -77,6 +77,9 @@ namespace UCommon
 	template<int l, int m>
 	constexpr float SH(float x, float y, float z);
 
+	template<int l, int m>
+	float SH(const FVector3f& w);
+
 	template<int i>
 	constexpr int SHIndexToL = i == 0 ? 0 : (i < 4 ? 1 : (i < 9 ? 2 : (i < 16 ? 3 : 4)));
 
@@ -774,6 +777,13 @@ namespace UCommon
 	// Buffer.w + z1 + z1*z1*k
 	// == Buffer.w + z1*(1 + z1*k)
 	UBPA_UCOMMON_API float HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer);
+
+	// RotateMatrix       : (3, 3)
+	// SHBand2RotateMatrix: (3, 3)
+	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const float* RotateMatrix);
+	// RotateMatrix       : (3, 3)
+	// SHBand2RotateMatrix: (5, 5)
+	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix);
 } // namespace UCommon
 
 UBPA_UCOMMON_SH_TO_NAMESPACE(UCommonTest)
