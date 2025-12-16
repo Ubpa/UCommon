@@ -23,10 +23,20 @@ endif()
 set(mode "")
 set(defines "")
 set(private_defines "")
-if(Ubpa_UCommon_UsingSharedLibrary)
+if(MSVC)
+  list(APPEND private_defines
+    "_CRT_SECURE_NO_WARNINGS")
+  list(APPEND defines
+    "__SSE4_2__")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+  #
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  #
+endif()
+if(Ubpa_UMBD_UsingSharedLibrary)
   set(mode SHARED)
-  list(APPEND defines "UBPA_UCOMMON_USING_SHARED_LIBRARY")
-  list(APPEND private_defines "UBPA_UCOMMON_BUILDING_SHARED_LIBRARY")
+  list(APPEND defines "UBPA_UMBD_USING_SHARED_LIBRARY")
+  list(APPEND private_defines "UBPA_UMBD_BUILDING_SHARED_LIBRARY")
 else()
   set(mode STATIC)
 endif()
@@ -38,10 +48,14 @@ Ubpa_AddTarget(
     ${defines}
   PRIVATE_DEFINE
     ${private_defines}
-  INC
-    "${PROJECT_SOURCE_DIR}/include"
   SOURCE
-    "${PROJECT_SOURCE_DIR}/include/UCommon"
+    "${PROJECT_SOURCE_DIR}/include/UCommon_ext/ASTCUtils.h"
+  INC_PRIVATE
+    "${PROJECT_SOURCE_DIR}/include"
+    "${CMAKE_CURRENT_SOURCE_DIR}/_deps"
+    "${CMAKE_CURRENT_SOURCE_DIR}/_deps/astcenc"
   C_OPTION
     ${c_options}
+  LIB
+    Ubpa::UCommon_Runtime
 )
