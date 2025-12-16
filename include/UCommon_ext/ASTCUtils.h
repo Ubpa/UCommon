@@ -31,11 +31,13 @@ namespace NameSpace \
     using FASTCConfig = UCommon::FASTCConfig; \
 }
 
-#include <UCommon/Utils.h>
-#include <UCommon/ThreadPool.h>
+#include <UCommon/Vector.h>
 
 namespace UCommon
 {
+	class FThreadPool;
+	class FTex2D;
+
 	/**
 	 * 128 bits = 16 x 8 bits
 	 * 2D
@@ -51,9 +53,19 @@ namespace UCommon
 
 	struct UBPA_UCOMMON_API FASTCConfig
 	{
+		enum class EFormat
+		{
+			None,
+			RGBM,
+			RGBD,
+			RGBV,
+		};
+		EFormat Format = EFormat::None;
+		float MaxValue = 0.f;
 		float Quality = 100.f;
 		FThreadPool* ThreadPool = nullptr;
 		const FVector4f* Weights = nullptr;
+		const char* Swizzel = nullptr;
 	};
 
 	UBPA_UCOMMON_API void InitBlockSizeDescriptorMngr(TSpan<const uint64_t> Sizes);
@@ -62,6 +74,22 @@ namespace UCommon
 	
 	void CompressImageToASTC(FASTCBlock* Blocks, const uint8_t* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig);
 	void DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize);
+
+	/**
+	 * @param This this
+	 * @param Tex uint8
+	 * @param BlockBuffer = new FASTCBlock[((GetGrid().GetExtent() + BlockSize - 1) / BlockSize).Area()];
+	 * @return uint8
+	 */
+	UBPA_UCOMMON_API void ToASTC(const FTex2D& This, FTex2D& Tex, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
+
+	/**
+	 * @param This this
+	 * @param BlockBuffer = new FASTCBlock[((GetGrid().GetExtent() + BlockSize - 1) / BlockSize).Area()];
+	 * @return uint8
+	 */
+	UBPA_UCOMMON_API FTex2D ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
+
 }
 
 UBPA_UCOMMON_ASTCUTILS_TO_NAMESPACE(UCommonTest)

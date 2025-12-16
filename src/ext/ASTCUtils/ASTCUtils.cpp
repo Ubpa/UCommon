@@ -23,6 +23,9 @@ SOFTWARE.
 */
 
 #include <UCommon_ext/ASTCUtils.h>
+#include <UCommon/Utils.h>
+#include <UCommon/ThreadPool.h>
+#include <UCommon/Tex2D.h>
 
 #undef PI
 #include "astcenc.h"
@@ -1087,11 +1090,73 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 	const unsigned int block_z = 1;
 
 	// Initialize cli_config_options with default values
-	const astcenc_swizzle swz_encode{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+	astcenc_swizzle swz_encode{ ASTCENC_SWZ_R, ASTCENC_SWZ_G, ASTCENC_SWZ_B, ASTCENC_SWZ_A };
+	if (ASTCConfig.Swizzel)
+	{
+		astcenc_swz swizzle_components[4];
+		for (int i = 0; i < 4; i++)
+		{
+			switch (ASTCConfig.Swizzel[i])
+			{
+			case 'r': swizzle_components[i] = ASTCENC_SWZ_R; break;
+			case 'g': swizzle_components[i] = ASTCENC_SWZ_G; break;
+			case 'b': swizzle_components[i] = ASTCENC_SWZ_B; break;
+			case 'a': swizzle_components[i] = ASTCENC_SWZ_A; break;
+			case '0': swizzle_components[i] = ASTCENC_SWZ_0; break;
+			case '1': swizzle_components[i] = ASTCENC_SWZ_1; break;
+			default:
+				UBPA_UCOMMON_NO_ENTRY();
+				swizzle_components[i] = static_cast<astcenc_swz>((int)ASTCENC_SWZ_R + i);
+				break;
+			}
+		}
+
+		swz_encode.r = swizzle_components[0];
+		swz_encode.g = swizzle_components[1];
+		swz_encode.b = swizzle_components[2];
+		swz_encode.a = swizzle_components[3];
+	}
 
 	astcenc_config config{};
-	const unsigned int flag = ASTCENC_FLG_SELF_DECOMPRESS_ONLY;
-	astcenc_config_init(profile, block_x, block_y, block_z, ASTCConfig.Quality, flag, &config);
+	unsigned int flags = 0;
+	switch (ASTCConfig.Format)
+	{
+	case FASTCConfig::EFormat::RGBM:
+		flags |= ASTCENC_FLG_MAP_RGBM;
+		break;
+	case FASTCConfig::EFormat::RGBD:
+		flags |= ASTCENC_FLG_MAP_RGBD;
+		break;
+	case FASTCConfig::EFormat::RGBV:
+		flags |= ASTCENC_FLG_MAP_RGBV;
+		break;
+	default:
+		break;
+	}
+	astcenc_config_init(profile, block_x, block_y, block_z, ASTCConfig.Quality, flags, &config);
+	switch (ASTCConfig.Format)
+	{
+	case FASTCConfig::EFormat::RGBM:
+		config.rgbm_m_scale = std::max(1.f, ASTCConfig.MaxValue);
+		config.cw_a_weight = 2.0f * config.rgbm_m_scale;
+		break;
+	case FASTCConfig::EFormat::RGBD:
+	{
+		float rgbd_max = std::max(1.f, ASTCConfig.MaxValue);
+		config.rgbd_k = 1.f / std::sqrt(rgbd_max) - 1.f;
+		config.cw_a_weight = rgbd_max;
+	}
+	break;
+	case FASTCConfig::EFormat::RGBV:
+	{
+		float rgbv_max = std::max(1.f, ASTCConfig.MaxValue);
+		config.rgbv_b = 1.f / rgbv_max + 1.f;
+		config.cw_a_weight = rgbv_max;
+	}
+	break;
+	default:
+		break;
+	}
 	config.cw_weights = (float*)ASTCConfig.Weights;
 
 	astcenc_image* image_uncomp_in = nullptr;
@@ -1183,4 +1248,32 @@ void UCommon::DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, cons
 			}
 		}
 	}
+}
+
+void UCommon::ToASTC(const FTex2D& This, FTex2D& Tex, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
+{
+	UBPA_UCOMMON_ASSERT(BlockSize == 4 || BlockSize == 6 || BlockSize == 8 || BlockSize == 10 || BlockSize == 12);
+
+	This.ToUint8(Tex);
+	bool bNewBlockBuffer = false;
+	if (!BlockBuffer)
+	{
+		const uint64_t NumBlocks = ((This.GetGrid2D().GetExtent() + BlockSize - 1) / BlockSize).Area();
+		BlockBuffer = new FASTCBlock[NumBlocks];
+		bNewBlockBuffer = true;
+	}
+	const FUint64Vector2 ImageSize = This.GetGrid2D().GetExtent();
+	CompressImageToASTC(BlockBuffer, (const uint8_t*)Tex.GetStorage(), ImageSize, FUint64Vector2(BlockSize), Config);
+	DecompressASTCImage((uint8_t*)Tex.GetStorage(), BlockBuffer, ImageSize, FUint64Vector2(BlockSize));
+	if (bNewBlockBuffer)
+	{
+		delete[] BlockBuffer;
+	}
+}
+
+UCommon::FTex2D UCommon::ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
+{
+	FTex2D Tex(This.GetGrid2D(), This.GetNumChannels(), EElementType::Uint8);
+	ToASTC(This, Tex, BlockSize, Config, BlockBuffer);
+	return Tex;
 }
