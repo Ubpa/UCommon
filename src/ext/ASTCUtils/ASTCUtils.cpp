@@ -1133,6 +1133,10 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 	default:
 		break;
 	}
+	if (ASTCConfig.YCoCgTexture)
+	{
+		flags |= ASTCENC_FLG_MAP_YCOCG_PREDICTION;
+	}
 	astcenc_config_init(profile, block_x, block_y, block_z, ASTCConfig.Quality, flags, &config);
 	switch (ASTCConfig.Format)
 	{
@@ -1158,6 +1162,26 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 		break;
 	}
 	config.cw_weights = (float*)ASTCConfig.Weights;
+	if (ASTCConfig.YCoCgTexture)
+	{
+		config.ycocg_texture = ASTCConfig.YCoCgTexture;
+		config.ycocg_texture_width = static_cast<unsigned int>(ASTCConfig.YCoCgTextureWidth);
+		config.ycocg_texture_height = static_cast<unsigned int>(ASTCConfig.YCoCgTextureHeight);
+		config.param_texture_width = static_cast<unsigned int>(ASTCConfig.ParamTextureWidth);
+		config.param_texture_height = static_cast<unsigned int>(ASTCConfig.ParamTextureHeight);
+		config.param_k1_min = ASTCConfig.ParamK1Min;
+		config.param_k1_max = ASTCConfig.ParamK1Max;
+		config.param_k2_min = ASTCConfig.ParamK2Min;
+		config.param_k2_max = ASTCConfig.ParamK2Max;
+		config.param_b1_min = ASTCConfig.ParamB1Min;
+		config.param_b1_max = ASTCConfig.ParamB1Max;
+		config.param_b2_min = ASTCConfig.ParamB2Min;
+		config.param_b2_max = ASTCConfig.ParamB2Max;
+		config.y_transform_a = ASTCConfig.YTransformA;
+		config.y_transform_b = ASTCConfig.YTransformB;
+		config.y_transform_c = ASTCConfig.YTransformC;
+		config.y_transform_d = ASTCConfig.YTransformD;
+	}
 
 	astcenc_image* image_uncomp_in = nullptr;
 

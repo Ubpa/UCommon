@@ -66,6 +66,25 @@ namespace UCommon
 		FThreadPool* ThreadPool = nullptr;
 		const FVector4f* Weights = nullptr;
 		const char* Swizzel = nullptr;
+		// YCoCg Prediction: external YCoCg texture for prediction parameter compression
+		const float* YCoCgTexture = nullptr;
+		uint64_t YCoCgTextureWidth = 0;
+		uint64_t YCoCgTextureHeight = 0;
+		uint64_t ParamTextureWidth = 0;
+		uint64_t ParamTextureHeight = 0;
+		float ParamK1Min = 0.f;
+		float ParamK1Max = 0.f;
+		float ParamK2Min = 0.f;
+		float ParamK2Max = 0.f;
+		float ParamB1Min = 0.f;
+		float ParamB1Max = 0.f;
+		float ParamB2Min = 0.f;
+		float ParamB2Max = 0.f;
+		// Y transform: P(Y) = a*Y^(3/2) + b*Y + c*Y^(1/2) + d
+		float YTransformA = 0.f;
+		float YTransformB = 0.f;
+		float YTransformC = 0.f;
+		float YTransformD = 0.f;
 	};
 
 	UBPA_UCOMMON_API void InitBlockSizeDescriptorMngr(TSpan<const uint64_t> Sizes);
