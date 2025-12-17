@@ -1134,6 +1134,13 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 		break;
 	}
 	astcenc_config_init(profile, block_x, block_y, block_z, ASTCConfig.Quality, flags, &config);
+	if (ASTCConfig.Cw)
+	{
+		config.cw_r_weight = ASTCCompressConfig.Cw[0];
+		config.cw_g_weight = ASTCCompressConfig.Cw[1];
+		config.cw_b_weight = ASTCCompressConfig.Cw[2];
+		config.cw_a_weight = ASTCCompressConfig.Cw[3];
+	}
 	switch (ASTCConfig.Format)
 	{
 	case FASTCConfig::EFormat::RGBM:

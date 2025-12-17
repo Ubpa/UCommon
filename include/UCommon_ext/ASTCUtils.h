@@ -66,6 +66,7 @@ namespace UCommon
 		FThreadPool* ThreadPool = nullptr;
 		const FVector4f* Weights = nullptr;
 		const char* Swizzel = nullptr;
+		const float* Cw = nullptr;
 	};
 
 	UBPA_UCOMMON_API void InitBlockSizeDescriptorMngr(TSpan<const uint64_t> Sizes);
