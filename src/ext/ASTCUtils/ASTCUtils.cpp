@@ -1184,10 +1184,6 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 		config.param_b1_max = ASTCConfig.ParamB1Max;
 		config.param_b2_min = ASTCConfig.ParamB2Min;
 		config.param_b2_max = ASTCConfig.ParamB2Max;
-		config.y_transform_a = ASTCConfig.YTransformA;
-		config.y_transform_b = ASTCConfig.YTransformB;
-		config.y_transform_c = ASTCConfig.YTransformC;
-		config.y_transform_d = ASTCConfig.YTransformD;
 	}
 
 	astcenc_image* image_uncomp_in = nullptr;

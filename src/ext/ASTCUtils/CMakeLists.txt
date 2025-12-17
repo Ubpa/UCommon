@@ -2,7 +2,7 @@ Ubpa_DownloadZip_Pro(
   https://utencent-1308066321.cos.ap-guangzhou.myqcloud.com/astcenc_3efe15_exp_20251217.zip
   astcenc.zip
   "${CMAKE_CURRENT_SOURCE_DIR}/_deps"
-  SHA256 748a09935092bacfb4ed1890ae675f15b2c6fa44809b8ab8166fad6ccd684073
+  SHA256 8d1956e0afef6689302dfae345e07f68b83bee508060d87d312848401ad9e8b1
 )
 
 set(c_options "")
