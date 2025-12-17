@@ -66,6 +66,7 @@ namespace UCommon
 		FThreadPool* ThreadPool = nullptr;
 		const FVector4f* Weights = nullptr;
 		const char* Swizzel = nullptr;
+		const float* Cw = nullptr;
 		// YCoCg Prediction: external YCoCg texture for prediction parameter compression
 		const float* YCoCgTexture = nullptr;
 		uint64_t YCoCgTextureWidth = 0;
