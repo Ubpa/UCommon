@@ -26,6 +26,7 @@ SOFTWARE.
 
 #include "Archive.h"
 #include "BQ.h"
+#include "Codec.h"
 #include "Config.h"
 #include "Cpp17.h"
 #include "FP8.h"
