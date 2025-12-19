@@ -28,6 +28,13 @@ SOFTWARE.
 #include "Vector.h"
 #include "Utils.h"
 
+#define UBPA_UCOMMON_CODEC_TO_NAMESPACE(NameSpace) \
+namespace NameSpace \
+{ \
+    using FPackedHue = UCommon::FPackedHue; \
+    using FPackedHemiOct = UCommon::FPackedHemiOct; \
+}
+
 namespace UCommon
 {
 	//===========================================
@@ -447,3 +454,4 @@ namespace UCommon
 	};
 } // namespace UCommon
 
+UBPA_UCOMMON_CODEC_TO_NAMESPACE(UCommonTest)

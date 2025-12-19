@@ -38,8 +38,6 @@ namespace NameSpace \
     template<typename T> constexpr bool IsDirectSupported = UCommon::IsDirectSupported<T>; \
     template<typename T> constexpr bool IsSupported = UCommon::IsSupported<T>; \
     template<typename T> constexpr EElementType ElementTypeOf = UCommon::ElementTypeOf<T>; \
-    using FPackedHue = UCommon::FPackedHue; \
-    using FPackedHemiOct = UCommon::FPackedHemiOct; \
 }
 
 namespace UCommon
