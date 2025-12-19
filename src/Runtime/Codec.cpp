@@ -299,9 +299,6 @@ float UCommon::EncodeRGBV(float L, float MaxValue)
 	float b = RGBV_GetB(MaxValue);
 	float V = std::sqrt(b * L / (L + 1.f));
 
-	// Round to nearest quantized value
-	V = std::clamp(std::round(V * 255.0f) / 255.0f, 0.f, 1.f);
-
 	return V;
 }
 
