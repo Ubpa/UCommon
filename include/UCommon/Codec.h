@@ -172,6 +172,7 @@ namespace UCommon
 	 * L/(L+1) simulates tonemapping, sqrt simulates gamma correction.
 	 */
 	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue = RGBV_DefaultMaxValue, float InLowClamp = LowClamp);
+	// [0, 1]
 	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue = RGBV_DefaultMaxValue);
 
 	/**
