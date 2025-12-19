@@ -206,13 +206,21 @@ namespace UCommon
 		return FDoubleColorRGB(RGBV.X, RGBV.Y, RGBV.Z) * L;
 	}
 
-	[[nodiscard]] static inline FVector2f SquareCoCg(const FVector2f& CoCg)
+	[[nodiscard]] static inline FVector2f CoCgToSquareCoCg(const FVector2f& CoCg)
 	{
 		float Cg = Clamp(CoCg[1], -1.f, 1.f);
-		const float CoRange = 1.f - Cg;
-		float SqCo = CoRange > UBPA_UCOMMON_DELTA ? Saturate((CoCg[0] + 0.5f * CoRange) / CoRange) : 0.f;
+		float CoRange = 1.f - Cg;
+		float SqCo = CoRange > UBPA_UCOMMON_DELTA ? Saturate((CoCg[0] + 0.5f * CoRange) / CoRange) : 0.5f;
 		float SqCg = (Cg + 1.f) / 2.f;
 		return { SqCo,SqCg };
+	}
+
+	[[nodiscard]] static inline FVector2f SquareCoCgToCoCg(const FVector2f& SqCoCg)
+	{
+		float Cg = Saturate(SqCoCg[1]) * 2.f - 1.f;
+		float CoRange = 1.f - Cg;
+		float Co = (Saturate(SqCoCg[0]) - 0.5f) * CoRange;
+		return { Co,Cg };
 	}
 
 	[[nodiscard]] static inline FVector2f ClampCoCg(const FVector2f& CoCg)
