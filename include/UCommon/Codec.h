@@ -124,11 +124,10 @@ namespace UCommon
 	 */
 	inline float EncodeRGBD(float L, float MaxValue) noexcept
 	{
-		if (L <= 0.f)
-			return 0.f;
-		float k = RGBD_GetK(MaxValue);
-		float sqrtL = std::sqrt(L);
-		return sqrtL / (1.f - k * sqrtL);
+		UBPA_UCOMMON_ASSERT(L >= 0.f);
+		float K = RGBD_GetK(MaxValue);
+		float SqrtL = std::sqrt(L);
+		return SqrtL / (1.f - K * SqrtL);
 	}
 
 	/**
@@ -137,11 +136,10 @@ namespace UCommon
 	 */
 	inline float DecodeRGBD(float D, float MaxValue) noexcept
 	{
-		if (D <= 0.f)
-			return 0.f;
-		float k = RGBD_GetK(MaxValue);
-		float sqrtL = D / (k * D + 1.f);
-		return Pow2(sqrtL);
+		UBPA_UCOMMON_ASSERT(D >= 0.f);
+		float K = RGBD_GetK(MaxValue);
+		float SqrtL = D / (K * D + 1.f);
+		return Pow2(SqrtL);
 	}
 
 	//===========================================
@@ -206,6 +204,102 @@ namespace UCommon
 		double V2 = Pow2(RGBV.W);
 		double L = V2 / (b - V2);
 		return FDoubleColorRGB(RGBV.X, RGBV.Y, RGBV.Z) * L;
+	}
+
+	[[nodiscard]] static inline FVector2f ClampCoCg(const FVector2f& CoCg)
+	{
+		float Cg = Clamp(CoCg[1], -1.f, 1.f);
+		const float HalfCoRange = (1.f - Cg) / 2;
+		float Co = Clamp(CoCg[0], -HalfCoRange, HalfCoRange);
+		return { Co,Cg };
+	}
+
+	// co in [-1, 1], cg in [-1, 1]
+	static inline void RGBToCoCg(float R, float G, float B, float& Co, float& Cg)
+	{
+		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
+		const float RB = R + B;
+		const float Y = (2.f * G + RB) / 4.f;
+		if (Y < UBPA_UCOMMON_DELTA)
+		{
+			Co = 0.f;
+			Cg = 0.f;
+			return;
+		}
+		Co = (R - B) / Y / 4.f;
+		Cg = (2.f * G - RB) / Y / 4.f;
+	}
+
+	// co in [-1, 1], cg in [-1, 1]
+	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
+	{
+		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
+		const float RB = R + B;
+		Y = (2.f * G + RB) / 4.f;
+		if (Y < UBPA_UCOMMON_DELTA)
+		{
+			Co = 0.f;
+			Cg = 0.f;
+			return;
+		}
+		Co = (R - B) / Y / 4.f;
+		Cg = (2.f * G - RB) / Y / 4.f;
+	}
+
+	static inline FVector2f RGBToCoCg(const FLinearColorRGB& RGB)
+	{
+		FVector2f CoCg;
+		RGBToCoCg(RGB.X, RGB.Y, RGB.Z, CoCg[0], CoCg[1]);
+		return CoCg;
+	}
+
+	[[nodiscard]] static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
+	{
+		FLinearColorRGB YCoCg;
+		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
+		return YCoCg;
+	}
+
+	static inline void CoCgToRGB(float Co, float Cg, float& R, float& G, float& B)
+	{
+		const float Tmp = 1.f - Cg;
+		R = (Tmp + 2.f * Co);
+		G = (1.f + Cg);
+		B = (Tmp - 2.f * Co);
+	}
+
+	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
+	{
+		CoCgToRGB(Co, Cg, R, G, B);
+		R *= Y;
+		G *= Y;
+		B *= Y;
+	}
+
+	static inline FLinearColorRGB CoCgToRGB(const FVector2f& CoCg)
+	{
+		FLinearColorRGB RGB;
+		CoCgToRGB(CoCg[0], CoCg[1], RGB.X, RGB.Y, RGB.Z);
+		return RGB;
+	}
+
+	[[nodiscard]] static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
+	{
+		FLinearColorRGB RGB;
+		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
+		return RGB;
+	}
+
+	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FLinearColorRGB& MinYCoCg, const FLinearColorRGB& MaxYCoCg)
+	{
+		const FLinearColorRGB YCoCg = RGBToYCoCg(RGB);
+		const FLinearColorRGB ClampYCoCg = YCoCg.Clamp(MinYCoCg, MaxYCoCg);
+		return YCoCgToRGB(ClampYCoCg);
+	}
+
+	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FBox& YCoCgBox)
+	{
+		return ClampRGBwithYCoCg(RGB, YCoCgBox.Min, YCoCgBox.Max);
 	}
 } // namespace UCommon
 
