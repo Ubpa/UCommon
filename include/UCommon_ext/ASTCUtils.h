@@ -67,10 +67,13 @@ namespace UCommon
 		const FVector4f* Weights = nullptr;
 		const char* Swizzel = nullptr;
 		const float* Cw = nullptr;
-		// YCoCg Prediction: external YCoCg texture for prediction parameter compression
+		// vY-SqCoCg Prediction: external vY-SqCoCg texture for prediction parameter compression
+		// Texture format: (vY, SqCo, SqCg) where vY = EncodeRGBV(Y), SqCoCg = CoCgToSquareCoCg(CoCg)
 		const float* YCoCgTexture = nullptr;
 		uint64_t YCoCgTextureWidth = 0;
 		uint64_t YCoCgTextureHeight = 0;
+		// MaxValue for RGBV decoding: Y = vY^2 / (b - vY^2), where b = 1/MaxValue + 1
+		float YCoCgMaxValue = 128.f;
 		uint64_t ParamTextureWidth = 0;
 		uint64_t ParamTextureHeight = 0;
 		float ParamK1Min = 0.f;

@@ -1184,6 +1184,8 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 		config.param_b1_max = ASTCConfig.ParamB1Max;
 		config.param_b2_min = ASTCConfig.ParamB2Min;
 		config.param_b2_max = ASTCConfig.ParamB2Max;
+		// RGBV b value for vY decoding: b = 1/MaxValue + 1
+		config.ycocg_rgbv_b = 1.f / std::max(1.f, ASTCConfig.YCoCgMaxValue) + 1.f;
 	}
 
 	astcenc_image* image_uncomp_in = nullptr;
