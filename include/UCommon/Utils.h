@@ -242,6 +242,7 @@ namespace UCommon
 
 		return FVector4f(X, Y, Z, PDF);
 	}
+
 	static inline FVector4f FibonacciHemispherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
