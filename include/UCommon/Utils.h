@@ -208,102 +208,6 @@ namespace UCommon
 		return TrilinearInterpolateZ(val3, Texcoord, OneMinusTexcoord);
 	}
 
-	[[nodiscard]] static inline FVector2f ClampCoCg(const FVector2f& CoCg)
-	{
-		float Cg = Clamp(CoCg[1], -1.f, 1.f);
-		const float HalfCoRange = (1.f - Cg) / 2;
-		float Co = Clamp(CoCg[0], -HalfCoRange, HalfCoRange);
-		return { Co,Cg };
-	}
-
-	// co in [-1, 1], cg in [-1, 1]
-	static inline void RGBToCoCg(float R, float G, float B, float& Co, float& Cg)
-	{
-		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
-		const float RB = R + B;
-		const float Y = (2.f * G + RB) / 4.f;
-		if (Y < UBPA_UCOMMON_DELTA)
-		{
-			Co = 0.f;
-			Cg = 0.f;
-			return;
-		}
-		Co = (R - B) / Y / 4.f;
-		Cg = (2.f * G - RB) / Y / 4.f;
-	}
-
-	// co in [-1, 1], cg in [-1, 1]
-	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
-	{
-		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
-		const float RB = R + B;
-		Y = (2.f * G + RB) / 4.f;
-		if (Y < UBPA_UCOMMON_DELTA)
-		{
-			Co = 0.f;
-			Cg = 0.f;
-			return;
-		}
-		Co = (R - B) / Y / 4.f;
-		Cg = (2.f * G - RB) / Y / 4.f;
-	}
-
-	static inline FVector2f RGBToCoCg(const FLinearColorRGB& RGB)
-	{
-		FVector2f CoCg;
-		RGBToCoCg(RGB.X, RGB.Y, RGB.Z, CoCg[0], CoCg[1]);
-		return CoCg;
-	}
-
-	[[nodiscard]] static inline FLinearColorRGB RGBToYCoCg(const FLinearColorRGB& RGB)
-	{
-		FLinearColorRGB YCoCg;
-		RGBToYCoCg(RGB.X, RGB.Y, RGB.Z, YCoCg.X, YCoCg.Y, YCoCg.Z);
-		return YCoCg;
-	}
-
-	static inline void CoCgToRGB(float Co, float Cg, float& R, float& G, float& B)
-	{
-		const float Tmp = 1.f - Cg;
-		R = (Tmp + 2.f * Co);
-		G = (1.f + Cg);
-		B = (Tmp - 2.f * Co);
-	}
-
-	static inline void YCoCgToRGB(float Y, float Co, float Cg, float& R, float& G, float& B)
-	{
-		CoCgToRGB(Co, Cg, R, G, B);
-		R *= Y;
-		G *= Y;
-		B *= Y;
-	}
-
-	static inline FLinearColorRGB CoCgToRGB(const FVector2f& CoCg)
-	{
-		FLinearColorRGB RGB;
-		CoCgToRGB(CoCg[0], CoCg[1], RGB.X, RGB.Y, RGB.Z);
-		return RGB;
-	}
-
-	[[nodiscard]] static inline FLinearColorRGB YCoCgToRGB(const FLinearColorRGB& YCoCg)
-	{
-		FLinearColorRGB RGB;
-		YCoCgToRGB(YCoCg.X, YCoCg.Y, YCoCg.Z, RGB.X, RGB.Y, RGB.Z);
-		return RGB;
-	}
-
-	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FLinearColorRGB& MinYCoCg, const FLinearColorRGB& MaxYCoCg)
-	{
-		const FLinearColorRGB YCoCg = RGBToYCoCg(RGB);
-		const FLinearColorRGB ClampYCoCg = YCoCg.Clamp(MinYCoCg, MaxYCoCg);
-		return YCoCgToRGB(ClampYCoCg);
-	}
-
-	static inline FLinearColorRGB ClampRGBwithYCoCg(const FLinearColorRGB& RGB, const FBox& YCoCgBox)
-	{
-		return ClampRGBwithYCoCg(RGB, YCoCgBox.Min, YCoCgBox.Max);
-	}
-
 	static constexpr float Pi = 3.1415926f;
 
 	static inline FVector4f UniformSampleSphere(FVector2f E)
@@ -328,22 +232,25 @@ namespace UCommon
 	static inline FVector4f FibonacciSpherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
-		const float Z = (2.f * n + 1.f) / N - 1.f;
+		const float nf = (float)n;
+		const float Z = (2.f * nf + 1.f) / (float)N - 1.f;
 		const float r = std::sqrt(1.f - Z * Z);
-		const float X = r * std::cos(Phi * n);
-		const float Y = r * std::sin(Phi * n);
+		const float X = r * std::cos(Phi * nf);
+		const float Y = r * std::sin(Phi * nf);
 
 		constexpr float PDF = 1.0f / (4.f * Pi);
 
 		return FVector4f(X, Y, Z, PDF);
 	}
+
 	static inline FVector4f FibonacciHemispherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
-		const float Z = (n + 0.5f) / N;
+		const float nf = (float)n;
+		const float Z = (nf + 0.5f) / (float)N;
 		const float r = std::sqrt(1.f - Z * Z);
-		const float X = r * std::cos(Phi * n);
-		const float Y = r * std::sin(Phi * n);
+		const float X = r * std::cos(Phi * nf);
+		const float Y = r * std::sin(Phi * nf);
 
 		constexpr float PDF = 1.0f / (2.f * Pi);
 
@@ -639,133 +546,6 @@ namespace UCommon
 		if (Value >> 8) { Value >>= 8;  MSB |= 0x8; }
 		return MSB + Table[Value];
 	}
-
-	struct FPackedHue
-	{
-		FPackedHue() {} // uninitialize
-		FPackedHue(EForceInit) : U(128), V(128) {} // zero hue (U=0.5, V=0.5 in UV space)
-		FPackedHue(uint8_t InU, uint8_t InV) : U(InU), V(InV) {}
-		FPackedHue(const FVector2f& CoCg)
-		{
-			// Triangle mapping: map (Co, Cg) in valid triangle to UV [0,1]x[0,1]
-			// Valid region: Cg - 1 <= 2*Co <= 1 - Cg
-			// Inverse mapping: given (Co, Cg), find UV
-
-			// Step 1: Quantize Cg first
-			const float Vf = (CoCg.Y + 1.f) * 0.5f;
-			V = ElementFloatClampToUint8(Vf);
-
-			// Step 2: Map Co to U within valid range based on quantized Cg
-			// Note: V = 255 (triangle top vertex) is degenerate case where CoRange = 0
-			float Uf;
-			if (V != 255)
-			{
-				// Use quantized Cg to compute Co range for better accuracy
-				// CoRange is symmetric: Co in [-CoRange/2, CoRange/2]
-				const float QuantizedCg = ElementUint8ToFloat(V) * 2.f - 1.f;
-				const float CoRange = 1.f - QuantizedCg;
-				Uf = (CoCg.X + 0.5f * CoRange) / CoRange;
-			}
-			else
-			{
-				Uf = 0.5f; // Degenerate case: triangle top vertex, Co must be 0
-			}
-
-			U = ElementFloatClampToUint8(Uf);
-		}
-
-		FVector2f Unpack() const
-		{
-			// Triangle mapping: map UV [0,1]x[0,1] to valid (Co, Cg) triangle
-			const float Uf = ElementUint8ToFloat(U);
-			const float Vf = ElementUint8ToFloat(V);
-
-			// Map V to Cg: [0, 1] -> [-1, 1]
-			const float CgValue = Vf * 2.f - 1.f;
-
-			// CoRange is symmetric: Co in [-CoRange/2, CoRange/2]
-			const float CoRange = 1.f - CgValue;
-			const float CoValue = (Uf - 0.5f) * CoRange;
-
-			return { CoValue, CgValue };
-		}
-
-		operator FUint8Vector2() const { return reinterpret_cast<const FUint8Vector2&>(*this); }
-
-		// Triangle mapping: UV [0,1]x[0,1] -> Valid CoCg triangle
-		// U maps to Co position within valid range for given Cg
-		// V maps to Cg in [-1, 1]
-		// Valid region: Cg - 1 <= 2*Co <= 1 - Cg
-		// Space utilization: 100%
-		uint8_t U; // U coordinate in triangle mapping (maps to Co)
-		uint8_t V; // V coordinate in triangle mapping (maps to Cg)
-	};
-
-	static inline FVector3f VectorToHemiOctL(const FVector3f& V)
-	{
-		// Require Z >= 0 (upper hemisphere only)
-		UBPA_UCOMMON_ASSERT(V.Z >= 0.f);
-
-		const float L = std::abs(V.X) + std::abs(V.Y) + V.Z;
-		if (L < UBPA_UCOMMON_DELTA)
-		{
-			return FVector3f(0.f, 0.f, 0.f);
-		}
-
-		// Normalize by L1 norm to get hemispherical octahedral coordinates
-		const float HemiOctX = V.X / L;
-		const float HemiOctY = V.Y / L;
-
-		return { HemiOctX, HemiOctY, L };
-	}
-
-	static inline FVector3f HemiOctToDir(const FVector2f& HemiOct)
-	{
-		// Reconstruct Z from hemispherical octahedral constraint: |x| + |y| + z = 1
-		const float Z = 1.f - std::abs(HemiOct.X) - std::abs(HemiOct.Y);
-		UBPA_UCOMMON_ASSERT(Z > -UBPA_UCOMMON_DELTA);
-
-		// Reconstruct vector with original length
-		return FVector3f(HemiOct.X, HemiOct.Y, Z);
-	}
-
-	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
-	{
-		return HemiOctToDir(HemiOctL) * HemiOctL.Z;
-	}
-
-	struct FPackedHemiOct
-	{
-		FPackedHemiOct() {} // uninitialize
-		FPackedHemiOct(EForceInit) : U(213), V(128) {} // ~(1/3,1/3,1/3)
-		FPackedHemiOct(uint8_t InU, uint8_t InV) : U(InU), V(InV) {}
-		FPackedHemiOct(const FVector2f& HemiOct)
-		{
-			// Rotate 45 degrees to map diamond [-1,1]x[-1,1] with |x|+|y|<=1 to square [0,1]x[0,1]
-			// u = (x + y) / 2 + 0.5  maps to [0, 1]
-			// v = (x - y) / 2 + 0.5  maps to [0, 1]
-			const float Uf = (HemiOct.X + HemiOct.Y) * 0.5f + 0.5f;
-			const float Vf = (HemiOct.X - HemiOct.Y) * 0.5f + 0.5f;
-			U = ElementFloatClampToUint8(Uf);
-			V = ElementFloatClampToUint8(Vf);
-		}
-
-		FVector2f Unpack() const
-		{
-			// Inverse rotation: recover HemiOct.X and HemiOct.Y from U and V
-			// x = u + v - 1
-			// y = u - v
-			const float Uf = ElementUint8ToFloat(U);
-			const float Vf = ElementUint8ToFloat(V);
-			const float HemiOctX = Uf + Vf - 1.f;
-			const float HemiOctY = Uf - Vf;
-			return { HemiOctX, HemiOctY };
-		}
-
-		operator FUint8Vector2() const { return reinterpret_cast<const FUint8Vector2&>(*this); }
-
-		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
-	};
 
 	// Matrix: (N, N)
 	// Vector: (N, 1)
