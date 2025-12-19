@@ -232,10 +232,11 @@ namespace UCommon
 	static inline FVector4f FibonacciSpherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
-		const float Z = (2.f * n + 1.f) / N - 1.f;
+		const float nf = (float)n;
+		const float Z = (2.f * nf + 1.f) / (float)N - 1.f;
 		const float r = std::sqrt(1.f - Z * Z);
-		const float X = r * std::cos(Phi * n);
-		const float Y = r * std::sin(Phi * n);
+		const float X = r * std::cos(Phi * nf);
+		const float Y = r * std::sin(Phi * nf);
 
 		constexpr float PDF = 1.0f / (4.f * Pi);
 
@@ -244,10 +245,11 @@ namespace UCommon
 	static inline FVector4f FibonacciHemispherePoint(uint64_t N, uint64_t n)
 	{
 		constexpr float Phi = 2.f * Pi / GlodenRatio;
-		const float Z = (n + 0.5f) / N;
+		const float nf = (float)n;
+		const float Z = (nf + 0.5f) / (float)N;
 		const float r = std::sqrt(1.f - Z * Z);
-		const float X = r * std::cos(Phi * n);
-		const float Y = r * std::sin(Phi * n);
+		const float X = r * std::cos(Phi * nf);
+		const float Y = r * std::sin(Phi * nf);
 
 		constexpr float PDF = 1.0f / (2.f * Pi);
 
