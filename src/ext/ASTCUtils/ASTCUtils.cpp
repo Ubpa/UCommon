@@ -1176,16 +1176,16 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 		config.ycocg_texture_height = static_cast<unsigned int>(ASTCConfig.YCoCgTextureHeight);
 		config.param_texture_width = static_cast<unsigned int>(ASTCConfig.ParamTextureWidth);
 		config.param_texture_height = static_cast<unsigned int>(ASTCConfig.ParamTextureHeight);
-		config.param_k1_min = ASTCConfig.ParamK1Min;
-		config.param_k1_max = ASTCConfig.ParamK1Max;
-		config.param_k2_min = ASTCConfig.ParamK2Min;
-		config.param_k2_max = ASTCConfig.ParamK2Max;
-		config.param_b1_min = ASTCConfig.ParamB1Min;
-		config.param_b1_max = ASTCConfig.ParamB1Max;
-		config.param_b2_min = ASTCConfig.ParamB2Min;
-		config.param_b2_max = ASTCConfig.ParamB2Max;
-		// RGBV b value for vY decoding: b = 1/MaxValue + 1
-		config.ycocg_rgbv_b = 1.f / std::max(1.f, ASTCConfig.YCoCgMaxValue) + 1.f;
+		config.param_co0_min = ASTCConfig.ParamCo0Min;
+		config.param_co0_max = ASTCConfig.ParamCo0Max;
+		config.param_cg0_min = ASTCConfig.ParamCg0Min;
+		config.param_cg0_max = ASTCConfig.ParamCg0Max;
+		config.param_co1_min = ASTCConfig.ParamCo1Min;
+		config.param_co1_max = ASTCConfig.ParamCo1Max;
+		config.param_cg1_min = ASTCConfig.ParamCg1Min;
+		config.param_cg1_max = ASTCConfig.ParamCg1Max;
+		// RGBV b value for vY decoding: b = 1/MaxValue + 1. If MaxValue is 0, input is Y (no decoding needed)
+		config.ycocg_rgbv_b = (ASTCConfig.YCoCgMaxValue > 0.f) ? (1.f / ASTCConfig.YCoCgMaxValue + 1.f) : 0.f;
 	}
 
 	astcenc_image* image_uncomp_in = nullptr;

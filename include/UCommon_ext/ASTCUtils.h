@@ -67,23 +67,26 @@ namespace UCommon
 		const FVector4f* Weights = nullptr;
 		const char* Swizzel = nullptr;
 		const float* Cw = nullptr;
-		// vY-SqCoCg Prediction: external vY-SqCoCg texture for prediction parameter compression
-		// Texture format: (vY, SqCo, SqCg) where vY = EncodeRGBV(Y), SqCoCg = CoCgToSquareCoCg(CoCg)
+		// vY-CoCg Prediction: external vY-CoCg texture for prediction parameter compression
+		// Texture format: (vY, Co, Cg) where vY = EncodeRGBV(Y)
 		const float* YCoCgTexture = nullptr;
 		uint64_t YCoCgTextureWidth = 0;
 		uint64_t YCoCgTextureHeight = 0;
 		// MaxValue for RGBV decoding: Y = vY^2 / (b - vY^2), where b = 1/MaxValue + 1
-		float YCoCgMaxValue = 128.f;
+		// MaxValue for RGBV decoding. If 0, input is Y; otherwise input is vY and Y = vY^2 / (b - vY^2), where b = 1/MaxValue + 1
+		float YCoCgMaxValue = 0.f;
 		uint64_t ParamTextureWidth = 0;
 		uint64_t ParamTextureHeight = 0;
-		float ParamK1Min = 0.f;
-		float ParamK1Max = 0.f;
-		float ParamK2Min = 0.f;
-		float ParamK2Max = 0.f;
-		float ParamB1Min = 0.f;
-		float ParamB1Max = 0.f;
-		float ParamB2Min = 0.f;
-		float ParamB2Max = 0.f;
+		// Prediction formula: Co = Co0*(1-vY) + Co1*vY, Cg = Cg0*(1-vY) + Cg1*vY
+		// Channel mapping: R=Co0, G=Cg0, B=Co1, A=Cg1
+		float ParamCo0Min = 0.f;
+		float ParamCo0Max = 0.f;
+		float ParamCg0Min = 0.f;
+		float ParamCg0Max = 0.f;
+		float ParamCo1Min = 0.f;
+		float ParamCo1Max = 0.f;
+		float ParamCg1Min = 0.f;
+		float ParamCg1Max = 0.f;
 	};
 
 	UBPA_UCOMMON_API void InitBlockSizeDescriptorMngr(TSpan<const uint64_t> Sizes);
