@@ -45,11 +45,11 @@ namespace UCommon
 		/** @brief The LDR sRGB color profile. */
 		LDR_SRGB = 0,
 		/** @brief The LDR linear color profile. */
-		PRF_LDR,
+		LDR,
 		/** @brief The HDR RGB with LDR alpha color profile. */
-		PRF_HDR_RGB_LDR_A,
+		HDR_RGB_LDR_A,
 		/** @brief The HDR RGBA color profile. */
-		PRF_HDR
+		HDR
 	};
 
 	/**
