@@ -1011,32 +1011,8 @@ static void decompress_symbolic_block(
 	}
 }
 
-UCommon::FVector4f UCommon::FASTCBlock::GetPixel(const FUint64Vector2& BlockSize, uint64_t PointIndex) const
+void UCommon::FASTCBlock::GetPixels(EASTCProfile Profile, const FUint64Vector2& BlockSize, TSpan<const uint64_t> PointIndices, FVector4f* Pixels) const
 {
-	const astcenc_profile profile = ASTCENC_PRF_LDR;
-
-	const block_size_descriptor& bsd = BlockSizeDescriptorMngr::GetInstance().GetBlockSizeDescriptor(BlockSize);
-
-	const uint8_t (&pcb)[16] = Data;
-	symbolic_compressed_block scb;
-
-	physical_to_symbolic(bsd, pcb, scb, BlockSize, TSpan<const uint64_t>(&PointIndex, 1));
-
-	FVector4f Result;
-	decompress_symbolic_block(
-		profile,
-		bsd,
-		scb,
-		BlockSize, TSpan<const uint64_t>(&PointIndex, 1), &Result
-		);
-
-	return Result;
-}
-
-void UCommon::FASTCBlock::GetPixels(const FUint64Vector2& BlockSize, TSpan<const uint64_t> PointIndices, FVector4f* Pixels) const
-{
-	const astcenc_profile profile = ASTCENC_PRF_LDR;
-
 	const block_size_descriptor& bsd = BlockSizeDescriptorMngr::GetInstance().GetBlockSizeDescriptor(BlockSize);
 
 	const uint8_t(&pcb)[16] = Data;
@@ -1045,17 +1021,22 @@ void UCommon::FASTCBlock::GetPixels(const FUint64Vector2& BlockSize, TSpan<const
 	physical_to_symbolic(bsd, pcb, scb, BlockSize, PointIndices);
 
 	decompress_symbolic_block(
-		profile,
+		(astcenc_profile)Profile,
 		bsd,
 		scb,
 		BlockSize, PointIndices, Pixels
 	);
 }
 
-void UCommon::FASTCBlock::GetAllPixels(const FUint64Vector2& BlockSize, FVector4f* Pixels) const
+UCommon::FVector4f UCommon::FASTCBlock::GetPixel(EASTCProfile Profile, const FUint64Vector2& BlockSize, uint64_t PointIndex) const
 {
-	const astcenc_profile profile = ASTCENC_PRF_LDR;
+	FVector4f Result;
+	GetPixels(Profile, BlockSize, { &PointIndex, 1 }, &Result);
+	return Result;
+}
 
+void UCommon::FASTCBlock::GetAllPixels(EASTCProfile Profile, const FUint64Vector2& BlockSize, FVector4f* Pixels) const
+{
 	const block_size_descriptor& bsd = BlockSizeDescriptorMngr::GetInstance().GetBlockSizeDescriptor(BlockSize);
 
 	const uint8_t(&pcb)[16] = Data;
@@ -1065,7 +1046,7 @@ void UCommon::FASTCBlock::GetAllPixels(const FUint64Vector2& BlockSize, FVector4
 
 	image_block blk{};
 	decompress_symbolic_block(
-		profile,
+		(astcenc_profile)Profile,
 		bsd,
 		0,
 		0,
@@ -1079,11 +1060,9 @@ void UCommon::FASTCBlock::GetAllPixels(const FUint64Vector2& BlockSize, FVector4
 	}
 }
 
-void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig)
+void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Profile, EElementType ElementType, const void* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig)
 {
 	UBPA_UCOMMON_ASSERT(Blocks && Image);
-
-	const astcenc_profile profile = ASTCENC_PRF_LDR;
 
 	const unsigned int block_x = static_cast<unsigned int>(BlockSize.X);
 	const unsigned int block_y = static_cast<unsigned int>(BlockSize.Y);
@@ -1133,7 +1112,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 	default:
 		break;
 	}
-	astcenc_config_init(profile, block_x, block_y, block_z, ASTCConfig.Quality, flags, &config);
+	astcenc_config_init((astcenc_profile)Profile, block_x, block_y, block_z, ASTCConfig.Quality, flags, &config);
 	if (ASTCConfig.Cw)
 	{
 		config.cw_r_weight = ASTCConfig.Cw[0];
@@ -1179,8 +1158,10 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 	image_uncomp_in_data.dim_x = static_cast<unsigned int>(ImageSize.X);
 	image_uncomp_in_data.dim_y = static_cast<unsigned int>(ImageSize.Y);
 	image_uncomp_in_data.dim_z = 1u;
-	image_uncomp_in_data.data_type = ASTCENC_TYPE_U8;
-	image_uncomp_in_data.data = const_cast<void**>(reinterpret_cast<const void**>(&Image));
+	image_uncomp_in_data.data_type = ElementType == EElementType::Float ? ASTCENC_TYPE_F32
+		: (ElementType == EElementType::Half ? ASTCENC_TYPE_F16
+		: ASTCENC_TYPE_U8);
+	image_uncomp_in_data.data = const_cast<void**>(&Image);
 
 	image_uncomp_in = &image_uncomp_in_data;
 
@@ -1215,7 +1196,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, const uint8_t* Im
 	astcenc_context_free(codec_context);
 }
 
-void UCommon::DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize)
+void UCommon::DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize)
 {
 	UBPA_UCOMMON_ASSERT(Image && Blocks);
 
@@ -1227,7 +1208,7 @@ void UCommon::DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, cons
 		for (uint64_t BlockIndexX = 0; BlockIndexX < BlockGrid2D.X; BlockIndexX++)
 		{
 			const uint64_t BlockIndex = BlockIndexX + BlockIndexY * BlockGrid2D.X;
-			Blocks[BlockIndex].GetAllPixels(BlockSize, Pixels);
+			Blocks[BlockIndex].GetAllPixels(Profile, BlockSize, Pixels);
 
 			for (uint64_t Y = 0; Y < BlockSize.Y; Y++)
 			{
@@ -1247,21 +1228,20 @@ void UCommon::DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, cons
 
 					const uint64_t ImageIndex = ImageIndexX + ImageIndexY * ImageSize.X;
 
-					for (uint64_t C = 0; C < 4; C++)
-					{
-						Image[ImageIndex * 4 + C] = UCommon::ElementFloatClampToUint8(Pixels[X + Y * BlockSize.X].GetData()[C]);
-					}
+					Image[ImageIndex] = Pixels[X + Y * BlockSize.X];
 				}
 			}
 		}
 	}
 }
 
-void UCommon::ToASTC(const FTex2D& This, FTex2D& Tex, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
+void UCommon::ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
 {
 	UBPA_UCOMMON_ASSERT(BlockSize == 4 || BlockSize == 6 || BlockSize == 8 || BlockSize == 10 || BlockSize == 12);
+	UBPA_UCOMMON_ASSERT(Tex.GetElementType() == EElementType::Half);
+	UBPA_UCOMMON_ASSERT(Tex.GetNumChannels() == 4);
+	UBPA_UCOMMON_ASSERT(Tex.GetGrid2D() == This.GetGrid2D());
 
-	This.ToUint8(Tex);
 	bool bNewBlockBuffer = false;
 	if (!BlockBuffer)
 	{
@@ -1270,17 +1250,18 @@ void UCommon::ToASTC(const FTex2D& This, FTex2D& Tex, uint64_t BlockSize, FASTCC
 		bNewBlockBuffer = true;
 	}
 	const FUint64Vector2 ImageSize = This.GetGrid2D().GetExtent();
-	CompressImageToASTC(BlockBuffer, (const uint8_t*)Tex.GetStorage(), ImageSize, FUint64Vector2(BlockSize), Config);
-	DecompressASTCImage((uint8_t*)Tex.GetStorage(), BlockBuffer, ImageSize, FUint64Vector2(BlockSize));
+	const EASTCProfile Profile = This.GetElementType() == EElementType::Uint8 ? EASTCProfile::PRF_LDR : EASTCProfile::PRF_HDR;
+	CompressImageToASTC(BlockBuffer, Profile, This.GetElementType(), This.GetStorage(), ImageSize, FUint64Vector2(BlockSize), Config);
+	DecompressASTCImage((FVector4f*)Tex.GetStorage(), Profile, BlockBuffer, ImageSize, FUint64Vector2(BlockSize));
 	if (bNewBlockBuffer)
 	{
 		delete[] BlockBuffer;
 	}
 }
 
-UCommon::FTex2D UCommon::ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
+UCommon::FTex2D UCommon::ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer)
 {
-	FTex2D Tex(This.GetGrid2D(), This.GetNumChannels(), EElementType::Uint8);
-	ToASTC(This, Tex, BlockSize, Config, BlockBuffer);
+	UCommon::FTex2D Tex(This.GetGrid2D(), 4, EElementType::Float);
+	ToASTC(Tex, This, BlockSize, ASTCConfig, BlockBuffer);
 	return Tex;
 }

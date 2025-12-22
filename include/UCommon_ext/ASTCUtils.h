@@ -37,6 +37,18 @@ namespace UCommon
 {
 	class FThreadPool;
 	class FTex2D;
+	enum class EElementType : std::uint64_t;
+
+	enum class EASTCProfile {
+		/** @brief The LDR sRGB color profile. */
+		LDR_SRGB = 0,
+		/** @brief The LDR linear color profile. */
+		PRF_LDR,
+		/** @brief The HDR RGB with LDR alpha color profile. */
+		PRF_HDR_RGB_LDR_A,
+		/** @brief The HDR RGBA color profile. */
+		PRF_HDR
+	};
 
 	/**
 	 * 128 bits = 16 x 8 bits
@@ -46,9 +58,9 @@ namespace UCommon
 	{
 		uint8_t Data[16];
 
-		FVector4f GetPixel(const FUint64Vector2& BlockSize, uint64_t PointIndex) const;
-		void GetPixels(const FUint64Vector2& BlockSize, TSpan<const uint64_t> PointIndices, FVector4f* Pixels) const;
-		void GetAllPixels(const FUint64Vector2& BlockSize, FVector4f* Pixels) const;
+		void GetPixels(EASTCProfile Profile, const FUint64Vector2& BlockSize, TSpan<const uint64_t> PointIndices, FVector4f* Pixels) const;
+		FVector4f GetPixel(EASTCProfile Profile, const FUint64Vector2& BlockSize, uint64_t PointIndex) const;
+		void GetAllPixels(EASTCProfile Profile, const FUint64Vector2& BlockSize, FVector4f* Pixels) const;
 	};
 
 	struct UBPA_UCOMMON_API FASTCConfig
@@ -73,24 +85,17 @@ namespace UCommon
 	UBPA_UCOMMON_API void ReleaseBlockSizeDescriptorMngr();
 	UBPA_UCOMMON_API uint64_t GetBlockSizeDescriptorMngrAllocatedBytes();
 	
-	void CompressImageToASTC(FASTCBlock* Blocks, const uint8_t* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig);
-	void DecompressASTCImage(uint8_t* Image, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize);
+	void CompressImageToASTC(FASTCBlock* Blocks, EASTCProfile Profile, EElementType ElementType, const void* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig);
+	void DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize);
 
 	/**
-	 * @param This this
-	 * @param Tex uint8
+	 * @param Tex float4
+	 * @param This this float/half/uint8
 	 * @param BlockBuffer = new FASTCBlock[((GetGrid().GetExtent() + BlockSize - 1) / BlockSize).Area()];
-	 * @return uint8
 	 */
-	UBPA_UCOMMON_API void ToASTC(const FTex2D& This, FTex2D& Tex, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
+	UBPA_UCOMMON_API void ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
 
-	/**
-	 * @param This this
-	 * @param BlockBuffer = new FASTCBlock[((GetGrid().GetExtent() + BlockSize - 1) / BlockSize).Area()];
-	 * @return uint8
-	 */
 	UBPA_UCOMMON_API FTex2D ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
-
 }
 
 UBPA_UCOMMON_ASTCUTILS_TO_NAMESPACE(UCommonTest)
