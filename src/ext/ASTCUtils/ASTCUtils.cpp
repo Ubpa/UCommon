@@ -1257,7 +1257,7 @@ void UCommon::DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const 
 	}
 }
 
-void UCommon::ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
+void UCommon::ToASTC(FTex2D& Tex, EASTCProfile Profile, const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
 {
 	UBPA_UCOMMON_ASSERT(BlockSize == 4 || BlockSize == 6 || BlockSize == 8 || BlockSize == 10 || BlockSize == 12);
 	UBPA_UCOMMON_ASSERT(Tex.GetElementType() == EElementType::Half);
@@ -1272,7 +1272,6 @@ void UCommon::ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCC
 		bNewBlockBuffer = true;
 	}
 	const FUint64Vector2 ImageSize = This.GetGrid2D().GetExtent();
-	const EASTCProfile Profile = This.GetElementType() == EElementType::Uint8 ? EASTCProfile::PRF_LDR : EASTCProfile::PRF_HDR;
 	CompressImageToASTC(BlockBuffer, Profile, This.GetElementType(), This.GetStorage(), ImageSize, FUint64Vector2(BlockSize), Config);
 	DecompressASTCImage((FVector4f*)Tex.GetStorage(), Profile, BlockBuffer, ImageSize, FUint64Vector2(BlockSize));
 	if (bNewBlockBuffer)
@@ -1281,9 +1280,9 @@ void UCommon::ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCC
 	}
 }
 
-UCommon::FTex2D UCommon::ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer)
+UCommon::FTex2D UCommon::ToASTC(EASTCProfile Profile, const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer)
 {
 	UCommon::FTex2D Tex(This.GetGrid2D(), 4, EElementType::Float);
-	ToASTC(Tex, This, BlockSize, ASTCConfig, BlockBuffer);
+	ToASTC(Tex, Profile, This, BlockSize, ASTCConfig, BlockBuffer);
 	return Tex;
 }
