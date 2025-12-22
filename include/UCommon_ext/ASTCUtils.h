@@ -93,9 +93,9 @@ namespace UCommon
 	 * @param This this float/half/uint8
 	 * @param BlockBuffer = new FASTCBlock[((GetGrid().GetExtent() + BlockSize - 1) / BlockSize).Area()];
 	 */
-	UBPA_UCOMMON_API void ToASTC(FTex2D& Tex, const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
+	UBPA_UCOMMON_API void ToASTC(FTex2D& Tex, EASTCProfile Profile, const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
 
-	UBPA_UCOMMON_API FTex2D ToASTC(const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
+	UBPA_UCOMMON_API FTex2D ToASTC(EASTCProfile Profile, const FTex2D& This, uint64_t BlockSize, FASTCConfig ASTCConfig, FASTCBlock* BlockBuffer = nullptr);
 }
 
 UBPA_UCOMMON_ASTCUTILS_TO_NAMESPACE(UCommonTest)
