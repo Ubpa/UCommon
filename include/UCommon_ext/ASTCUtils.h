@@ -27,6 +27,7 @@ SOFTWARE.
 #define UBPA_UCOMMON_ASTCUTILS_TO_NAMESPACE(NameSpace) \
 namespace NameSpace \
 { \
+    using EASTCProfile = UCommon::EASTCProfile; \
     using FASTCBlock = UCommon::FASTCBlock; \
     using FASTCConfig = UCommon::FASTCConfig; \
 }
@@ -39,7 +40,8 @@ namespace UCommon
 	class FTex2D;
 	enum class EElementType : std::uint64_t;
 
-	enum class EASTCProfile {
+	enum class EASTCProfile
+	{
 		/** @brief The LDR sRGB color profile. */
 		LDR_SRGB = 0,
 		/** @brief The LDR linear color profile. */
@@ -85,8 +87,8 @@ namespace UCommon
 	UBPA_UCOMMON_API void ReleaseBlockSizeDescriptorMngr();
 	UBPA_UCOMMON_API uint64_t GetBlockSizeDescriptorMngrAllocatedBytes();
 	
-	void CompressImageToASTC(FASTCBlock* Blocks, EASTCProfile Profile, EElementType ElementType, const void* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig);
-	void DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize);
+	UBPA_UCOMMON_API void CompressImageToASTC(FASTCBlock* Blocks, EASTCProfile Profile, EElementType ElementType, const void* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig);
+	UBPA_UCOMMON_API void DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const FASTCBlock* Blocks, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize);
 
 	/**
 	 * @param Tex float4
