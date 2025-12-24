@@ -73,6 +73,8 @@ namespace UCommon
 			RGBM,
 			RGBD,
 			RGBV,
+			YCoCg,
+			YCoCgPredition,
 		};
 		EFormat Format = EFormat::None;
 		float MaxValue = 0.f;
