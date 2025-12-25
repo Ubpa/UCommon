@@ -220,6 +220,8 @@ namespace UCommon
 
 		void BilinearSample(float* Result, const FVector2f& Texcoord, ETextureAddress AddressModeX = ETextureAddress::Wrap, ETextureAddress AddressModeY = ETextureAddress::Wrap) const noexcept;
 
+		void BilinearSampleAlignCorner(float* Result, const FVector2f& Texcoord) const noexcept;
+
 		/**
 		 * Width = Width/2
 		 * Height = Height/2
