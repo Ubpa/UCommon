@@ -1110,6 +1110,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 	case FASTCConfig::EFormat::RGBV:
 		flags |= ASTCENC_FLG_MAP_RGBV;
 		break;
+#if UBPA_UCOMMON_ASTC_EXP
 	case FASTCConfig::EFormat::YCoCg:
 		flags |= ASTCENC_FLG_MAP_YCOCG;
 		UBPA_UCOMMON_ASSERT(ASTCConfig.YCoCgTexture);
@@ -1118,6 +1119,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 		flags |= ASTCENC_FLG_MAP_YCOCG_PREDICTION;
 		UBPA_UCOMMON_ASSERT(ASTCConfig.YCoCgTexture);
 		break;
+#endif
 	default:
 		break;
 	}
@@ -1153,6 +1155,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 		break;
 	}
 	config.cw_weights = (float*)ASTCConfig.Weights;
+#if UBPA_UCOMMON_ASTC_EXP
 	if (ASTCConfig.YCoCgTexture)
 	{
 		config.ycocg_texture = ASTCConfig.YCoCgTexture;
@@ -1171,6 +1174,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 		// RGBV b value for vY decoding: b = 1/MaxValue + 1. If MaxValue is 0, input is Y (no decoding needed)
 		config.ycocg_rgbv_b = (ASTCConfig.YCoCgMaxValue > 0.f) ? (1.f / ASTCConfig.YCoCgMaxValue + 1.f) : 0.f;
 	}
+#endif
 
 	astcenc_image* image_uncomp_in = nullptr;
 

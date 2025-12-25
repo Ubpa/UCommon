@@ -41,6 +41,8 @@ SOFTWARE.
 
 #define UBPA_UCOMMON_WITH_EDITOR 1
 
+#define UBPA_UCOMMON_ASTC_EXP 1
+
 //----------------------------------------------------------
 
 //#define UCOMMON_COMPATIBLE_CPP14
@@ -112,4 +114,8 @@ SOFTWARE.
 #define UBPA_UCOMMON_MALLOC(size) (malloc(size))
 #define UBPA_UCOMMON_REALLOC(size) (realloc(ptr,size))
 #define UBPA_UCOMMON_FREE(ptr) (free(ptr))
+#endif
+
+#ifndef UBPA_UCOMMON_ASTC_EXP
+#define UBPA_UCOMMON_ASTC_EXP 0
 #endif
