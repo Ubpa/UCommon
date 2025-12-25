@@ -415,6 +415,22 @@ void UCommon::FTex2D::BilinearSample(float* Result, const FVector2f& Texcoord, E
 	}
 }
 
+void UCommon::FTex2D::BilinearSampleAlignCorner(float* Result, const FVector2f& Texcoord) const noexcept
+{
+	// Step 1: Clamp texcoord to [0, 1]
+	const FVector2f ClampedTexcoord = Texcoord.Clamp(0.f, 1.f);
+
+	// Step 2: Map texcoord to corner range
+	// In align corner mode, texcoord [0, 1] maps to pixel centers [0, extent-1]
+	// Standard BilinearSample maps texcoord [0, 1] to [0, extent], with pixel centers at [0.5, extent-0.5]
+	// So we need to transform: new_texcoord = (texcoord * (extent - 1) + 0.5) / extent
+	const FVector2f Extent(Grid2D.GetExtent());
+	const FVector2f MappedTexcoord = (ClampedTexcoord * (Extent - 1.f) + 0.5f) / Extent;
+
+	// Step 3: Call BilinearSample with Clamp mode
+	BilinearSample(Result, MappedTexcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
+}
+
 namespace UCommon
 {
 	template<typename T>
