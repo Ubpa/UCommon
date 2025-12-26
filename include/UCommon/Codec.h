@@ -106,6 +106,7 @@ namespace UCommon
 	 * https://www.desmos.com/calculator/ioylfelonf
 	 */
 	UBPA_UCOMMON_API FLinearColor EncodeRGBD(FLinearColorRGB Color, float MaxValue, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColor EncodeRGBDWithD(FLinearColorRGB Color, float MaxValue, float D);
 
 	/**
 	 * Map color to valid RGBD-encodable color.
@@ -172,6 +173,7 @@ namespace UCommon
 	 * L/(L+1) simulates tonemapping, sqrt simulates gamma correction.
 	 */
 	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue = RGBV_DefaultMaxValue, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColor EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float V);
 	// [0, 1]
 	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue = RGBV_DefaultMaxValue);
 
@@ -199,19 +201,6 @@ namespace UCommon
 		float b = RGBV_GetB(MaxValue);
 		float V2 = Pow2(V);
 		return V2 / (b - V2);
-	}
-
-	inline FLinearColorRGB DecodeRGBV(FColor RGBV, float MaxValue) noexcept
-	{
-		return DecodeRGBV(ElementColorToLinearColor(RGBV), MaxValue);
-	}
-
-	inline FDoubleColorRGB DecodeRGBV(FDoubleColor RGBV, double MaxValue) noexcept
-	{
-		double b = 1. / MaxValue + 1.;
-		double V2 = Pow2(RGBV.W);
-		double L = V2 / (b - V2);
-		return FDoubleColorRGB(RGBV.X, RGBV.Y, RGBV.Z) * L;
 	}
 
 	[[nodiscard]] static inline FVector2f CoCgToSquareCoCg(const FVector2f& CoCg)
@@ -418,7 +407,7 @@ namespace UCommon
 
 	static inline FVector3f HemiOctLToVector(const FVector3f& HemiOctL)
 	{
-		return HemiOctToDir(HemiOctL) * HemiOctL.Z;
+		return HemiOctToDir({ HemiOctL.X, HemiOctL.Y }) * HemiOctL.Z;
 	}
 
 	struct FPackedHemiOct

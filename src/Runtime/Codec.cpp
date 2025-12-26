@@ -24,13 +24,11 @@ SOFTWARE.
 
 #include <UCommon/Codec.h>
 
-using namespace UCommon;
-
 //===========================================
 // RGBM Codec Implementation
 //===========================================
 
-FLinearColor UCommon::EncodeRGBM(FLinearColorRGB Color, float Multiplier, float InLowClamp)
+UCommon::FLinearColor UCommon::EncodeRGBM(FLinearColorRGB Color, float Multiplier, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -86,7 +84,7 @@ float UCommon::EncodeRGBM(float M, float Multiplier, float InLowClamp)
 	return SqrtMScale;
 }
 
-FLinearColor UCommon::EncodeRGBMWithM(FLinearColorRGB Color, float Multiplier, float SqrtMScale)
+UCommon::FLinearColor UCommon::EncodeRGBMWithM(FLinearColorRGB Color, float Multiplier, float SqrtMScale)
 {
 	Color = Color.Max(0.f);
 
@@ -119,7 +117,7 @@ FLinearColor UCommon::EncodeRGBMWithM(FLinearColorRGB Color, float Multiplier, f
 	return FLinearColor(RGBScale, SqrtMScale);
 }
 
-FLinearColorRGB UCommon::MapToValidColorRGBM(FLinearColorRGB Color, float Multiplier, float InLowClamp)
+UCommon::FLinearColorRGB UCommon::MapToValidColorRGBM(FLinearColorRGB Color, float Multiplier, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -160,7 +158,7 @@ float UCommon::RGBD_GetMaxValue(float K)
 	return 1.f / (Pow2(K + 1.f));
 }
 
-FLinearColor UCommon::EncodeRGBD(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColor UCommon::EncodeRGBD(FLinearColorRGB Color, float MaxValue, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -201,7 +199,40 @@ FLinearColor UCommon::EncodeRGBD(FLinearColorRGB Color, float MaxValue, float In
 	return FLinearColor(RGBScale, D);
 }
 
-FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColor UCommon::EncodeRGBDWithD(FLinearColorRGB Color, float MaxValue, float D)
+{
+	Color = Color.Max(0.f);
+
+	const float MaxRGB = Color.MaxComponent();
+	if (MaxRGB == 0.f || MaxValue == 0.f)
+	{
+		return FLinearColor(0.f, 0.f, 0.f, D);
+	}
+
+	const float k = RGBD_GetK(MaxValue);
+	float Multiplier = Pow2(D / (k * D + 1.f));
+	float Ratio = std::min(1.f, Multiplier / MaxRGB);
+
+	FLinearColorRGB RGBScale = (Color * Ratio / Multiplier).Clamp(0.f, 1.f);
+
+	for (uint64_t Index = 0; Index < 3; Index++)
+	{
+		float a = std::clamp(std::floor(RGBScale[Index] * 255.f) / 255.f, 0.f, 1.f);
+		float b = std::clamp(std::ceil(RGBScale[Index] * 255.f) / 255.f, 0.f, 1.f);
+		if (std::abs(a * Multiplier - Color[Index]) < std::abs(b * Multiplier - Color[Index]))
+		{
+			RGBScale[Index] = a;
+		}
+		else
+		{
+			RGBScale[Index] = b;
+		}
+	}
+
+	return FLinearColor(RGBScale, D);
+}
+
+UCommon::FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, float MaxValue, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -235,7 +266,7 @@ FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, float MaxVal
 // RGBV Codec Implementation
 //===========================================
 
-FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -285,6 +316,44 @@ FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float In
 	return FLinearColor(RGBScale, V);
 }
 
+UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float V)
+{
+	Color = Color.Max(0.f);
+
+	float L = Color.MaxComponent();
+	if (L == 0.f || MaxValue == 0.f)
+	{
+		return FLinearColor(0.f, 0.f, 0.f, V);
+	}
+
+	// Decode back to get the actual L from V: L = V^2 / (b - V^2)
+	float b = RGBV_GetB(MaxValue);
+	float V2 = Pow2(V);
+	float LDecoded = V2 / (b - V2);
+
+	// RGB_encoded = Color / LDecoded, decode: RGB = RGB_encoded * L
+	FLinearColorRGB RGBScale = (Color / LDecoded).Clamp(0.f, 1.f);
+
+	// Quantization optimization: choose floor or ceil for each channel
+	for (uint64_t Index = 0; Index < 3; Index++)
+	{
+		float FloorVal = std::clamp(std::floor(RGBScale[Index] * 255.f) / 255.f, 0.f, 1.f);
+		float CeilVal = std::clamp(std::ceil(RGBScale[Index] * 255.f) / 255.f, 0.f, 1.f);
+		float FloorDecoded = FloorVal * LDecoded;
+		float CeilDecoded = CeilVal * LDecoded;
+		if (std::abs(FloorDecoded - Color[Index]) < std::abs(CeilDecoded - Color[Index]))
+		{
+			RGBScale[Index] = FloorVal;
+		}
+		else
+		{
+			RGBScale[Index] = CeilVal;
+		}
+	}
+
+	return FLinearColor(RGBScale, V);
+}
+
 float UCommon::EncodeRGBV(float L, float MaxValue)
 {
 	if (L <= 0.f)
@@ -302,7 +371,7 @@ float UCommon::EncodeRGBV(float L, float MaxValue)
 	return V;
 }
 
-FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
