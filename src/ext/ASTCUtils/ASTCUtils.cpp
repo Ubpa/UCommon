@@ -1063,6 +1063,7 @@ void UCommon::FASTCBlock::GetAllPixels(EASTCProfile Profile, const FUint64Vector
 void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Profile, EElementType ElementType, const void* Image, const FUint64Vector2& ImageSize, const FUint64Vector2& BlockSize, FASTCConfig ASTCConfig)
 {
 	UBPA_UCOMMON_ASSERT(Blocks && Image);
+	UBPA_UCOMMON_ASSERT(ElementType == EElementType::Uint8 || ElementType == EElementType::Half || ElementType == EElementType::Float);
 
 	const unsigned int block_x = static_cast<unsigned int>(BlockSize.X);
 	const unsigned int block_y = static_cast<unsigned int>(BlockSize.Y);
@@ -1136,7 +1137,7 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 	case FASTCConfig::EFormat::RGBV:
 	{
 		float rgbv_max = std::max(1.f, ASTCConfig.MaxValue);
-		float rgbv_s = std::max(0.f, ASTCConfig.S);
+		float rgbv_s = std::max(0.f, ASTCConfig.RGBV_S);
 		config.rgbv_k = -rgbv_s;
 		config.rgbv_b = rgbv_s + 1.f / rgbv_max;
 		config.cw_a_weight = rgbv_max;
@@ -1240,7 +1241,6 @@ void UCommon::DecompressASTCImage(FVector4f* Image, EASTCProfile Profile, const 
 void UCommon::ToASTC(FTex2D& Tex, EASTCProfile Profile, const FTex2D& This, uint64_t BlockSize, FASTCConfig Config, FASTCBlock* BlockBuffer)
 {
 	UBPA_UCOMMON_ASSERT(BlockSize == 4 || BlockSize == 6 || BlockSize == 8 || BlockSize == 10 || BlockSize == 12);
-	UBPA_UCOMMON_ASSERT(Tex.GetElementType() == EElementType::Half);
 	UBPA_UCOMMON_ASSERT(Tex.GetNumChannels() == 4);
 	UBPA_UCOMMON_ASSERT(Tex.GetGrid2D() == This.GetGrid2D());
 

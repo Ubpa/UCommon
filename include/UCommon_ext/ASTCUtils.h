@@ -76,8 +76,8 @@ namespace UCommon
 		};
 		EFormat Format = EFormat::None;
 		float MaxValue = 0.f;
-		/** RGBV s parameter for encoding: k = -s, b = s + 1/M. Default is 1. */
-		float S = 1.f;
+		/** RGBV s parameter for encoding/decoding: k = -s, b = s + 1/M. Default is 1. */
+		float RGBV_S = 1.f;
 		float Quality = 100.f;
 		FThreadPool* ThreadPool = nullptr;
 		const FVector4f* Weights = nullptr;
