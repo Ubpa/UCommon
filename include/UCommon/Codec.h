@@ -158,49 +158,87 @@ namespace UCommon
 	constexpr float RGBV_DefaultMaxValue = 128.f;
 	/** Default optimal V value for GlobalEncode. */
 	constexpr float RGBV_DefaultOptimalV = 0.8f;
+	/** Default s value for RGBV encoding. */
+	constexpr float RGBV_DefaultS = 1.f;
 
 	/**
-	 * Get the b factor for the RGBV encoding.
-	 * b = 1/M + 1
-	 * Used in formula: L = V^2 / (b - V^2)
+	 * Compute optimal s from mean luminance m and max luminance M.
+	 * t = 1/2
+	 * s = max(0, (t^2*M - m) / (m*M*(1 - t^2)))
+	 * @param MeanLuminance Mean luminance value (m), in (0, M]
+	 * @param MaxValue Max luminance value (M), > 0
+	 * @return Optimal s value, >= 0
 	 */
-	inline float RGBV_GetB(float MaxValue) noexcept { return 1.f / MaxValue + 1.f; }
+	inline float RGBV_GetS(float MeanLuminance, float MaxValue) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(MeanLuminance > 0.f);
+		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		constexpr float t = 0.5f;
+		constexpr float t2 = t * t; // 0.25
+		// s = max(0, (t^2*M - m) / (m*M*(1 - t^2)))
+		float numerator = t2 * MaxValue - MeanLuminance;
+		float denominator = MeanLuminance * MaxValue * (1.f - t2);
+		return std::max(0.f, numerator / denominator);
+	}
+
+	/**
+	 * Get the k factor for the RGBV encoding (runtime).
+	 * k = -s
+	 * Used in formula: L = V^2 / (k*V^2 + b)
+	 */
+	inline float RGBV_GetK(float S) noexcept { return -S; }
+
+	/**
+	 * Get the b factor for the RGBV encoding (runtime).
+	 * b = s + 1/M
+	 * Used in formula: L = V^2 / (k*V^2 + b)
+	 */
+	inline float RGBV_GetB(float MaxValue, float S) noexcept { return S + 1.f / MaxValue; }
 
 	/**
 	 * RGBV encoding
-	 * V = sqrt((M+1)/M * L/(L+1)) = sqrt(b * L/(L+1))
-	 * where L = max(R,G,B), L in [0, M]
-	 * L/(L+1) simulates tonemapping, sqrt simulates gamma correction.
+	 * L = v^2 / (s * (1-v^2) + 1/M)
+	 * v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	 * where L = max(R,G,B), L in [0, M], s >= 0
+	 * L==M => v==1, L==0 => v==0
+	 * Runtime simplified: L = v^2 / (k*v^2 + b), where k = -s, b = s + 1/M
 	 */
-	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue = RGBV_DefaultMaxValue, float InLowClamp = LowClamp);
-	UBPA_UCOMMON_API FLinearColor EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float V);
+	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue = RGBV_DefaultMaxValue, float S = RGBV_DefaultS, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColor EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float S, float V);
 	// [0, 1]
-	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue = RGBV_DefaultMaxValue);
+	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue = RGBV_DefaultMaxValue, float S = RGBV_DefaultS);
 
 	/**
 	 * Map color to valid RGBV-encodable color.
 	 * This ensures the color can be represented within the RGBV encoding scheme.
 	 */
-	UBPA_UCOMMON_API FLinearColorRGB MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColorRGB MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S = RGBV_DefaultS, float InLowClamp = LowClamp);
 
 	/**
 	 * Decode RGBV to linear HDR color.
-	 * L = V^2 / (b - V^2), where b = 1/M + 1
+	 * L = V^2 / (k*V^2 + b), where k = -s, b = s + 1/M
 	 * RGB = RGB_encoded * L
 	 */
-	inline FLinearColorRGB DecodeRGBV(FLinearColor RGBV, float MaxValue) noexcept
+	inline FLinearColorRGB DecodeRGBV(FLinearColor RGBV, float MaxValue, float S = RGBV_DefaultS) noexcept
 	{
-		float b = RGBV_GetB(MaxValue);
+		float k = RGBV_GetK(S);
+		float b = RGBV_GetB(MaxValue, S);
 		float V2 = Pow2(RGBV.W);
-		float L = V2 / (b - V2);
+		float L = V2 / (k * V2 + b);
 		return FLinearColorRGB(RGBV.X, RGBV.Y, RGBV.Z) * L;
 	}
 
-	inline float DecodeRGBV(float V, float MaxValue) noexcept
+	inline float DecodeRGBV(float V, float MaxValue, float S = RGBV_DefaultS) noexcept
 	{
-		float b = RGBV_GetB(MaxValue);
+		float k = RGBV_GetK(S);
+		float b = RGBV_GetB(MaxValue, S);
 		float V2 = Pow2(V);
-		return V2 / (b - V2);
+		return V2 / (k * V2 + b);
+	}
+
+	inline FLinearColorRGB DecodeRGBV(FColor RGBV, float MaxValue, float S = RGBV_DefaultS) noexcept
+	{
+		return DecodeRGBV(ElementColorToLinearColor(RGBV), MaxValue, S);
 	}
 
 	[[nodiscard]] static inline FVector2f CoCgToSquareCoCg(const FVector2f& CoCg)
