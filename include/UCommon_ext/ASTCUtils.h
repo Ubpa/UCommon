@@ -87,14 +87,11 @@ namespace UCommon
 		const float* Cw = nullptr;
 		// vY-CoCg Prediction: external vY-CoCg texture for prediction parameter compression
 		// Texture format: (vY, Co, Cg) where vY = EncodeRGBV(Y)
+		// RGBV vY decoding uses MaxValue and RGBV_S: Y = vY^2 / (k*vY^2 + b), where k = -RGBV_S, b = RGBV_S + 1/MaxValue
+		// If MaxValue is 0, input is Y (no decoding needed)
 		const float* YCoCgTexture = nullptr;
 		uint64_t YCoCgTextureWidth = 0;
 		uint64_t YCoCgTextureHeight = 0;
-		// RGBV MaxValue for vY decoding: Y = vY^2 / (k*vY^2 + b), where k = -s, b = s + 1/MaxValue
-		// If 0, input is Y (no decoding needed)
-		float YCoCgMaxValue = 0.f;
-		/** RGBV s parameter for YCoCg vY decoding. Default is 1. */
-		float YCoCgS = 1.f;
 		uint64_t ParamTextureWidth = 0;
 		uint64_t ParamTextureHeight = 0;
 		// Prediction formula: Co = Co0*(1-vY) + Co1*vY, Cg = Cg0*(1-vY) + Cg1*vY

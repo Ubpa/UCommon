@@ -1173,13 +1173,13 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 		config.param_co1_max = ASTCConfig.ParamCo1Max;
 		config.param_cg1_min = ASTCConfig.ParamCg1Min;
 		config.param_cg1_max = ASTCConfig.ParamCg1Max;
-		// RGBV k and b values for vY decoding: Y = vY^2 / (k*vY^2 + b), where k = -s, b = s + 1/MaxValue
+		// RGBV k and b values for vY decoding: Y = vY^2 / (k*vY^2 + b), where k = -RGBV_S, b = RGBV_S + 1/MaxValue
 		// If MaxValue is 0, input is Y (no decoding needed)
-		if (ASTCConfig.YCoCgMaxValue > 0.f)
+		if (ASTCConfig.MaxValue > 0.f)
 		{
-			float ycocg_s = std::max(0.f, ASTCConfig.YCoCgS);
+			float ycocg_s = std::max(0.f, ASTCConfig.RGBV_S);
 			config.ycocg_rgbv_k = -ycocg_s;
-			config.ycocg_rgbv_b = ycocg_s + 1.f / ASTCConfig.YCoCgMaxValue;
+			config.ycocg_rgbv_b = ycocg_s + 1.f / ASTCConfig.MaxValue;
 		}
 		else
 		{
