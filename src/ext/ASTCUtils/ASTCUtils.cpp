@@ -1178,13 +1178,13 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 		if (ASTCConfig.MaxValue > 0.f)
 		{
 			float ycocg_s = std::max(0.f, ASTCConfig.RGBV_S);
-			config.ycocg_rgbv_k = -ycocg_s;
-			config.ycocg_rgbv_b = ycocg_s + 1.f / ASTCConfig.MaxValue;
+			config.rgbv_k = -ycocg_s;
+			config.rgbv_b = ycocg_s + 1.f / ASTCConfig.MaxValue;
 		}
 		else
 		{
-			config.ycocg_rgbv_k = 0.f;
-			config.ycocg_rgbv_b = 0.f;
+			config.rgbv_k = 0.f;
+			config.rgbv_b = 0.f;
 		}
 	}
 #endif
