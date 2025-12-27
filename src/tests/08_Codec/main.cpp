@@ -84,10 +84,10 @@ void TestRGBD(FLinearColorRGB Color, float MaxValue, const char* Label)
 // RGBV Test
 //===========================================
 
-void TestRGBV(FLinearColorRGB Color, float MaxValue, const char* Label)
+void TestRGBV(FLinearColorRGB Color, float MaxValue, const char* Label, float S = 1.f)
 {
-    FLinearColor RGBV = EncodeRGBV(Color, MaxValue);
-    FLinearColorRGB Decoded = DecodeRGBV(RGBV, MaxValue);
+    FLinearColor RGBV = EncodeRGBV(Color, MaxValue, S);
+    FLinearColorRGB Decoded = DecodeRGBV(RGBV, MaxValue, S);
 
     float L = Color.MaxComponent();
     float DecodedL = Decoded.MaxComponent();
@@ -176,7 +176,7 @@ void RunComparisonTest(float MaxValue)
 
         float errM = VisualSpaceError(color, DecodeRGBM(EncodeRGBM(color, MaxValue), MaxValue));
         float errD = VisualSpaceError(color, DecodeRGBD(EncodeRGBD(color, MaxValue), MaxValue));
-        float errV = VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue), MaxValue));
+        float errV = VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue, 1.f), MaxValue, 1.f));
 
         rgbmSum += errM; rgbdSum += errD; rgbvSum += errV;
         rgbmMax = std::max(rgbmMax, (double)errM);
@@ -205,7 +205,7 @@ void RunComparisonTest(float MaxValue)
             if (L < ranges[r].first || L >= ranges[r].second) continue;
             rM += VisualSpaceError(color, DecodeRGBM(EncodeRGBM(color, MaxValue), MaxValue));
             rD += VisualSpaceError(color, DecodeRGBD(EncodeRGBD(color, MaxValue), MaxValue));
-            rV += VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue), MaxValue));
+            rV += VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue, 1.f), MaxValue, 1.f));
             rCount++;
         }
         if (rCount > 0)
@@ -233,8 +233,8 @@ void RunComparisonTest(float MaxValue)
         float mDec = Pow2(mEnc) * MaxValue;
         float dEnc = Quantize8(EncodeRGBD(L, MaxValue));
         float dDec = DecodeRGBD(dEnc, MaxValue);
-        float vEnc = Quantize8(EncodeRGBV(L, MaxValue));
-        float vDec = DecodeRGBV(vEnc, MaxValue);
+        float vEnc = Quantize8(EncodeRGBV(L, MaxValue, 1.f));
+        float vDec = DecodeRGBV(vEnc, MaxValue, 1.f);
 
         float errM = std::abs(ToVisualSpace(L) - ToVisualSpace(mDec));
         float errD = std::abs(ToVisualSpace(L) - ToVisualSpace(dDec));
@@ -269,8 +269,8 @@ void RunComparisonTest(float MaxValue)
             float mDec = Pow2(mEnc) * MaxValue;
             float dEnc = Quantize8(EncodeRGBD(L, MaxValue));
             float dDec = DecodeRGBD(dEnc, MaxValue);
-            float vEnc = Quantize8(EncodeRGBV(L, MaxValue));
-            float vDec = DecodeRGBV(vEnc, MaxValue);
+            float vEnc = Quantize8(EncodeRGBV(L, MaxValue, 1.f));
+            float vDec = DecodeRGBV(vEnc, MaxValue, 1.f);
 
             rM += std::abs(ToVisualSpace(L) - ToVisualSpace(mDec));
             rD += std::abs(ToVisualSpace(L) - ToVisualSpace(dDec));
