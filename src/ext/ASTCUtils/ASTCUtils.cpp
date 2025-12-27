@@ -1136,7 +1136,9 @@ void UCommon::CompressImageToASTC(UCommon::FASTCBlock* Blocks, EASTCProfile Prof
 	case FASTCConfig::EFormat::RGBV:
 	{
 		float rgbv_max = std::max(1.f, ASTCConfig.MaxValue);
-		config.rgbv_b = 1.f / rgbv_max + 1.f;
+		float rgbv_s = std::max(0.f, ASTCConfig.S);
+		config.rgbv_k = -rgbv_s;
+		config.rgbv_b = rgbv_s + 1.f / rgbv_max;
 		config.cw_a_weight = rgbv_max;
 	}
 	break;
