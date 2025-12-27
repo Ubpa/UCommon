@@ -203,23 +203,23 @@ namespace UCommon
 	 * L==M => v==1, L==0 => v==0
 	 * Runtime simplified: L = v^2 / (k*v^2 + b), where k = -s, b = s + 1/M
 	 */
-	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue = RGBV_DefaultMaxValue, float S = RGBV_DefaultS, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp = LowClamp);
 	UBPA_UCOMMON_API FLinearColor EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float S, float V);
 	// [0, 1]
-	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue = RGBV_DefaultMaxValue, float S = RGBV_DefaultS);
+	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue, float S);
 
 	/**
 	 * Map color to valid RGBV-encodable color.
 	 * This ensures the color can be represented within the RGBV encoding scheme.
 	 */
-	UBPA_UCOMMON_API FLinearColorRGB MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S = RGBV_DefaultS, float InLowClamp = LowClamp);
+	UBPA_UCOMMON_API FLinearColorRGB MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp = LowClamp);
 
 	/**
 	 * Decode RGBV to linear HDR color.
 	 * L = V^2 / (k*V^2 + b), where k = -s, b = s + 1/M
 	 * RGB = RGB_encoded * L
 	 */
-	inline FLinearColorRGB DecodeRGBV(FLinearColor RGBV, float MaxValue, float S = RGBV_DefaultS) noexcept
+	inline FLinearColorRGB DecodeRGBV(FLinearColor RGBV, float MaxValue, float S) noexcept
 	{
 		float k = RGBV_GetK(S);
 		float b = RGBV_GetB(MaxValue, S);
@@ -228,7 +228,7 @@ namespace UCommon
 		return FLinearColorRGB(RGBV.X, RGBV.Y, RGBV.Z) * L;
 	}
 
-	inline float DecodeRGBV(float V, float MaxValue, float S = RGBV_DefaultS) noexcept
+	inline float DecodeRGBV(float V, float MaxValue, float S) noexcept
 	{
 		float k = RGBV_GetK(S);
 		float b = RGBV_GetB(MaxValue, S);
@@ -236,7 +236,7 @@ namespace UCommon
 		return V2 / (k * V2 + b);
 	}
 
-	inline FLinearColorRGB DecodeRGBV(FColor RGBV, float MaxValue, float S = RGBV_DefaultS) noexcept
+	inline FLinearColorRGB DecodeRGBV(FColor RGBV, float MaxValue, float S) noexcept
 	{
 		return DecodeRGBV(ElementColorToLinearColor(RGBV), MaxValue, S);
 	}
