@@ -279,10 +279,10 @@ UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue,
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	// v = sqrt((sM+1)/(sL+1) * L/M)
 	float sM = S * MaxValue;
 	float sL = S * L;
-	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
+	float V = std::sqrt((sM + 1.f) / (sL + 1.f) * L / MaxValue);
 
 	// Keep well above zero to avoid clamps in the compressor
 	V = std::max(V, InLowClamp);
@@ -368,10 +368,10 @@ float UCommon::EncodeRGBV(float L, float MaxValue, float S)
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	// v = sqrt((sM+1)/(sL+1) * L/M)
 	float sM = S * MaxValue;
 	float sL = S * L;
-	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
+	float V = std::sqrt((sM + 1.f) / (sL + 1.f) * L / MaxValue);
 
 	return V;
 }

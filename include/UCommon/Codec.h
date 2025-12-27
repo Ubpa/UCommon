@@ -198,7 +198,7 @@ namespace UCommon
 	/**
 	 * RGBV encoding
 	 * L = v^2 / (s * (1-v^2) + 1/M)
-	 * v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	 * v = sqrt((sM+1)/(sL+1) * L/M)
 	 * where L = max(R,G,B), L in [0, M], s >= 0
 	 * L==M => v==1, L==0 => v==0
 	 * Runtime simplified: L = v^2 / (k*v^2 + b), where k = -s, b = s + 1/M
