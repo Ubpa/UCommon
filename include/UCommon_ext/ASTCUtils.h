@@ -88,9 +88,11 @@ namespace UCommon
 		const float* YCoCgTexture = nullptr;
 		uint64_t YCoCgTextureWidth = 0;
 		uint64_t YCoCgTextureHeight = 0;
-		// MaxValue for RGBV decoding: Y = vY^2 / (b - vY^2), where b = 1/MaxValue + 1
-		// MaxValue for RGBV decoding. If 0, input is Y; otherwise input is vY and Y = vY^2 / (b - vY^2), where b = 1/MaxValue + 1
+		// RGBV MaxValue for vY decoding: Y = vY^2 / (k*vY^2 + b), where k = -s, b = s + 1/MaxValue
+		// If 0, input is Y (no decoding needed)
 		float YCoCgMaxValue = 0.f;
+		/** RGBV s parameter for YCoCg vY decoding. Default is 1. */
+		float YCoCgS = 1.f;
 		uint64_t ParamTextureWidth = 0;
 		uint64_t ParamTextureHeight = 0;
 		// Prediction formula: Co = Co0*(1-vY) + Co1*vY, Cg = Cg0*(1-vY) + Cg1*vY
