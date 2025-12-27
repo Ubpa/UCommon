@@ -266,7 +266,7 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, flo
 // RGBV Codec Implementation
 //===========================================
 
-UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -279,9 +279,10 @@ UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue,
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// V = sqrt(b * L/(L+1)), where b = (M+1)/M
-	float b = RGBV_GetB(MaxValue);
-	float V = std::sqrt(b * L / (L + 1.f));
+	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	float sM = S * MaxValue;
+	float sL = S * L;
+	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
 
 	// Keep well above zero to avoid clamps in the compressor
 	V = std::max(V, InLowClamp);
@@ -289,9 +290,11 @@ UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue,
 	// Ensure we always round up to next largest V
 	V = std::min(1.0f, std::ceil(V * 255.0f) / 255.0f);
 
-	// Decode back to get the actual L after quantization: L = V^2 / (b - V^2)
+	// Decode back to get the actual L after quantization: L = V^2 / (k*V^2 + b)
+	float k = RGBV_GetK(S);
+	float b = RGBV_GetB(MaxValue, S);
 	float V2 = Pow2(V);
-	float LDecoded = V2 / (b - V2);
+	float LDecoded = V2 / (k * V2 + b);
 
 	// RGB_encoded = Color / LDecoded, decode: RGB = RGB_encoded * L
 	FLinearColorRGB RGBScale = (Color / LDecoded).Clamp(0.f, 1.f);
@@ -316,7 +319,7 @@ UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue,
 	return FLinearColor(RGBScale, V);
 }
 
-UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float V)
+UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float S, float V)
 {
 	Color = Color.Max(0.f);
 
@@ -326,10 +329,11 @@ UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxV
 		return FLinearColor(0.f, 0.f, 0.f, V);
 	}
 
-	// Decode back to get the actual L from V: L = V^2 / (b - V^2)
-	float b = RGBV_GetB(MaxValue);
+	// Decode back to get the actual L from V: L = V^2 / (k*V^2 + b)
+	float k = RGBV_GetK(S);
+	float b = RGBV_GetB(MaxValue, S);
 	float V2 = Pow2(V);
-	float LDecoded = V2 / (b - V2);
+	float LDecoded = V2 / (k * V2 + b);
 
 	// RGB_encoded = Color / LDecoded, decode: RGB = RGB_encoded * L
 	FLinearColorRGB RGBScale = (Color / LDecoded).Clamp(0.f, 1.f);
@@ -354,7 +358,7 @@ UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxV
 	return FLinearColor(RGBScale, V);
 }
 
-float UCommon::EncodeRGBV(float L, float MaxValue)
+float UCommon::EncodeRGBV(float L, float MaxValue, float S)
 {
 	if (L <= 0.f)
 	{
@@ -364,14 +368,15 @@ float UCommon::EncodeRGBV(float L, float MaxValue)
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// V = sqrt(b * L/(L+1)), where b = (M+1)/M
-	float b = RGBV_GetB(MaxValue);
-	float V = std::sqrt(b * L / (L + 1.f));
+	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	float sM = S * MaxValue;
+	float sL = S * L;
+	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
 
 	return V;
 }
 
-UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float InLowClamp)
+UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
 {
 	Color = Color.Max(0.f);
 
@@ -384,9 +389,10 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, flo
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// V = sqrt(b * L/(L+1)), where b = (M+1)/M
-	float b = RGBV_GetB(MaxValue);
-	float V = std::sqrt(b * L / (L + 1.f));
+	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	float sM = S * MaxValue;
+	float sL = S * L;
+	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
 
 	// Keep well above zero to avoid clamps in the compressor
 	V = std::max(V, InLowClamp);
@@ -394,9 +400,11 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, flo
 	// Clamp V to valid range
 	V = std::min(1.0f, V);
 
-	// Decode back to get the actual L: L = V^2 / (b - V^2)
+	// Decode back to get the actual L: L = V^2 / (k*V^2 + b)
+	float k = RGBV_GetK(S);
+	float b = RGBV_GetB(MaxValue, S);
 	float V2 = Pow2(V);
-	float LDecoded = V2 / (b - V2);
+	float LDecoded = V2 / (k * V2 + b);
 
 	// RGB_encoded = Color / LDecoded, then decode: RGB = RGB_encoded * LDecoded
 	FLinearColorRGB RGBScale = (Color / LDecoded).Clamp(0.f, 1.f);
