@@ -268,6 +268,13 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, flo
 
 UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
 {
+	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+	if (S == -1.f / MaxValue)
+	{
+		// Degenerate case: v = 1 for all L
+		return FLinearColor(1.f, 1.f, 1.f, InLowClamp);
+	}
+
 	Color = Color.Max(0.f);
 
 	float L = Color.MaxComponent();
@@ -321,10 +328,13 @@ UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue,
 
 UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float S, float V)
 {
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+
 	Color = Color.Max(0.f);
 
 	float L = Color.MaxComponent();
-	if (L == 0.f || MaxValue == 0.f)
+	if (L == 0.f)
 	{
 		return FLinearColor(0.f, 0.f, 0.f, V);
 	}
@@ -360,10 +370,9 @@ UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxV
 
 float UCommon::EncodeRGBV(float L, float MaxValue, float S)
 {
-	if (L <= 0.f)
-	{
-		return 0.f;
-	}
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+	UBPA_UCOMMON_ASSERT(L >= 0.f);
 
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
@@ -378,6 +387,9 @@ float UCommon::EncodeRGBV(float L, float MaxValue, float S)
 
 UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
 {
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+
 	Color = Color.Max(0.f);
 
 	float L = Color.MaxComponent();
@@ -389,10 +401,10 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, flo
 	// Clamp L to [0, MaxValue]
 	L = std::min(L, MaxValue);
 
-	// v = sqrt((sM+1)/(sM) * sL/(sL+1))
+	// v = sqrt((sM+1)/(sL+1) * L/M)
 	float sM = S * MaxValue;
 	float sL = S * L;
-	float V = std::sqrt((sM + 1.f) / sM * sL / (sL + 1.f));
+	float V = std::sqrt((sM + 1.f) / (sL + 1.f) * L / MaxValue);
 
 	// Keep well above zero to avoid clamps in the compressor
 	V = std::max(V, InLowClamp);
