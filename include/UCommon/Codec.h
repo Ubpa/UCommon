@@ -164,21 +164,18 @@ namespace UCommon
 	/**
 	 * Compute optimal s from mean luminance m and max luminance M.
 	 * t = 1/2
-	 * s = max(0, (t^2*M - m) / (m*M*(1 - t^2)))
+	 * s = (t^2*M - m) / (m*M*(1 - t^2))
 	 * @param MeanLuminance Mean luminance value (m), in (0, M]
 	 * @param MaxValue Max luminance value (M), > 0
-	 * @return Optimal s value, >= 0
+	 * @return Optimal s value, > -1/M
 	 */
 	inline float RGBV_GetS(float MeanLuminance, float MaxValue) noexcept
 	{
-		UBPA_UCOMMON_ASSERT(MeanLuminance > 0.f);
 		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		UBPA_UCOMMON_ASSERT(0.f < MeanLuminance && MeanLuminance <= MaxValue);
 		constexpr float t = 0.5f;
 		constexpr float t2 = t * t; // 0.25
-		// s = max(0, (t^2*M - m) / (m*M*(1 - t^2)))
-		float numerator = t2 * MaxValue - MeanLuminance;
-		float denominator = MeanLuminance * MaxValue * (1.f - t2);
-		return std::max(0.f, numerator / denominator);
+		return (t2 - MeanLuminance / MaxValue) / (MeanLuminance * (1.f - t2));
 	}
 
 	/**
@@ -193,13 +190,17 @@ namespace UCommon
 	 * b = s + 1/M
 	 * Used in formula: L = V^2 / (k*V^2 + b)
 	 */
-	inline float RGBV_GetB(float MaxValue, float S) noexcept { return S + 1.f / MaxValue; }
+	inline float RGBV_GetB(float MaxValue, float S) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		return S + 1.f / MaxValue;
+	}
 
 	/**
 	 * RGBV encoding
 	 * L = v^2 / (s * (1-v^2) + 1/M)
 	 * v = sqrt((sM+1)/(sL+1) * L/M)
-	 * where L = max(R,G,B), L in [0, M], s >= 0
+	 * where L = max(R,G,B), L in [0, M], s >= -1/M
 	 * L==M => v==1, L==0 => v==0
 	 * Runtime simplified: L = v^2 / (k*v^2 + b), where k = -s, b = s + 1/M
 	 */
@@ -221,6 +222,9 @@ namespace UCommon
 	 */
 	inline FLinearColorRGB DecodeRGBV(FLinearColor RGBV, float MaxValue, float S) noexcept
 	{
+		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+		UBPA_UCOMMON_ASSERT(0.f <= RGBV.W && RGBV.W <= 1.f);
 		float k = RGBV_GetK(S);
 		float b = RGBV_GetB(MaxValue, S);
 		float V2 = Pow2(RGBV.W);
@@ -230,6 +234,9 @@ namespace UCommon
 
 	inline float DecodeRGBV(float V, float MaxValue, float S) noexcept
 	{
+		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
+		UBPA_UCOMMON_ASSERT(0.f <= V && V <= 1.f);
 		float k = RGBV_GetK(S);
 		float b = RGBV_GetB(MaxValue, S);
 		float V2 = Pow2(V);
@@ -238,6 +245,8 @@ namespace UCommon
 
 	inline FLinearColorRGB DecodeRGBV(FColor RGBV, float MaxValue, float S) noexcept
 	{
+		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+		UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
 		return DecodeRGBV(ElementColorToLinearColor(RGBV), MaxValue, S);
 	}
 
@@ -269,33 +278,34 @@ namespace UCommon
 	// co in [-1, 1], cg in [-1, 1]
 	static inline void RGBToCoCg(float R, float G, float B, float& Co, float& Cg)
 	{
-		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
 		const float RB = R + B;
-		const float Y = (2.f * G + RB) / 4.f;
-		if (Y < UBPA_UCOMMON_DELTA)
+		float FourY = 2.f * G + RB;
+		if (FourY < UBPA_UCOMMON_DELTA)
 		{
 			Co = 0.f;
 			Cg = 0.f;
 			return;
 		}
-		Co = (R - B) / Y / 4.f;
-		Cg = (2.f * G - RB) / Y / 4.f;
+		float InvFourY = 1.f / FourY;
+		Co = (R - B) * InvFourY;
+		Cg = (2.f * G - RB) * InvFourY;
 	}
 
 	// co in [-1, 1], cg in [-1, 1]
 	static inline void RGBToYCoCg(float R, float G, float B, float& Y, float& Co, float& Cg)
 	{
-		UBPA_UCOMMON_ASSERT(R >= 0 && G >= 0 && B >= 0);
 		const float RB = R + B;
-		Y = (2.f * G + RB) / 4.f;
-		if (Y < UBPA_UCOMMON_DELTA)
+		float FourY = 2.f * G + RB;
+		Y = FourY / 4.f;
+		if (FourY < UBPA_UCOMMON_DELTA)
 		{
 			Co = 0.f;
 			Cg = 0.f;
 			return;
 		}
-		Co = (R - B) / Y / 4.f;
-		Cg = (2.f * G - RB) / Y / 4.f;
+		float InvFourY = 1.f / FourY;
+		Co = (R - B) * InvFourY;
+		Cg = (2.f * G - RB) * InvFourY;
 	}
 
 	static inline FVector2f RGBToCoCg(const FLinearColorRGB& RGB)
