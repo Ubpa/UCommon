@@ -336,5 +336,124 @@ int main()
     RunComparisonTest(128.f);
     RunComparisonTest(2048.f);
 
+    //===========================================
+    // RGBV_ComputeIntegral and RGBV_SolveS Tests
+    //===========================================
+    printf("================================================================================\n");
+    printf("=== RGBV_ComputeIntegral and RGBV_SolveS Tests ===\n");
+    printf("================================================================================\n\n");
+
+    // Test 0
+    {
+        printf("Test 0\n");
+        float M = 5.f;
+        float I = 1.f;
+		float s = RGBV_SolveS(M, I);
+        float Expected = M / 3.f;
+        float Error = std::abs(I - Expected);
+        printf("  M=%.1f, I(s=0)=%.6f, s=%.6f\n", M, I, s);
+    }
+
+    // Test 1: Verify integral at s=0 equals M/3
+    {
+        printf("Test 1: Integral at s=0 should equal M/3\n");
+        float M = 128.f;
+        float I = RGBV_ComputeIntegral(M, 0.f);
+        float Expected = M / 3.f;
+        float Error = std::abs(I - Expected);
+        printf("  M=%.1f, I(s=0)=%.6f, Expected=%.6f, Error=%.2e\n", M, I, Expected, Error);
+        printf("  %s\n\n", Error < 1e-5f ? "PASSED" : "FAILED");
+    }
+
+    // Test 2: Verify integral is monotonically decreasing
+    {
+        printf("Test 2: Integral should be monotonically decreasing with s\n");
+        float M = 128.f;
+        float sValues[] = { -1.f / M + 0.001f, -0.5f / M, 0.f, 0.5f, 1.f, 2.f, 10.f };
+        bool Monotonic = true;
+        float PrevI = std::numeric_limits<float>::infinity();
+        for (float s : sValues)
+        {
+            float I = RGBV_ComputeIntegral(M, s);
+            printf("  s=%.4f, I=%.6f\n", s, I);
+            if (I >= PrevI) Monotonic = false;
+            PrevI = I;
+        }
+        printf("  %s\n\n", Monotonic ? "PASSED" : "FAILED");
+    }
+
+    // Test 3: Round-trip test - compute I from s, then solve back for s
+    {
+        printf("Test 3: Round-trip test (compute I from s, solve back for s)\n");
+        float M = 128.f;
+        float sTestValues[] = { -1.f / M + 0.01f, -0.5f / M, 0.f, 0.5f, 1.f, 5.f, 10.f };
+        bool AllPassed = true;
+        for (float sOriginal : sTestValues)
+        {
+            float I = RGBV_ComputeIntegral(M, sOriginal);
+            float sSolved = RGBV_SolveS(M, I);
+            float Error = std::abs(sSolved - sOriginal);
+            float RelError = std::abs(sOriginal) > 1e-6f ? Error / std::abs(sOriginal) : Error;
+            bool Passed = RelError < 1e-3f || Error < 1e-6f;
+            printf("  s=%.6f -> I=%.6f -> s_solved=%.6f, Error=%.2e %s\n",
+                sOriginal, I, sSolved, Error, Passed ? "OK" : "FAIL");
+            if (!Passed) AllPassed = false;
+        }
+        printf("  %s\n\n", AllPassed ? "PASSED" : "FAILED");
+    }
+
+    // Test 4: Test with different M values
+    {
+        printf("Test 4: Round-trip with different M values\n");
+        float MValues[] = { 1.f, 10.f, 128.f, 1000.f };
+        float sValues[] = { 0.f, 1.f, 5.f };
+        bool AllPassed = true;
+        for (float M : MValues)
+        {
+            for (float s : sValues)
+            {
+                float I = RGBV_ComputeIntegral(M, s);
+                float sSolved = RGBV_SolveS(M, I);
+                float Error = std::abs(sSolved - s);
+                float RelError = (std::abs(s) > 1e-6f) ? Error / std::abs(s) : Error;
+                // Allow either absolute error < 1e-3 or relative error < 1e-3
+                bool Passed = Error < 1e-3f || RelError < 1e-3f;
+                printf("  M=%.0f, s=%.1f -> I=%.6f -> s_solved=%.6f, Error=%.2e %s\n",
+                    M, s, I, sSolved, Error, Passed ? "OK" : "FAIL");
+                if (!Passed) AllPassed = false;
+            }
+        }
+        printf("  %s\n\n", AllPassed ? "PASSED" : "FAILED");
+    }
+
+    // Test 5: Edge cases - very small and very large I
+    {
+        printf("Test 5: Edge cases\n");
+        float M = 128.f;
+
+        // Large I (should give s close to -1/M)
+        float I_large = 100.f;
+        float s_large = RGBV_SolveS(M, I_large);
+        float I_verify_large = RGBV_ComputeIntegral(M, s_large);
+        printf("  Large I=%.1f: s=%.6f, verify I=%.6f, Error=%.2e\n",
+            I_large, s_large, I_verify_large, std::abs(I_verify_large - I_large));
+
+        // Small I (should give large positive s)
+        float I_small = 0.1f;
+        float s_small = RGBV_SolveS(M, I_small);
+        float I_verify_small = RGBV_ComputeIntegral(M, s_small);
+        printf("  Small I=%.1f: s=%.6f, verify I=%.6f, Error=%.2e\n",
+            I_small, s_small, I_verify_small, std::abs(I_verify_small - I_small));
+
+        // I = M/3 (should give s = 0)
+        float I_mid = M / 3.f;
+        float s_mid = RGBV_SolveS(M, I_mid);
+        printf("  I=M/3=%.4f: s=%.6f (expected ~0)\n", I_mid, s_mid);
+
+        printf("\n");
+    }
+
+    printf("=== RGBV Integral Tests Complete ===\n\n");
+
     return 0;
 }

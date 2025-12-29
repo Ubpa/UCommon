@@ -266,6 +266,113 @@ UCommon::FLinearColorRGB UCommon::MapToValidColorRGBD(FLinearColorRGB Color, flo
 // RGBV Codec Implementation
 //===========================================
 
+float UCommon::RGBV_ComputeIntegral(float MaxValue, float S)
+{
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(S > -1.f / MaxValue);
+
+	float InvM = 1.f / MaxValue;
+
+	// Case s = 0: I = M/3
+	if (std::abs(S) < UBPA_UCOMMON_DELTA)
+	{
+		return MaxValue / 3.f;
+	}
+
+	float b = S + InvM; // b = s + 1/M
+
+	// Case s > 0: I = (1/s) * (sqrt((s+1/M)/s) * artanh(sqrt(s/(s+1/M))) - 1)
+	if (S > 0.f)
+	{
+		float ratio = b / S;            // (s + 1/M) / s
+		float sqrtRatio = std::sqrt(ratio);
+		float arg = std::sqrt(S / b);   // sqrt(s / (s + 1/M))
+		// artanh(x) = 0.5 * ln((1+x)/(1-x))
+		float artanhVal = std::atanh(arg);
+		return (sqrtRatio * artanhVal - 1.f) / S;
+	}
+
+	// Case -1/M < s < 0: I = (1/s) * (sqrt((s+1/M)/(-s)) * arctan(sqrt(-s/(s+1/M))) - 1)
+	float negS = -S;
+	float ratio = b / negS;          // (s + 1/M) / (-s)
+	float sqrtRatio = std::sqrt(ratio);
+	float arg = std::sqrt(negS / b); // sqrt(-s / (s + 1/M))
+	float arctanVal = std::atan(arg);
+	return (sqrtRatio * arctanVal - 1.f) / S; // Note: S < 0, so division by S gives correct sign
+}
+
+float UCommon::RGBV_SolveS(float MaxValue, float IntegralValue, float Tolerance, uint64_t MaxIterations)
+{
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(IntegralValue > 0.f);
+
+	float InvM = 1.f / MaxValue;
+	float SAtZero = MaxValue / 3.f; // I(s=0) = M/3
+
+	// If target I equals M/3, return s = 0
+	if (std::abs(IntegralValue - SAtZero) < Tolerance)
+	{
+		return 0.f;
+	}
+
+	// I(s) is monotonically decreasing:
+	// - As s -> -1/M+, I -> +infinity
+	// - As s -> +infinity, I -> 0
+	// So if I > M/3, we need s < 0; if I < M/3, we need s > 0
+
+	float sLow, sHigh;
+
+	if (IntegralValue > SAtZero)
+	{
+		// Need s < 0 (closer to -1/M gives larger I)
+		sLow = -InvM + Tolerance; // Just above -1/M
+		sHigh = 0.f;
+	}
+	else
+	{
+		// Need s > 0 (larger s gives smaller I)
+		// Find upper bound by exponential search
+		sLow = 0.f;
+		sHigh = 1.f;
+		// Double sHigh until I(sHigh) < target
+		while (RGBV_ComputeIntegral(MaxValue, sHigh) > IntegralValue && sHigh < 1e10f)
+		{
+			sLow = sHigh;
+			sHigh *= 2.f;
+		}
+	}
+
+	// Use bisection method for robustness
+	float sMid = 0.f;
+	for (uint64_t i = 0; i < MaxIterations; ++i)
+	{
+		sMid = (sLow + sHigh) * 0.5f;
+
+		float currentI = RGBV_ComputeIntegral(MaxValue, sMid);
+
+		float error = currentI - IntegralValue;
+
+		if (std::abs(error) < Tolerance)
+		{
+			return sMid;
+		}
+
+		// I(s) is decreasing, so:
+		// If currentI > target, we need larger s (to get smaller I)
+		// If currentI < target, we need smaller s (to get larger I)
+		if (error > 0.f)
+		{
+			sLow = sMid;
+		}
+		else
+		{
+			sHigh = sMid;
+		}
+	}
+
+	return sMid;
+}
+
 UCommon::FLinearColor UCommon::EncodeRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
 {
 	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);

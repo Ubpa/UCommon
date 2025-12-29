@@ -160,23 +160,31 @@ namespace UCommon
 	constexpr float RGBV_DefaultOptimalV = 0.8f;
 	/** Default s value for RGBV encoding. */
 	constexpr float RGBV_DefaultS = 1.f;
+	constexpr float RGBV_MinMaxValue = 1.f / RGBV_DefaultMaxValue;
+	constexpr float RGBV_MinMeanValue = RGBV_MinMaxValue / 16.f;
 
 	/**
-	 * Compute optimal s from mean luminance m and max luminance M.
-	 * t = 1/2
-	 * s = (t^2*M - m) / (m*M*(1 - t^2))
-	 * @param MeanLuminance Mean luminance value (m), in (0, M]
+	 * Compute the integral I = integral_0^1 L dv where L = v^2/(s(1-v^2)+1/M).
+	 * When s > 0:       I = (1/s) * (sqrt((s+1/M)/s) * artanh(sqrt(s/(s+1/M))) - 1)
+	 * When s = 0:       I = M/3
+	 * When -1/M < s < 0: I = (1/s) * (sqrt((s+1/M)/(-s)) * arctan(sqrt(-s/(s+1/M))) - 1)
 	 * @param MaxValue Max luminance value (M), > 0
-	 * @return Optimal s value, > -1/M
+	 * @param S Parameter s, > -1/M
+	 * @return Integral value I > 0
 	 */
-	inline float RGBV_GetS(float MeanLuminance, float MaxValue) noexcept
-	{
-		UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
-		UBPA_UCOMMON_ASSERT(0.f < MeanLuminance && MeanLuminance <= MaxValue);
-		constexpr float t = 0.5f;
-		constexpr float t2 = t * t; // 0.25
-		return (t2 - MeanLuminance / MaxValue) / (MeanLuminance * (1.f - t2));
-	}
+	UBPA_UCOMMON_API float RGBV_ComputeIntegral(float MaxValue, float S);
+
+	/**
+	 * Solve for s given the integral I and max luminance M using numerical methods.
+	 * Find s such that integral_0^1 L dv = I, where L = v^2/(s(1-v^2)+1/M).
+	 * Uses bisection method.
+	 * @param MaxValue Max luminance value (M), > 0
+	 * @param IntegralValue Target integral value (I), > 0
+	 * @param Tolerance Convergence tolerance, default 1e-6
+	 * @param MaxIterations Maximum number of iterations, default 100
+	 * @return Solved s value, > -1/M
+	 */
+	UBPA_UCOMMON_API float RGBV_SolveS(float MaxValue, float IntegralValue, float Tolerance = 1e-4f, uint64_t MaxIterations = 128);
 
 	/**
 	 * Get the k factor for the RGBV encoding (runtime).
