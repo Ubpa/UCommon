@@ -717,6 +717,120 @@ int main(int argc, char** argv)
 		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from vector works" << std::endl;
 	}
 
+	// Test: TSHVector construction from lower order + band
+	std::cout << "\n=== Test: TSHVector Construction from Lower Order + Band ===" << std::endl;
+	{
+		// Create a lower order SHVector (Order 2: 4 coefficients)
+		FSHVector2 lowerOrder;
+		lowerOrder.V[0] = 1.0f;  // L0
+		lowerOrder.V[1] = 2.0f;  // L1 m=-1
+		lowerOrder.V[2] = 3.0f;  // L1 m=0
+		lowerOrder.V[3] = 4.0f;  // L1 m=1
+
+		// Create a band view for Order 3 (5 coefficients: L2)
+		float bandData[5] = {5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+		FSHBandView3 band(bandData);
+
+		// Construct Order 3 SHVector from Order 2 + Band 3
+		FSHVector3 higherOrder(lowerOrder, band);
+
+		// Verify: should have 9 coefficients total
+		// First 4 from lowerOrder, next 5 from band
+		bool passed = (
+			higherOrder.V[0] == 1.0f &&
+			higherOrder.V[1] == 2.0f &&
+			higherOrder.V[2] == 3.0f &&
+			higherOrder.V[3] == 4.0f &&
+			higherOrder.V[4] == 5.0f &&
+			higherOrder.V[5] == 6.0f &&
+			higherOrder.V[6] == 7.0f &&
+			higherOrder.V[7] == 8.0f &&
+			higherOrder.V[8] == 9.0f
+		);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] TSHVector(lower order, band) works" << std::endl;
+	}
+
+	// Test: TSHVectorRGB construction from lower order + band
+	std::cout << "\n=== Test: TSHVectorRGB Construction from Lower Order + Band ===" << std::endl;
+	{
+		// Create a lower order SHVectorRGB (Order 2: 4 coefficients per channel)
+		FSHVectorRGB2 lowerOrderRGB;
+		for (int i = 0; i < 4; ++i)
+		{
+			lowerOrderRGB.R.V[i] = static_cast<float>(i + 1);
+			lowerOrderRGB.G.V[i] = static_cast<float>(i + 10);
+			lowerOrderRGB.B.V[i] = static_cast<float>(i + 20);
+		}
+
+		// Create RGB band views for Order 3 (5 coefficients per channel)
+		float bandDataR[5] = {5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+		float bandDataG[5] = {15.0f, 16.0f, 17.0f, 18.0f, 19.0f};
+		float bandDataB[5] = {25.0f, 26.0f, 27.0f, 28.0f, 29.0f};
+		FSHBandViewRGB3 bandRGB(bandDataR, bandDataG, bandDataB);
+
+		// Construct Order 3 SHVectorRGB from Order 2 + Band 3
+		FSHVectorRGB3 higherOrderRGB(lowerOrderRGB, bandRGB);
+
+		// Verify R channel
+		bool passedR = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.R.V[i] != static_cast<float>(i + 1))
+			{
+				passedR = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.R.V[i] != static_cast<float>(i + 1))
+			{
+				passedR = false;
+				break;
+			}
+		}
+
+		// Verify G channel
+		bool passedG = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.G.V[i] != static_cast<float>(i + 10))
+			{
+				passedG = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.G.V[i] != static_cast<float>(i + 11))
+			{
+				passedG = false;
+				break;
+			}
+		}
+
+		// Verify B channel
+		bool passedB = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.B.V[i] != static_cast<float>(i + 20))
+			{
+				passedB = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.B.V[i] != static_cast<float>(i + 21))
+			{
+				passedB = false;
+				break;
+			}
+		}
+
+		std::cout << "[" << (passedR && passedG && passedB ? "PASSED" : "FAILED") << "] TSHVectorRGB(lower order, band) works" << std::endl;
+	}
+
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;

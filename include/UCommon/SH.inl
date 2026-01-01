@@ -244,28 +244,87 @@ UCommon::TSHBandView<Order, false>& UCommon::TSHBandView<Order, false>::operator
 	return const_cast<TSHBandView&>(*this);
 }
 
-// Non-member Dot function (template handles all const combinations)
-namespace UCommon
+// Non-member Dot function for TSHBandView (template handles all const combinations)
+template<int Order, bool bConst1, bool bConst2>
+float UCommon::Dot(TSHBandView<Order, bConst1> A, TSHBandView<Order, bConst2> B) noexcept
 {
-	template<int Order, bool bConst1, bool bConst2>
-	float Dot(const TSHBandView<Order, bConst1>& A, const TSHBandView<Order, bConst2>& B) noexcept
+	UBPA_UCOMMON_ASSERT(A.GetData() != nullptr);
+	UBPA_UCOMMON_ASSERT(B.GetData() != nullptr);
+	float Result = 0.0f;
+	for (uint64_t i = 0; i < TSHBandView<Order, bConst1>::MaxSHBasis; ++i)
 	{
-		UBPA_UCOMMON_ASSERT(A.GetData() != nullptr);
-		UBPA_UCOMMON_ASSERT(B.GetData() != nullptr);
-		float Result = 0.0f;
-		for (uint64_t i = 0; i < TSHBandView<Order, bConst1>::MaxSHBasis; ++i)
-		{
-			Result += A[i] * B[i];
-		}
-		return Result;
+		Result += A[i] * B[i];
 	}
+	return Result;
 }
 
-// Member Dot function (calls non-member)
-template<int Order, bool bConst>
-float UCommon::TSHBandViewCommon<Order, bConst>::Dot(TSHBandConstView<Order> Other) const noexcept
+// ============================================================================
+// TSHBandCommon member functions (common operations for View and Vector)
+// ============================================================================
+
+// Dot product
+template<typename Derived, int Order>
+float UCommon::TSHBandCommon<Derived, Order>::Dot(TSHBandConstView<Order> Other) const noexcept
 {
-	return UCommon::Dot(static_cast<const TSHBandView<Order, bConst>&>(*this), Other);
+	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
+	float Result = 0.0f;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Result += AsDerived()[i] * Other[i];
+	}
+	return Result;
+}
+
+// Binary operators
+template<typename Derived, int Order>
+UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<Derived, Order>::operator+(TSHBandConstView<Order> Other) const noexcept
+{
+	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
+	TSHBandVector<Order> Result;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Result[i] = AsDerived()[i] + Other[i];
+	}
+	return Result;
+}
+
+template<typename Derived, int Order>
+UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<Derived, Order>::operator-(TSHBandConstView<Order> Other) const noexcept
+{
+	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
+	TSHBandVector<Order> Result;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Result[i] = AsDerived()[i] - Other[i];
+	}
+	return Result;
+}
+
+template<typename Derived, int Order>
+UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<Derived, Order>::operator*(float Scalar) const noexcept
+{
+	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	TSHBandVector<Order> Result;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Result[i] = AsDerived()[i] * Scalar;
+	}
+	return Result;
+}
+
+template<typename Derived, int Order>
+UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<Derived, Order>::operator/(float Scalar) const noexcept
+{
+	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	TSHBandVector<Order> Result;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Result[i] = AsDerived()[i] / Scalar;
+	}
+	return Result;
 }
 
 // ============================================================================
@@ -376,18 +435,7 @@ UCommon::TSHBandVector<Order>& UCommon::TSHBandVector<Order>::operator/=(float S
 	return *this;
 }
 
-// Dot product (member function)
-template<int Order>
-float UCommon::TSHBandVector<Order>::Dot(TSHBandConstView<Order> Other) const noexcept
-{
-	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
-	float Result = 0.0f;
-	for (uint64_t i = 0; i < MaxSHBasis; ++i)
-	{
-		Result += Data[i] * Other[i];
-	}
-	return Result;
-}
+// Dot and binary operators are inherited from TSHBandCommon - no need to reimplement
 
 // Implicit conversion to mutable view
 template<int Order>
@@ -403,124 +451,34 @@ UCommon::TSHBandVector<Order>::operator UCommon::TSHBandConstView<Order>() const
 	return TSHBandConstView<Order>(Data);
 }
 
+// Binary operators and Dot for TSHBandView are inherited from TSHBandCommon - no need to reimplement
 // ============================================================================
-// Binary operators for TSHBandView (return TSHBandVector)
-// ============================================================================
-// ============================================================================
-// TSHBandViewCommon binary operators (member functions)
-// ============================================================================
-
-template<int Order, bool bConst>
-UCommon::TSHBandVector<Order> UCommon::TSHBandViewCommon<Order, bConst>::operator+(TSHBandConstView<Order> Other) const noexcept
-{
-	UBPA_UCOMMON_ASSERT(Data != nullptr);
-	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < MaxSHBasis; ++i)
-	{
-		Result[i] = Data[i] + Other[i];
-	}
-	return Result;
-}
-
-template<int Order, bool bConst>
-UCommon::TSHBandVector<Order> UCommon::TSHBandViewCommon<Order, bConst>::operator-(TSHBandConstView<Order> Other) const noexcept
-{
-	UBPA_UCOMMON_ASSERT(Data != nullptr);
-	UBPA_UCOMMON_ASSERT(Other.GetData() != nullptr);
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < MaxSHBasis; ++i)
-	{
-		Result[i] = Data[i] - Other[i];
-	}
-	return Result;
-}
-
-template<int Order, bool bConst>
-UCommon::TSHBandVector<Order> UCommon::TSHBandViewCommon<Order, bConst>::operator*(float Scalar) const noexcept
-{
-	UBPA_UCOMMON_ASSERT(Data != nullptr);
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < MaxSHBasis; ++i)
-	{
-		Result[i] = Data[i] * Scalar;
-	}
-	return Result;
-}
-
-template<int Order, bool bConst>
-UCommon::TSHBandVector<Order> UCommon::TSHBandViewCommon<Order, bConst>::operator/(float Scalar) const noexcept
-{
-	UBPA_UCOMMON_ASSERT(Data != nullptr);
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < MaxSHBasis; ++i)
-	{
-		Result[i] = Data[i] / Scalar;
-	}
-	return Result;
-}
 
 // Non-member Dot function for TSHBandVector
 template<int Order>
 float UCommon::Dot(const TSHBandVector<Order>& A, const TSHBandVector<Order>& B) noexcept
 {
-	float Result = 0.0f;
-	for (uint64_t i = 0; i < TSHBandVector<Order>::MaxSHBasis; ++i)
-	{
-		Result += A[i] * B[i];
-	}
-	return Result;
+	return UCommon::Dot(static_cast<TSHBandConstView<Order>>(A), static_cast<TSHBandConstView<Order>>(B));
+}
+
+// Binary operators for TSHBandVector are inherited from TSHBandCommon - no need to reimplement
+// ============================================================================
+
+// Non-member operator* (scalar * view) for commutativity
+template<int Order, bool bConst>
+UCommon::TSHBandVector<Order> UCommon::operator*(float Scalar, TSHBandView<Order, bConst> View) noexcept
+{
+	return View * Scalar;
 }
 
 // Binary operators for TSHBandVector (return TSHBandVector)
-template<int Order>
-UCommon::TSHBandVector<Order> UCommon::operator+(const TSHBandVector<Order>& Lhs, const TSHBandVector<Order>& Rhs) noexcept
-{
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < TSHBandVector<Order>::MaxSHBasis; ++i)
-	{
-		Result[i] = Lhs[i] + Rhs[i];
-	}
-	return Result;
-}
+// ============================================================================
 
-template<int Order>
-UCommon::TSHBandVector<Order> UCommon::operator-(const TSHBandVector<Order>& Lhs, const TSHBandVector<Order>& Rhs) noexcept
-{
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < TSHBandVector<Order>::MaxSHBasis; ++i)
-	{
-		Result[i] = Lhs[i] - Rhs[i];
-	}
-	return Result;
-}
-
-template<int Order>
-UCommon::TSHBandVector<Order> UCommon::operator*(const TSHBandVector<Order>& Vec, float Scalar) noexcept
-{
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < TSHBandVector<Order>::MaxSHBasis; ++i)
-	{
-		Result[i] = Vec[i] * Scalar;
-	}
-	return Result;
-}
-
+// Non-member operator* (scalar * vector) for commutativity
 template<int Order>
 UCommon::TSHBandVector<Order> UCommon::operator*(float Scalar, const TSHBandVector<Order>& Vec) noexcept
 {
 	return Vec * Scalar;
-}
-
-template<int Order>
-UCommon::TSHBandVector<Order> UCommon::operator/(const TSHBandVector<Order>& Vec, float Scalar) noexcept
-{
-	TSHBandVector<Order> Result;
-	for (uint64_t i = 0; i < TSHBandVector<Order>::MaxSHBasis; ++i)
-	{
-		Result[i] = Vec[i] / Scalar;
-	}
-	return Result;
 }
 
 // ============================================================================
@@ -610,103 +568,110 @@ UCommon::TSHBandVectorRGB<Order>::operator UCommon::TSHBandConstViewRGB<Order>()
 }
 
 // ============================================================================
+// Member binary operators for TSHBandViewRGBCommon
+// ============================================================================
+
+// operator+ (member)
+template<int Order, bool bConst>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandViewRGBCommon<Order, bConst>::operator+(TSHBandConstViewRGB<Order> Other) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R + Other.R,
+		G + Other.G,
+		B + Other.B
+	);
+}
+
+// operator- (member)
+template<int Order, bool bConst>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandViewRGBCommon<Order, bConst>::operator-(TSHBandConstViewRGB<Order> Other) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R - Other.R,
+		G - Other.G,
+		B - Other.B
+	);
+}
+
+// operator* (member - view * scalar)
+template<int Order, bool bConst>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandViewRGBCommon<Order, bConst>::operator*(float Scalar) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R * Scalar,
+		G * Scalar,
+		B * Scalar
+	);
+}
+
+// operator/ (member)
+template<int Order, bool bConst>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandViewRGBCommon<Order, bConst>::operator/(float Scalar) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R / Scalar,
+		G / Scalar,
+		B / Scalar
+	);
+}
+
 // Binary operators for TSHBandViewRGB (return TSHBandVectorRGB)
 // ============================================================================
 
-// Addition
-template<int Order, bool bConst1, bool bConst2>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator+(const TSHBandViewRGB<Order, bConst1>& Lhs, const TSHBandViewRGB<Order, bConst2>& Rhs) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Lhs.R + Rhs.R,
-		Lhs.G + Rhs.G,
-		Lhs.B + Rhs.B
-	);
-}
-
-// Subtraction
-template<int Order, bool bConst1, bool bConst2>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator-(const TSHBandViewRGB<Order, bConst1>& Lhs, const TSHBandViewRGB<Order, bConst2>& Rhs) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Lhs.R - Rhs.R,
-		Lhs.G - Rhs.G,
-		Lhs.B - Rhs.B
-	);
-}
-
-// Scalar multiplication (view * scalar)
+// Scalar multiplication (scalar * view) - non-member for commutativity
 template<int Order, bool bConst>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator*(const TSHBandViewRGB<Order, bConst>& View, float Scalar) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		View.R * Scalar,
-		View.G * Scalar,
-		View.B * Scalar
-	);
-}
-
-// Scalar multiplication (scalar * view)
-template<int Order, bool bConst>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator*(float Scalar, const TSHBandViewRGB<Order, bConst>& View) noexcept
+UCommon::TSHBandVectorRGB<Order> UCommon::operator*(float Scalar, TSHBandViewRGB<Order, bConst> View) noexcept
 {
 	return View * Scalar;
 }
 
-// Scalar division
-template<int Order, bool bConst>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator/(const TSHBandViewRGB<Order, bConst>& View, float Scalar) noexcept
+// Member binary operators for TSHBandVectorRGB
+template<int Order>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandVectorRGB<Order>::operator+(TSHBandConstViewRGB<Order> Other) const noexcept
 {
 	return TSHBandVectorRGB<Order>(
-		View.R / Scalar,
-		View.G / Scalar,
-		View.B / Scalar
+		R + Other.R,
+		G + Other.G,
+		B + Other.B
+	);
+}
+
+template<int Order>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandVectorRGB<Order>::operator-(TSHBandConstViewRGB<Order> Other) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R - Other.R,
+		G - Other.G,
+		B - Other.B
+	);
+}
+
+template<int Order>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandVectorRGB<Order>::operator*(float Scalar) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R * Scalar,
+		G * Scalar,
+		B * Scalar
+	);
+}
+
+template<int Order>
+UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandVectorRGB<Order>::operator/(float Scalar) const noexcept
+{
+	return TSHBandVectorRGB<Order>(
+		R / Scalar,
+		G / Scalar,
+		B / Scalar
 	);
 }
 
 // Binary operators for TSHBandVectorRGB (return TSHBandVectorRGB)
-template<int Order>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator+(const TSHBandVectorRGB<Order>& Lhs, const TSHBandVectorRGB<Order>& Rhs) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Lhs.R + Rhs.R,
-		Lhs.G + Rhs.G,
-		Lhs.B + Rhs.B
-	);
-}
+// ============================================================================
 
-template<int Order>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator-(const TSHBandVectorRGB<Order>& Lhs, const TSHBandVectorRGB<Order>& Rhs) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Lhs.R - Rhs.R,
-		Lhs.G - Rhs.G,
-		Lhs.B - Rhs.B
-	);
-}
-
-template<int Order>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator*(const TSHBandVectorRGB<Order>& Vec, float Scalar) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Vec.R * Scalar,
-		Vec.G * Scalar,
-		Vec.B * Scalar
-	);
-}
-
+// Non-member operator* (scalar * vector) for commutativity
 template<int Order>
 UCommon::TSHBandVectorRGB<Order> UCommon::operator*(float Scalar, const TSHBandVectorRGB<Order>& Vec) noexcept
 {
 	return Vec * Scalar;
-}
-
-template<int Order>
-UCommon::TSHBandVectorRGB<Order> UCommon::operator/(const TSHBandVectorRGB<Order>& Vec, float Scalar) noexcept
-{
-	return TSHBandVectorRGB<Order>(
-		Vec.R / Scalar,
-		Vec.G / Scalar,
-		Vec.B / Scalar
-	);
 }
