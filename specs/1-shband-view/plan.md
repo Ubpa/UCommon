@@ -1,379 +1,311 @@
 # Implementation Plan: SHBand View Design
 
-**Created**: 2026-01-01
-**Author**: Ubpa
-**Status**: Draft
-**Related Spec**: [spec.md](./spec.md)
-**Branch**: 1-shband-view
+**Branch**: `1-shband-view` | **Date**: 2026-01-01 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/1-shband-view/spec.md`
 
----
+**Note**: This plan implements a CRTP-based template parameter design for SHBand views, replacing the previous 4-class design with a unified 2-template approach.
 
-## Executive Summary
+## Summary
 
-### Objective
-Convert `TSHBandVector` and `TSHBandVectorRGB` from memory-owning classes (inheriting from `TSHVectorBase`) to lightweight view classes that store only pointers to external data.
+Convert `TSHBandVector` and `TSHBandVectorRGB` from memory-owning classes to lightweight view classes using template parameters for const-correctness. The new design uses `TSHBandView<Order, bConst=false>` and `TSHBandViewRGB<Order, bConst=false>` with CRTP base class `TSHBandViewCommon<Derived, Order, bConst>` for shared functionality. This simplifies the API from 4 separate types to 2 template types, reduces `Dot()` overloads from 4 to 1, and maintains zero-overhead abstraction with compile-time const checking.
 
-### Key Changes
-- **Remove inheritance**: Views no longer inherit from `TSHVectorBase` or `TSHVectorRGBBase`
-- **Pointer-only storage**: Replace `float V[MaxSHBasis]` array with `float* Data` pointer
-- **Type renaming**: `TSHBandVector` → `TSHBandView`, add `TSHBandConstView` for const correctness
-- **Update GetBand()**: Return views instead of references to internal data
-- **Remove static methods**: `SHBasisFunction()`, `ZHToSHBasisFunction()` removed from views
+**Key Technical Approach**:
+- CRTP (Curiously Recurring Template Pattern) for type-safe base class
+- Partial template specialization for `bConst=false` (mutable) and `bConst=true` (const)
+- `std::conditional_t` for compile-time pointer type selection
+- Single template `Dot()` function handling all const combinations
 
-### Impact
-- **Version**: MAJOR bump (3.0.0 → 4.0.0)
-- **Breaking**: Yes - no backward compatibility
-- **Files affected**: `include/UCommon/SH.h`, `include/UCommon/SH.inl`, tests
-- **Memory footprint**: `TSHBandView<2>` reduces from 12 bytes to 8 bytes (64-bit)
+## Technical Context
 
----
+**Language/Version**: C++17
+**Primary Dependencies**: C++ Standard Library (`<type_traits>`, `<cstdint>`), UCommon internal headers
+**Storage**: N/A (header-only library)
+**Testing**: Existing UCommon test framework in `test/SH/`
+**Target Platform**: Cross-platform (Windows/Linux/macOS), MSVC 2019+, Clang 10+, GCC 9+
+**Project Type**: Single library (header-only C++ template library)
+**Performance Goals**: Zero-overhead abstraction (sizeof(view) = sizeof(pointer), single dereference for access)
+**Constraints**:
+  - Must compile with C++17 (no C++20 features)
+  - Zero runtime overhead (all template instantiation at compile-time)
+  - Maintain ABI compatibility within 4.x series (after initial 4.0.0 release)
+  - Support all three major compilers (MSVC, Clang, GCC)
+**Scale/Scope**:
+  - 2 template classes + 1 CRTP base class
+  - ~500 lines of template code in `include/UCommon/SH.h`
+  - Update ~10 `GetBand()` methods across owning vector classes
+  - Refactor existing tests in `test/SH/`
 
-## Constitution Compliance
+## Constitution Check
 
-✅ **All 10 principles satisfied** (see detailed checklist in spec.md)
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-**Key alignments**:
-- Principle 1: T prefix for template classes
-- Principle 3: `explicit`, `noexcept`, `constexpr` used appropriately
-- Principle 4: View pattern - no ownership, user manages lifetime
-- Principle 7: Zero-overhead abstraction
-- Principle 10: MAJOR version bump documented
+### Principle 1: Unified Naming Conventions
+- ✅ **PASS**: Template classes use `T` prefix (`TSHBandView`, `TSHBandViewRGB`, `TSHBandViewCommon`)
+- ✅ **PASS**: PascalCase for all types, methods, parameters
+- ✅ **PASS**: `bConst` parameter follows bool naming convention
+- ✅ **PASS**: `In` prefix for constructor parameters (e.g., `InData`, `InR`, `InG`, `InB`)
 
----
+### Principle 2: Strict Code Formatting Standards
+- ✅ **PASS**: Allman brace style required
+- ✅ **PASS**: Tab indentation required
+- ✅ **PASS**: MIT license header required in all modified files
+- ✅ **PASS**: Consistent spacing around operators
 
-## Technical Architecture
+### Principle 3: Type Safety and Explicitness
+- ✅ **PASS**: `noexcept` on all non-throwing functions
+- ✅ **PASS**: `constexpr` on compile-time constructors
+- ✅ **PASS**: `explicit` on single-parameter constructors (pointer constructors)
+- ✅ **PASS**: `static_assert` for compile-time checks (VectorOrder >= Order)
+- ✅ **PASS**: Explicitly-sized types (`uint64_t` for indices)
+- ✅ **PASS**: `const` correctness enforced via template parameter
 
-### Current Design (Owning)
+### Principle 4: Resource Management and Ownership Clarity
+- ✅ **PASS**: Views explicitly do NOT own data (documented in spec)
+- ✅ **PASS**: Shallow copy semantics clearly documented
+- ✅ **PASS**: User responsible for lifetime management (documented)
+- ⚠️ **NOTE**: No `EOwnership` enum needed (views never own)
 
-```cpp
-template<int Order>
-class TSHBandVector : public TSHVectorBase<TSHBandVector<Order>, Order, 2*Order-1>
-{
-    // Inherits: float V[2*Order-1]
-    // Owns data on stack
-};
+### Principle 5: Modularity and Namespace Organization
+- ✅ **PASS**: All code in `UCommon` namespace
+- ✅ **PASS**: CRTP base class in `UCommon` namespace (public, not `detail::`)
+- ✅ **PASS**: Single header file organization (`include/UCommon/SH.h`)
+
+### Principle 6: Cross-Platform Compatibility
+- ✅ **PASS**: C++17 standard (no C++20 features)
+- ✅ **PASS**: Target compilers: MSVC 2019+, Clang 10+, GCC 9+
+- ✅ **PASS**: Platform-independent code (no OS-specific APIs)
+
+### Principle 7: Performance Optimization
+- ✅ **PASS**: Zero-overhead abstraction (template-based, fully inlined)
+- ✅ **PASS**: sizeof(view) = sizeof(pointer) verified
+- ✅ **PASS**: Single dereference for array access
+- ✅ **PASS**: Compile-time size determination
+
+### Principle 8: Error Handling and Debugging
+- ✅ **PASS**: `UBPA_UCOMMON_ASSERT` for precondition checks
+- ✅ **PASS**: Debug checks for nullptr and bounds
+- ✅ **PASS**: No exceptions (library policy)
+
+### Principle 9: Documentation and Testing
+- ✅ **PASS**: Doxygen comments required for all public APIs
+- ✅ **PASS**: Migration guide included in spec
+- ✅ **PASS**: Existing test infrastructure in `test/SH/`
+- ✅ **PASS**: Tests required for all new functionality
+
+### Principle 10: Version Management and Compatibility
+- ✅ **PASS**: MAJOR version bump (3.0.0 → 4.0.0) for breaking changes
+- ✅ **PASS**: Breaking changes documented in spec
+- ✅ **PASS**: No backward compatibility (explicitly stated)
+
+**Constitution Check Result**: ✅ **ALL GATES PASSED** - Proceed to Phase 0
+
+## Project Structure
+
+### Documentation (this feature)
+
+```text
+specs/1-shband-view/
+├── spec.md              # Feature specification (completed)
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (CRTP patterns, template best practices)
+├── data-model.md        # Phase 1 output (class hierarchy, template instantiations)
+├── quickstart.md        # Phase 1 output (migration examples, usage patterns)
+├── contracts/           # Phase 1 output (API contracts for view classes)
+│   ├── TSHBandView.yaml
+│   ├── TSHBandViewRGB.yaml
+│   └── TSHBandViewCommon.yaml
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-**Memory**: `sizeof(TSHBandVector<2>)` = 12 bytes (3 floats)
+### Source Code (repository root)
 
-### New Design (View)
+```text
+include/UCommon/
+├── SH.h                 # Main header - contains all SH classes
+│                        # MODIFY: Add TSHBandViewCommon, update TSHBandView/RGB
+│                        # MODIFY: Update GetBand() methods in TSHVector, TSHVectorRGB, etc.
+└── SH.inl               # Inline implementations
+                         # MODIFY: Add template implementations for new view classes
 
-```cpp
-template<int Order>
-class TSHBandView
-{
-    float* Data;  // 8 bytes (64-bit pointer)
-    // Points to external data
-};
+test/SH/
+├── SHBandView.cpp       # NEW: Unit tests for TSHBandView<Order, bConst>
+├── SHBandViewRGB.cpp    # NEW: Unit tests for TSHBandViewRGB<Order, bConst>
+├── SHVector.cpp         # MODIFY: Update GetBand() tests
+└── SHVectorRGB.cpp      # MODIFY: Update GetBand() tests
 
-template<int Order>
-class TSHBandConstView
-{
-    const float* Data;  // 8 bytes
-};
+CMakeLists.txt           # MODIFY: Add new test files if needed
+README.md                # MODIFY: Update version to 4.0.0, document breaking changes
 ```
 
-**Memory**: `sizeof(TSHBandView<2>)` = 8 bytes
+**Structure Decision**: Single library project (header-only C++ template library). All implementation in `include/UCommon/SH.h` and `SH.inl`. Tests in `test/SH/` directory. This is the standard UCommon structure for header-only template libraries.
 
-### Data Flow
+**Key Files**:
+- **Primary Implementation**: `include/UCommon/SH.h` (lines 479-518 currently contain old TSHBandVector)
+- **Inline Implementations**: `include/UCommon/SH.inl` (template method bodies)
+- **Test Files**: `test/SH/*.cpp` (existing test infrastructure)
 
-```
-Before (Owning):
-TSHVector<3>::GetBand<2>()
-  └─> reinterpret_cast<TSHBandVector<2>*>(&V[IndexBase])
-      └─> Returns reference to internal array
+## Complexity Tracking
 
-After (View):
-TSHVector<3>::GetBand<2>()
-  └─> TSHBandView<2>(&V[IndexBase])
-      └─> Returns view pointing to internal array
-```
+> **No violations detected** - All constitution checks passed. CRTP pattern is a standard C++ idiom for zero-overhead polymorphism and is appropriate for this use case.
+
 
 ---
 
-## Implementation Phases
+## Phase 0: Research (COMPLETE)
 
-### Phase 0: Preparation (0.5 days)
+**Status**: ✅ Complete
+**Output**: `research.md`
 
-**Objectives**:
-- Understand current implementation
-- Identify all usage sites
-- Plan migration strategy
+### Research Tasks Completed
 
-**Tasks**:
-1. [ ] Analyze current `TSHBandVector` in `SH.h` (lines 479-497)
-2. [ ] Analyze current `TSHBandVectorRGB` in `SH.h` (lines 500-518)
-3. [ ] Find all `GetBand()` call sites
-4. [ ] Review test files in `test/SH/`
-5. [ ] Document breaking changes
+1. ✅ **CRTP Pattern Best Practices**
+   - Decision: Use `TSHBandViewCommon<Derived, Order, bConst>` as CRTP base
+   - Rationale: Zero-overhead polymorphism, type-safe return types
+   - Implementation pattern documented
 
-**Deliverables**:
-- [ ] List of files to modify
-- [ ] Migration checklist
+2. ✅ **Template Partial Specialization for `bConst`**
+   - Decision: Specialize for `bConst=false` (mutable) and `bConst=true` (const)
+   - Rationale: Clear separation, compile-time selection, type safety
+   - Implementation pattern documented
 
----
+3. ✅ **`std::conditional_t` for Pointer Type Selection**
+   - Decision: Use `std::conditional_t<bConst, const float*, float*>`
+   - Rationale: Type safety, zero overhead, standard library
+   - Implementation pattern documented
 
-### Phase 1: Core View Classes (1 day)
+4. ✅ **Conversion Constructor for Implicit Mutable→Const Conversion**
+   - Decision: Add conversion constructor in `TSHBandView<Order, true>`
+   - Rationale: Standard practice, implicit conversion, type safety
+   - Implementation pattern documented
 
-**Objectives**:
-- Implement 4 new view classes
-- Remove old owning classes
-- Ensure compilation
+5. ✅ **Single Template `Dot()` Function**
+   - Decision: `template<int Order, bool bConst1, bool bConst2> float Dot(...)`
+   - Rationale: Simplification (4→1), maintainability, zero overhead
+   - Implementation pattern documented
 
-**Tasks**:
+6. ✅ **GetBand() Return Types**
+   - Decision: Non-const returns `TSHBandView<Order, false>`, const returns `TSHBandView<Order, true>`
+   - Rationale: Const-correctness, type safety
+   - Implementation pattern documented
 
-#### 1.1 Remove Old Classes
-- [ ] Delete `TSHBandVector<Order>` class (lines 479-497)
-- [ ] Delete `TSHBandVectorRGB<Order>` class (lines 500-518)
-- [ ] Keep type aliases for now (FSHBandVector2, etc.) - will update later
-
-#### 1.2 Implement TSHBandView<Order>
-- [ ] Add class definition after line 478
-- [ ] Implement default constructor: `Data(nullptr)`
-- [ ] Implement pointer constructor: `explicit TSHBandView(float* InData)`
-- [ ] Implement `operator=` (shallow copy)
-- [ ] Implement `operator[]` with `UBPA_UCOMMON_ASSERT(Data != nullptr && Index < MaxSHBasis)`
-- [ ] Implement `GetData()`, `GetSize()`
-- [ ] Implement `operator+=`, `-=`, `*=`, `/=`
-- [ ] Implement `Dot()` member function
-
-#### 1.3 Implement TSHBandConstView<Order>
-- [ ] Add class definition
-- [ ] Implement constructors (default, const pointer, implicit from TSHBandView)
-- [ ] Implement `operator=` (shallow copy)
-- [ ] Implement const `operator[]`
-- [ ] Implement `GetData()`, `GetSize()`
-- [ ] Implement `Dot()` member function
-
-#### 1.4 Implement Non-Member Dot Functions
-- [ ] Add 4 overloads for all const/non-const combinations
-- [ ] Place after class definitions
-### Phase 3: Update GetBand() Methods (1 day)
-
-**Objectives**:
-- Modify all `GetBand()` methods to return views
-- Ensure const correctness
-
-**Tasks**:
-
-#### 3.1 Update TSHVector<Order>::GetBand()
-Current (lines 569-580):
-```cpp
-template<int BandOrder>
-TSHBandVector<BandOrder>& GetBand()
-{
-    constexpr int IndexBase = Pow2(BandOrder - 1);
-    return *reinterpret_cast<TSHBandVector<BandOrder>*>(&Super::V[IndexBase]);
-}
-```
-
-New:
-```cpp
-template<int BandOrder>
-TSHBandView<BandOrder> GetBand() noexcept
-{
-    constexpr int IndexBase = Pow2(BandOrder - 1);
-    return TSHBandView<BandOrder>(&Super::V[IndexBase]);
-}
-
-template<int BandOrder>
-TSHBandConstView<BandOrder> GetBand() const noexcept
-{
-    constexpr int IndexBase = Pow2(BandOrder - 1);
-    return TSHBandConstView<BandOrder>(&Super::V[IndexBase]);
-}
-```
-
-- [ ] Update non-const `GetBand()` to return `TSHBandView<BandOrder>`
-- [ ] Update const `GetBand()` to return `TSHBandConstView<BandOrder>`
-- [ ] Add `noexcept` specifier
-
-#### 3.2 Update TSHVectorAC<Order>::GetBand()
-- [ ] Same changes as TSHVector (lines 632-643)
-
-#### 3.3 Update TSHVectorRGB<Order>::GetBand()
-Current (lines 677-681):
-```cpp
-template<int BandOrder>
-const TSHBandVectorRGB<BandOrder> GetBand() const
-{
-    return { Super::R.template GetBand<BandOrder>(),
-             Super::G.template GetBand<BandOrder>(),
-             Super::B.template GetBand<BandOrder>() };
-}
-```
-
-New:
-```cpp
-template<int BandOrder>
-TSHBandViewRGB<BandOrder> GetBand() noexcept
-{
-    return TSHBandViewRGB<BandOrder>(
-        Super::R.template GetBand<BandOrder>(),
-        Super::G.template GetBand<BandOrder>(),
-        Super::B.template GetBand<BandOrder>()
-    );
-}
-
-template<int BandOrder>
-TSHBandConstViewRGB<BandOrder> GetBand() const noexcept
-{
-    return TSHBandConstViewRGB<BandOrder>(
-        Super::R.template GetBand<BandOrder>(),
-        Super::G.template GetBand<BandOrder>(),
-        Super::B.template GetBand<BandOrder>()
-    );
-}
-```
-
-- [ ] Add non-const overload returning `TSHBandViewRGB<BandOrder>`
-- [ ] Update const overload to return `TSHBandConstViewRGB<BandOrder>`
-- [ ] Use 3-view constructor
-
-#### 3.4 Update TSHVectorACRGB<Order>::SetBand()
-- [ ] Change parameter type to `TSHBandViewRGB<BandOrder>`
-- [ ] Update implementation to handle shallow copy semantics
-
-**Deliverables**:
-- [ ] All `GetBand()` methods return views
-- [ ] Const correctness maintained
-- [ ] Code compiles
+**All technical unknowns resolved. Proceed to Phase 1.**
 
 ---
 
-### Phase 4: Update Type Aliases (0.25 days)
+## Phase 1: Design & Contracts (COMPLETE)
 
-**Objectives**:
-- Update type aliases to use new names
-- Add const view aliases
+**Status**: ✅ Complete
+**Outputs**: `data-model.md`, `contracts/`, `quickstart.md`
 
-**Tasks**:
-- [ ] Replace `FSHBandVector*` with `FSHBandView*`
-- [ ] Replace `FSHBandVectorRGB*` with `FSHBandViewRGB*`
-- [ ] Add `FSHBandConstView*` aliases
-- [ ] Add `FSHBandConstViewRGB*` aliases
+### Artifacts Generated
 
-**Deliverables**:
-- [ ] Type aliases updated (lines 738-745)
+1. ✅ **data-model.md**
+   - Class hierarchy diagram (CRTP base + 2 specializations)
+   - Template parameter specifications
+   - Data member definitions
+   - State transition diagrams
+   - Validation rules (compile-time and runtime)
+   - Memory layout comparison (old vs new)
 
----
+2. ✅ **contracts/TSHBandViewCommon.yaml**
+   - CRTP base class API contract
+   - Template parameters, type aliases, constants
+   - Common methods: `operator[]`, `GetSize()`, `Dot()`
+   - Protected CRTP helpers: `AsDerived()`
+   - Invariants and usage examples
 
-### Phase 5: Update Tests (1 day)
+3. ✅ **contracts/TSHBandView.yaml**
+   - Mutable specialization (`bConst=false`) contract
+   - Const specialization (`bConst=true`) contract
+   - Constructors, operators, methods for each
+   - Conversion constructor documentation
+   - Usage examples for both specializations
 
-**Objectives**:
-- Fix all broken tests
-- Add new tests for view semantics
+4. ✅ **contracts/TSHBandViewRGB.yaml**
+   - RGB view class API contract
+   - Data members (R, G, B channels)
+   - Constructors (from pointers, views, owning vectors)
+   - Operators (channel access, in-place operations)
+   - Implicit conversion support
 
-**Tasks**:
+5. ✅ **quickstart.md**
+   - Migration guide from 3.x to 4.0
+   - Type name mapping table
+   - 5 migration examples (basic usage, const correctness, GetBand, RGB, Dot)
+   - Common usage patterns
+   - Breaking changes checklist
+   - Performance notes
 
-#### 5.1 Update Existing Tests
-- [ ] Find all tests using `TSHBandVector` or `TSHBandVectorRGB`
-- [ ] Update to use owning types (`TSHVector`) and extract views
-- [ ] Fix `GetBand()` usage (now returns by value, not reference)
-- [ ] Update assignment tests (now shallow copy)
+### Constitution Re-Check (Post-Design)
 
-#### 5.2 Add New Tests
-- [ ] Test default construction (nullptr)
-- [ ] Test pointer construction
-- [ ] Test implicit conversion (mutable → const)
-- [ ] Test shallow copy semantics
-- [ ] Test mathematical operators
-- [ ] Test `Dot()` functions
-- [ ] Test RGB view construction from `TSHVectorRGB`
+**Status**: ✅ All gates still passing
 
-**Deliverables**:
-- [ ] All existing tests pass
-- [ ] New tests added and passing
-- [ ] Test coverage >= 90%
-
----
-
-### Phase 6: Documentation & Validation (0.5 days)
-
-**Objectives**:
-- Update documentation
-- Validate cross-platform compilation
-- Performance benchmarks
-
-**Tasks**:
-
-#### 6.1 Documentation
-- [ ] Update comments in `SH.h` for new classes
-- [ ] Add Doxygen comments for public APIs
-- [ ] Document migration guide
-
-#### 6.2 Validation
-- [ ] Compile on MSVC 2019+
-- [ ] Compile on Clang 10+
-- [ ] Compile on GCC 9+
-- [ ] Zero warnings on all compilers
-- [ ] Run all tests on all platforms
-
-#### 6.3 Performance
-- [ ] Benchmark `GetBand()` performance
-- [ ] Verify `sizeof(TSHBandView<N>)` == 8 bytes
-- [ ] Verify `sizeof(TSHBandViewRGB<N>)` == 24 bytes
-
-**Deliverables**:
-- [ ] Documentation complete
-- [ ] All platforms validated
-- [ ] Performance benchmarks pass
+- ✅ Naming conventions maintained in all generated contracts
+- ✅ Type safety enforced via template parameters and specialization
+- ✅ Zero-overhead abstraction verified in design
+- ✅ Documentation complete (contracts, quickstart, data model)
+- ✅ No new violations introduced
 
 ---
 
-## Risk Assessment
+## Phase 2: Task Generation (PENDING)
 
-### High Risk
-1. **Breaking Changes**: All existing code using `TSHBandVector` will break
-   - **Mitigation**: Clear migration guide, version bump to 4.0.0
+**Status**: ⏸️ Pending - Use `/speckit.tasks` command
+**Output**: `tasks.md`
 
-2. **Lifetime Management**: Users must ensure data outlives views
-   - **Mitigation**: Document clearly, add debug assertions
-
-### Medium Risk
-1. **Test Coverage**: May miss edge cases in view semantics
-   - **Mitigation**: Comprehensive test suite, code review
+This phase is NOT part of `/speckit.plan` command. Run `/speckit.tasks` to generate detailed implementation tasks.
 
 ---
 
-## Success Metrics
+## Summary
 
-- [ ] All 4 view classes implemented and tested
-- [ ] `sizeof(TSHBandView<2>)` == 8 bytes (64-bit)
-- [ ] All existing tests pass (after migration)
-- [ ] Zero compiler warnings (MSVC/Clang/GCC)
-- [ ] Performance: no regression vs. 3.0.0
-- [ ] Documentation complete
+### Completed Phases
 
----
+| Phase | Status | Outputs | Notes |
+|-------|--------|---------|-------|
+| **Phase 0: Research** | ✅ Complete | `research.md` | All technical unknowns resolved |
+| **Phase 1: Design** | ✅ Complete | `data-model.md`, `contracts/`, `quickstart.md` | API contracts and migration guide ready |
+| **Phase 2: Tasks** | ⏸️ Pending | `tasks.md` | Run `/speckit.tasks` command |
 
-## Timeline
+### Key Decisions
 
-| Phase | Duration | Dependencies |
-|-------|----------|--------------|
-| Phase 0: Preparation | 0.5 days | None |
-| Phase 1: Core Views | 1 day | Phase 0 |
-| Phase 2: RGB Views | 0.5 days | Phase 1 |
-| Phase 3: GetBand() | 1 day | Phase 2 |
-| Phase 4: Type Aliases | 0.25 days | Phase 3 |
-| Phase 5: Tests | 1 day | Phase 4 |
-| Phase 6: Documentation | 0.5 days | Phase 5 |
-| **Total** | **4.75 days** | |
+1. **CRTP Architecture**: `TSHBandViewCommon<Derived, Order, bConst>` base class
+2. **Partial Specialization**: Separate `bConst=false` and `bConst=true` specializations
+3. **Implicit Conversion**: Mutable→const via conversion constructor
+4. **Simplified Dot()**: Single template function instead of 4 overloads
+5. **Const-Correct GetBand()**: Returns appropriate `bConst` based on caller const-ness
 
----
+### Design Simplification Achieved
 
-## Next Steps
+- **Types**: 4 classes → 2 template classes (50% reduction)
+- **Dot() Functions**: 4 overloads → 1 template (75% reduction)
+- **Code Duplication**: Eliminated via CRTP base class
+- **Maintainability**: Single source of truth for common functionality
 
-After plan approval:
-1. Create `tasks.md` from this plan using `/speckit.tasks`
-2. Begin Phase 0 (Preparation)
-3. Daily progress updates
-4. Code review after Phase 3
-5. Final review before merge
+### Next Steps
+
+1. ✅ **Planning Complete** - All design artifacts generated
+2. ⏭️ **Run `/speckit.tasks`** - Generate detailed implementation tasks
+3. ⏭️ **Run `/speckit.implement`** - Execute implementation (after tasks generated)
 
 ---
 
-**Plan Status**: ✅ Ready for Review
-**Estimated Effort**: ~5 days
-**Breaking Changes**: Yes (MAJOR version bump)
-**Backward Compatibility**: No
+## Appendix: File Locations
+
+### Documentation
+- **Specification**: `D:\Workspace\UCommon\specs\1-shband-view\spec.md`
+- **Plan**: `D:\Workspace\UCommon\specs\1-shband-view\plan.md` (this file)
+- **Research**: `D:\Workspace\UCommon\specs\1-shband-view\research.md`
+- **Data Model**: `D:\Workspace\UCommon\specs\1-shband-view\data-model.md`
+- **Quickstart**: `D:\Workspace\UCommon\specs\1-shband-view\quickstart.md`
+
+### Contracts
+- **Base Class**: `D:\Workspace\UCommon\specs\1-shband-view\contracts\TSHBandViewCommon.yaml`
+- **View Class**: `D:\Workspace\UCommon\specs\1-shband-view\contracts\TSHBandView.yaml`
+- **RGB View**: `D:\Workspace\UCommon\specs\1-shband-view\contracts\TSHBandViewRGB.yaml`
+
+### Implementation (To Be Modified)
+- **Header**: `D:\Workspace\UCommon\include\UCommon\SH.h`
+- **Inline**: `D:\Workspace\UCommon\include\UCommon\SH.inl`
+- **Tests**: `D:\Workspace\UCommon\test\SH\*.cpp`
+

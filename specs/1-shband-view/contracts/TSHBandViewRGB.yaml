@@ -1,0 +1,207 @@
+# API Contract: TSHBandViewRGB<Order, bConst>
+
+metadata:
+  feature: SHBand View Design
+  version: 4.0.0
+  date: 2026-01-01
+  type: Class Template
+  namespace: UCommon
+
+template_parameters:
+  - name: Order
+    type: int
+    description: SH band order (1-based)
+    constraints: Order >= 1
+    
+  - name: bConst
+    type: bool
+    default: false
+    description: Const-correctness flag
+    values: [false, true]
+
+data_members:
+  - name: R
+    type: TSHBandView<Order, bConst>
+    description: Red channel view
+    access: public
+    
+  - name: G
+    type: TSHBandView<Order, bConst>
+    description: Green channel view
+    access: public
+    
+  - name: B
+    type: TSHBandView<Order, bConst>
+    description: Blue channel view
+    access: public
+
+constructors:
+  - signature: TSHBandViewRGB() noexcept
+    description: Default constructor (all channels point to nullptr)
+    postconditions:
+      - R.GetData() == nullptr
+      - G.GetData() == nullptr
+      - B.GetData() == nullptr
+      
+  - signature: TSHBandViewRGB(DataType InR, DataType InG, DataType InB) noexcept
+    description: Construct from three pointers
+    parameters:
+      - name: InR
+        type: DataType (conditional_t<bConst, const float*, float*>)
+        description: Pointer to R channel data
+      - name: InG
+        type: DataType
+        description: Pointer to G channel data
+      - name: InB
+        type: DataType
+        description: Pointer to B channel data
+    postconditions:
+      - R.GetData() == InR
+      - G.GetData() == InG
+      - B.GetData() == InB
+      
+  - signature: TSHBandViewRGB(const TSHBandView<Order, bConst>& InR, const TSHBandView<Order, bConst>& InG, const TSHBandView<Order, bConst>& InB) noexcept
+    description: Construct from three views
+    parameters:
+      - name: InR
+        type: const TSHBandView<Order, bConst>&
+      - name: InG
+        type: const TSHBandView<Order, bConst>&
+      - name: InB
+        type: const TSHBandView<Order, bConst>&
+    postconditions:
+      - R == InR
+      - G == InG
+      - B == InB
+      
+  - signature: template<int VectorOrder> explicit TSHBandViewRGB(VectorRGBType& InVectorRGB) noexcept
+    description: Construct from TSHVectorRGB (const-correct)
+    template_parameters:
+      - name: VectorOrder
+        type: int
+        constraints: VectorOrder >= Order
+    parameters:
+      - name: InVectorRGB
+        type: conditional_t<bConst, const TSHVectorRGB<VectorOrder>&, TSHVectorRGB<VectorOrder>&>
+        description: Owning RGB vector to extract bands from
+    postconditions:
+      - R == InVectorRGB.R.GetBand<Order>()
+      - G == InVectorRGB.G.GetBand<Order>()
+      - B == InVectorRGB.B.GetBand<Order>()
+    static_assert: VectorOrder >= Order
+    
+  - signature: TSHBandViewRGB(const TSHBandViewRGB<Order, false>& Other) noexcept
+    description: Implicit conversion from mutable RGB view (only in bConst=true specialization)
+    available_in: bConst=true only
+    parameters:
+      - name: Other
+        type: const TSHBandViewRGB<Order, false>&
+    postconditions:
+      - R == Other.R
+      - G == Other.G
+      - B == Other.B
+
+operators:
+  - signature: TSHBandViewRGB& operator=(const TSHBandViewRGB& Other) noexcept
+    description: Shallow copy assignment (rebind all three pointers)
+    parameters:
+      - name: Other
+        type: const TSHBandViewRGB&
+    returns:
+      type: TSHBandViewRGB&
+      description: *this
+    postconditions:
+      - R == Other.R
+      - G == Other.G
+      - B == Other.B
+    note: Does NOT copy data content, only rebinds pointers
+    
+  - signature: TSHBandView<Order, bConst>& operator[](uint64_t Index) noexcept
+    description: Channel access (mutable)
+    parameters:
+      - name: Index
+        type: uint64_t
+        constraints: Index < 3
+    returns:
+      type: TSHBandView<Order, bConst>&
+      description: Reference to channel (0=R, 1=G, 2=B)
+    preconditions:
+      - Index < 3
+    implementation: return (&R)[Index]
+    
+  - signature: const TSHBandView<Order, bConst>& operator[](uint64_t Index) const noexcept
+    description: Channel access (const)
+    parameters:
+      - name: Index
+        type: uint64_t
+        constraints: Index < 3
+    returns:
+      type: const TSHBandView<Order, bConst>&
+      description: Const reference to channel
+    preconditions:
+      - Index < 3
+      
+  - signature: TSHBandViewRGB& operator+=(const TSHBandViewRGB& Other) noexcept
+    description: In-place addition (all channels)
+    available_in: bConst=false only
+    parameters:
+      - name: Other
+        type: const TSHBandViewRGB&
+    returns:
+      type: TSHBandViewRGB&
+    preconditions:
+      - R.GetData() != nullptr
+      - G.GetData() != nullptr
+      - B.GetData() != nullptr
+      - Other.R.GetData() != nullptr
+      - Other.G.GetData() != nullptr
+      - Other.B.GetData() != nullptr
+    postconditions:
+      - R += Other.R
+      - G += Other.G
+      - B += Other.B
+      
+  - signature: TSHBandViewRGB& operator-=(const TSHBandViewRGB& Other) noexcept
+    description: In-place subtraction (all channels)
+    available_in: bConst=false only
+    
+  - signature: TSHBandViewRGB& operator*=(float Scalar) noexcept
+    description: In-place scalar multiplication (all channels)
+    available_in: bConst=false only
+    
+  - signature: TSHBandViewRGB& operator/=(float Scalar) noexcept
+    description: In-place scalar division (all channels)
+    available_in: bConst=false only
+
+properties:
+  size: sizeof(TSHBandView<Order, bConst>) * 3 = 24 bytes (64-bit)
+  alignment: alignof(TSHBandView<Order, bConst>)
+  trivially_copyable: true
+  standard_layout: true
+
+invariants:
+  - sizeof(TSHBandViewRGB<Order, bConst>) == 3 * sizeof(float*)
+  - R, G, B all have same Order and bConst
+
+usage_examples:
+  - description: Construct from three pointers
+    code: |
+      float r_data[3], g_data[3], b_data[3];
+      TSHBandViewRGB<2, false> rgb(r_data, g_data, b_data);
+      
+  - description: Construct from owning vector
+    code: |
+      TSHVectorRGB<3> vec;
+      TSHBandViewRGB<2, false> rgb(vec);  // Extract band 2 from all channels
+      
+  - description: Channel access
+    code: |
+      TSHBandViewRGB<2, false> rgb;
+      rgb[0][0] = 1.0f;  // R channel, first coefficient
+      rgb[1][1] = 0.5f;  // G channel, second coefficient
+      
+  - description: Implicit mutable→const conversion
+    code: |
+      TSHBandViewRGB<2, false> mutable_rgb;
+      TSHBandViewRGB<2, true> const_rgb = mutable_rgb;  // OK
+

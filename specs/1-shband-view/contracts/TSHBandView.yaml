@@ -1,0 +1,209 @@
+# API Contract: TSHBandView<Order, bConst>
+
+metadata:
+  feature: SHBand View Design
+  version: 4.0.0
+  date: 2026-01-01
+  type: Class Template (Partial Specializations)
+  namespace: UCommon
+
+template_parameters:
+  - name: Order
+    type: int
+    description: SH band order (1-based)
+    constraints: Order >= 1
+    
+  - name: bConst
+    type: bool
+    default: false
+    description: Const-correctness flag
+    values: [false, true]
+
+specializations:
+  - name: TSHBandView<Order, false>
+    description: Mutable view specialization
+    base_class: TSHBandViewCommon<TSHBandView<Order, false>, Order, false>
+    
+  - name: TSHBandView<Order, true>
+    description: Const view specialization
+    base_class: TSHBandViewCommon<TSHBandView<Order, true>, Order, true>
+
+# ============================================================================
+# TSHBandView<Order, false> - Mutable Specialization
+# ============================================================================
+
+mutable_specialization:
+  data_members:
+    - name: Data
+      type: float*
+      description: Pointer to external mutable data
+      default: nullptr
+      
+  constructors:
+    - signature: constexpr TSHBandView() noexcept
+      description: Default constructor (Data = nullptr)
+      postconditions:
+        - Data == nullptr
+        
+    - signature: explicit constexpr TSHBandView(float* InData) noexcept
+      description: Construct from pointer
+      parameters:
+        - name: InData
+          type: float*
+          description: Pointer to external data array
+      postconditions:
+        - Data == InData
+        
+  operators:
+    - signature: TSHBandView& operator=(const TSHBandView& Other) noexcept
+      description: Shallow copy assignment (rebind pointer)
+      parameters:
+        - name: Other
+          type: const TSHBandView&
+      returns:
+        type: TSHBandView&
+        description: *this
+      postconditions:
+        - Data == Other.Data
+      note: Does NOT copy data content, only rebinds pointer
+      
+    - signature: float& operator[](uint64_t Index) noexcept
+      description: Mutable array access
+      parameters:
+        - name: Index
+          type: uint64_t
+          constraints: Index < MaxSHBasis
+      returns:
+        type: float&
+        description: Mutable reference to coefficient
+      preconditions:
+        - Data != nullptr
+        - Index < MaxSHBasis
+        
+    - signature: TSHBandView& operator+=(const TSHBandView& Other) noexcept
+      description: In-place addition
+      parameters:
+        - name: Other
+          type: const TSHBandView&
+      returns:
+        type: TSHBandView&
+      preconditions:
+        - Data != nullptr
+        - Other.Data != nullptr
+      postconditions:
+        - Data[i] += Other.Data[i] for all i in [0, MaxSHBasis)
+        
+    - signature: TSHBandView& operator-=(const TSHBandView& Other) noexcept
+      description: In-place subtraction
+      
+    - signature: TSHBandView& operator*=(float Scalar) noexcept
+      description: In-place scalar multiplication
+      
+    - signature: TSHBandView& operator/=(float Scalar) noexcept
+      description: In-place scalar division
+      
+  methods:
+    - signature: float* GetData() noexcept
+      description: Get mutable pointer to data
+      returns:
+        type: float*
+        description: Data pointer
+        
+    - signature: const float* GetData() const noexcept
+      description: Get const pointer to data
+      returns:
+        type: const float*
+        description: Data pointer
+
+# ============================================================================
+# TSHBandView<Order, true> - Const Specialization
+# ============================================================================
+
+const_specialization:
+  data_members:
+    - name: Data
+      type: const float*
+      description: Pointer to external const data
+      default: nullptr
+      
+  constructors:
+    - signature: constexpr TSHBandView() noexcept
+      description: Default constructor (Data = nullptr)
+      postconditions:
+        - Data == nullptr
+        
+    - signature: explicit constexpr TSHBandView(const float* InData) noexcept
+      description: Construct from const pointer
+      parameters:
+        - name: InData
+          type: const float*
+          description: Pointer to external const data array
+      postconditions:
+        - Data == InData
+        
+    - signature: constexpr TSHBandView(const TSHBandView<Order, false>& Other) noexcept
+      description: Implicit conversion from mutable view
+      parameters:
+        - name: Other
+          type: const TSHBandView<Order, false>&
+          description: Mutable view to convert from
+      postconditions:
+        - Data == Other.GetData()
+      note: Enables implicit mutable→const conversion
+      
+  operators:
+    - signature: TSHBandView& operator=(const TSHBandView& Other) noexcept
+      description: Shallow copy assignment (rebind pointer)
+      parameters:
+        - name: Other
+          type: const TSHBandView&
+      returns:
+        type: TSHBandView&
+        description: *this
+      postconditions:
+        - Data == Other.Data
+        
+  methods:
+    - signature: const float* GetData() const noexcept
+      description: Get const pointer to data
+      returns:
+        type: const float*
+        description: Data pointer
+        
+  notes:
+    - No mutable operator[] (only const version from base class)
+    - No operator+= / -= / *= / /= (const view cannot modify data)
+    - Conversion constructor enables passing mutable views to const-accepting functions
+
+# ============================================================================
+# Common Properties (Both Specializations)
+# ============================================================================
+
+common_properties:
+  size: sizeof(float*) = 8 bytes (64-bit)
+  alignment: alignof(float*)
+  trivially_copyable: true
+  standard_layout: true
+  
+invariants:
+  - sizeof(TSHBandView<Order, bConst>) == sizeof(float*)
+  - MaxSHBasis == 2 * Order - 1
+  
+usage_examples:
+  - description: Mutable view from owning vector
+    code: |
+      TSHVector<3> vec;
+      TSHBandView<2, false> band = vec.GetBand<2>();
+      band[0] = 1.0f;  // OK - mutable
+      
+  - description: Const view from const vector
+    code: |
+      const TSHVector<3> vec;
+      TSHBandView<2, true> band = vec.GetBand<2>();
+      // band[0] = 1.0f;  // ERROR - const view
+      
+  - description: Implicit mutable→const conversion
+    code: |
+      TSHBandView<2, false> mutable_view;
+      TSHBandView<2, true> const_view = mutable_view;  // OK - implicit
+
