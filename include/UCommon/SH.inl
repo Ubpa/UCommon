@@ -187,3 +187,84 @@ UCommon::FVector3f UCommon::TSHVectorRGBBase<DerivedType, TElement, InMaxSHOrder
 	const TElement<MaxSHOrder> SHBasises = TElement<MaxSHOrder>::SHBasisFunction(Vector);
 	return { TElement<MaxSHOrder>::Dot(R, SHBasises), TElement<MaxSHOrder>::Dot(G, SHBasises), TElement<MaxSHOrder>::Dot(B, SHBasises) };
 }
+
+// ============================================================================
+// TSHBandView Mathematical Operations
+// ============================================================================
+
+// operator+= (mutable view only)
+template<int Order>
+UCommon::TSHBandView<Order, false>& UCommon::TSHBandView<Order, false>::operator+=(const TSHBandView& Other) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Data != nullptr);
+	UBPA_UCOMMON_ASSERT(Other.Data != nullptr);
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Data[i] += Other.Data[i];
+	}
+	return *this;
+}
+
+// operator-= (mutable view only)
+template<int Order>
+UCommon::TSHBandView<Order, false>& UCommon::TSHBandView<Order, false>::operator-=(const TSHBandView& Other) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Data != nullptr);
+	UBPA_UCOMMON_ASSERT(Other.Data != nullptr);
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Data[i] -= Other.Data[i];
+	}
+	return *this;
+}
+
+// operator*= (mutable view only)
+template<int Order>
+UCommon::TSHBandView<Order, false>& UCommon::TSHBandView<Order, false>::operator*=(float Scalar) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Data != nullptr);
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Data[i] *= Scalar;
+	}
+	return *this;
+}
+
+// operator/= (mutable view only)
+template<int Order>
+UCommon::TSHBandView<Order, false>& UCommon::TSHBandView<Order, false>::operator/=(float Scalar) noexcept
+{
+	UBPA_UCOMMON_ASSERT(Data != nullptr);
+	UBPA_UCOMMON_ASSERT(Scalar != 0.0f);
+	const float InvScalar = 1.0f / Scalar;
+	for (uint64_t i = 0; i < MaxSHBasis; ++i)
+	{
+		Data[i] *= InvScalar;
+	}
+	return *this;
+}
+
+// Non-member Dot function (template handles all const combinations)
+namespace UCommon
+{
+	template<int Order, bool bConst1, bool bConst2>
+	float Dot(const TSHBandView<Order, bConst1>& A, const TSHBandView<Order, bConst2>& B) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(A.GetData() != nullptr);
+		UBPA_UCOMMON_ASSERT(B.GetData() != nullptr);
+		float Result = 0.0f;
+		for (uint64_t i = 0; i < TSHBandView<Order, bConst1>::MaxSHBasis; ++i)
+		{
+			Result += A[i] * B[i];
+		}
+		return Result;
+	}
+}
+
+// Member Dot function (calls non-member)
+template<typename Derived, int Order, bool bConst>
+template<bool bOtherConst>
+float UCommon::TSHBandViewCommon<Derived, Order, bConst>::Dot(const TSHBandView<Order, bOtherConst>& Other) const noexcept
+{
+	return UCommon::Dot(static_cast<const TSHBandView<Order, bConst>&>(AsDerived()), Other);
+}
