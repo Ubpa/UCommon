@@ -24,6 +24,7 @@
 - Q: Dot() implementation? → A: Both member and non-member (member calls non-member).
 - Q: operator= semantics? → A: Shallow copy (rebind pointer).
 - Q: Type names? → A: TSHBandView, TSHBandConstView, TSHBandViewRGB, TSHBandConstViewRGB.
+- Q: Feature directory and branch naming? → A: Renamed from `1-shbandvector-view` to `1-shband-view` to match new type names.
 
 ---
 
