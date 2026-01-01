@@ -646,6 +646,77 @@ int main(int argc, char** argv)
 	TestTSHBandVector_ImplicitConversion();
 	TestTSHBandVectorRGB_BasicOperations();
 
+	// Test Vector() interface
+	std::cout << "\n=== Test: TSHBandView Vector() Interface ===" << std::endl;
+	{
+		FSHBandVector2 vec1{1.0f, 2.0f, 3.0f};
+		FSHBandVector2 vec2{4.0f, 5.0f, 6.0f};
+
+		FSHBandView2 view1 = vec1;
+		FSHBandView2 view2 = vec2;
+
+		// Use Vector() to assign one vector to another through view
+		view1.Vector() = view2.Vector();
+
+		bool passed = (vec1[0] == 4.0f && vec1[1] == 5.0f && vec1[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Vector() assignment works" << std::endl;
+
+		// Use Vector() with const view (read-only)
+		FSHBandConstView2 constView = vec2;
+		const FSHBandVector2& vecRef = constView.Vector();
+
+		passed = (vecRef[0] == 4.0f && vecRef[1] == 5.0f && vecRef[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Const Vector() works" << std::endl;
+	}
+
+	// Test flexible assignment from view
+	std::cout << "\n=== Test: TSHBandVector Assignment from View ===" << std::endl;
+	{
+		FSHBandVector2 vec1{1.0f, 2.0f, 3.0f};
+		FSHBandVector2 vec2{4.0f, 5.0f, 6.0f};
+		FSHBandVector2 vec3;
+
+		// Assign from another vector (implicit conversion to view)
+		vec3 = vec1;
+		bool passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from vector works" << std::endl;
+
+		// Assign from mutable view
+		FSHBandView2 view = vec2;
+		vec3 = view;
+		passed = (vec3[0] == 4.0f && vec3[1] == 5.0f && vec3[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from mutable view works" << std::endl;
+
+		// Assign from const view
+		FSHBandConstView2 constView = vec1;
+		vec3 = constView;
+		passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from const view works" << std::endl;
+	}
+
+	// Test construction from view
+	std::cout << "\n=== Test: TSHBandVector Construction from View ===" << std::endl;
+	{
+		FSHBandVector2 source{1.0f, 2.0f, 3.0f};
+
+		// Construct from mutable view
+		FSHBandView2 view = source;
+		FSHBandVector2 vec1(view);
+		bool passed = (vec1[0] == 1.0f && vec1[1] == 2.0f && vec1[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from mutable view works" << std::endl;
+
+		// Construct from const view
+		FSHBandConstView2 constView = source;
+		FSHBandVector2 vec2(constView);
+		passed = (vec2[0] == 1.0f && vec2[1] == 2.0f && vec2[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from const view works" << std::endl;
+
+		// Construct from another vector (implicit conversion to view)
+		FSHBandVector2 vec3(source);
+		passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from vector works" << std::endl;
+	}
+
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;
