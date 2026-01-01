@@ -646,6 +646,191 @@ int main(int argc, char** argv)
 	TestTSHBandVector_ImplicitConversion();
 	TestTSHBandVectorRGB_BasicOperations();
 
+	// Test Vector() interface
+	std::cout << "\n=== Test: TSHBandView Vector() Interface ===" << std::endl;
+	{
+		FSHBandVector2 vec1{1.0f, 2.0f, 3.0f};
+		FSHBandVector2 vec2{4.0f, 5.0f, 6.0f};
+
+		FSHBandView2 view1 = vec1;
+		FSHBandView2 view2 = vec2;
+
+		// Use Vector() to assign one vector to another through view
+		view1.Vector() = view2.Vector();
+
+		bool passed = (vec1[0] == 4.0f && vec1[1] == 5.0f && vec1[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Vector() assignment works" << std::endl;
+
+		// Use Vector() with const view (read-only)
+		FSHBandConstView2 constView = vec2;
+		const FSHBandVector2& vecRef = constView.Vector();
+
+		passed = (vecRef[0] == 4.0f && vecRef[1] == 5.0f && vecRef[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Const Vector() works" << std::endl;
+	}
+
+	// Test flexible assignment from view
+	std::cout << "\n=== Test: TSHBandVector Assignment from View ===" << std::endl;
+	{
+		FSHBandVector2 vec1{1.0f, 2.0f, 3.0f};
+		FSHBandVector2 vec2{4.0f, 5.0f, 6.0f};
+		FSHBandVector2 vec3;
+
+		// Assign from another vector (implicit conversion to view)
+		vec3 = vec1;
+		bool passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from vector works" << std::endl;
+
+		// Assign from mutable view
+		FSHBandView2 view = vec2;
+		vec3 = view;
+		passed = (vec3[0] == 4.0f && vec3[1] == 5.0f && vec3[2] == 6.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from mutable view works" << std::endl;
+
+		// Assign from const view
+		FSHBandConstView2 constView = vec1;
+		vec3 = constView;
+		passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Assignment from const view works" << std::endl;
+	}
+
+	// Test construction from view
+	std::cout << "\n=== Test: TSHBandVector Construction from View ===" << std::endl;
+	{
+		FSHBandVector2 source{1.0f, 2.0f, 3.0f};
+
+		// Construct from mutable view
+		FSHBandView2 view = source;
+		FSHBandVector2 vec1(view);
+		bool passed = (vec1[0] == 1.0f && vec1[1] == 2.0f && vec1[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from mutable view works" << std::endl;
+
+		// Construct from const view
+		FSHBandConstView2 constView = source;
+		FSHBandVector2 vec2(constView);
+		passed = (vec2[0] == 1.0f && vec2[1] == 2.0f && vec2[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from const view works" << std::endl;
+
+		// Construct from another vector (implicit conversion to view)
+		FSHBandVector2 vec3(source);
+		passed = (vec3[0] == 1.0f && vec3[1] == 2.0f && vec3[2] == 3.0f);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Construction from vector works" << std::endl;
+	}
+
+	// Test: TSHVector construction from lower order + band
+	std::cout << "\n=== Test: TSHVector Construction from Lower Order + Band ===" << std::endl;
+	{
+		// Create a lower order SHVector (Order 2: 4 coefficients)
+		FSHVector2 lowerOrder;
+		lowerOrder.V[0] = 1.0f;  // L0
+		lowerOrder.V[1] = 2.0f;  // L1 m=-1
+		lowerOrder.V[2] = 3.0f;  // L1 m=0
+		lowerOrder.V[3] = 4.0f;  // L1 m=1
+
+		// Create a band view for Order 3 (5 coefficients: L2)
+		float bandData[5] = {5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+		FSHBandView3 band(bandData);
+
+		// Construct Order 3 SHVector from Order 2 + Band 3
+		FSHVector3 higherOrder(lowerOrder, band);
+
+		// Verify: should have 9 coefficients total
+		// First 4 from lowerOrder, next 5 from band
+		bool passed = (
+			higherOrder.V[0] == 1.0f &&
+			higherOrder.V[1] == 2.0f &&
+			higherOrder.V[2] == 3.0f &&
+			higherOrder.V[3] == 4.0f &&
+			higherOrder.V[4] == 5.0f &&
+			higherOrder.V[5] == 6.0f &&
+			higherOrder.V[6] == 7.0f &&
+			higherOrder.V[7] == 8.0f &&
+			higherOrder.V[8] == 9.0f
+		);
+		std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] TSHVector(lower order, band) works" << std::endl;
+	}
+
+	// Test: TSHVectorRGB construction from lower order + band
+	std::cout << "\n=== Test: TSHVectorRGB Construction from Lower Order + Band ===" << std::endl;
+	{
+		// Create a lower order SHVectorRGB (Order 2: 4 coefficients per channel)
+		FSHVectorRGB2 lowerOrderRGB;
+		for (int i = 0; i < 4; ++i)
+		{
+			lowerOrderRGB.R.V[i] = static_cast<float>(i + 1);
+			lowerOrderRGB.G.V[i] = static_cast<float>(i + 10);
+			lowerOrderRGB.B.V[i] = static_cast<float>(i + 20);
+		}
+
+		// Create RGB band views for Order 3 (5 coefficients per channel)
+		float bandDataR[5] = {5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+		float bandDataG[5] = {15.0f, 16.0f, 17.0f, 18.0f, 19.0f};
+		float bandDataB[5] = {25.0f, 26.0f, 27.0f, 28.0f, 29.0f};
+		FSHBandViewRGB3 bandRGB(bandDataR, bandDataG, bandDataB);
+
+		// Construct Order 3 SHVectorRGB from Order 2 + Band 3
+		FSHVectorRGB3 higherOrderRGB(lowerOrderRGB, bandRGB);
+
+		// Verify R channel
+		bool passedR = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.R.V[i] != static_cast<float>(i + 1))
+			{
+				passedR = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.R.V[i] != static_cast<float>(i + 1))
+			{
+				passedR = false;
+				break;
+			}
+		}
+
+		// Verify G channel
+		bool passedG = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.G.V[i] != static_cast<float>(i + 10))
+			{
+				passedG = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.G.V[i] != static_cast<float>(i + 11))
+			{
+				passedG = false;
+				break;
+			}
+		}
+
+		// Verify B channel
+		bool passedB = true;
+		for (int i = 0; i < 4; ++i)
+		{
+			if (higherOrderRGB.B.V[i] != static_cast<float>(i + 20))
+			{
+				passedB = false;
+				break;
+			}
+		}
+		for (int i = 4; i < 9; ++i)
+		{
+			if (higherOrderRGB.B.V[i] != static_cast<float>(i + 21))
+			{
+				passedB = false;
+				break;
+			}
+		}
+
+		std::cout << "[" << (passedR && passedG && passedB ? "PASSED" : "FAILED") << "] TSHVectorRGB(lower order, band) works" << std::endl;
+	}
+
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;
