@@ -1,22 +1,60 @@
-*.pdf
-assets/
+# Build directories
 build/
-cpp-smallpt-master/
-_deps/
-html/
 bin/
+lib/
+obj/
+out/
+_deps/
 
-*.png
-*.jpg
-*.pptx
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# Compiled files
 *.exe
 *.lib
 *.pdb
-*.bin
 *.dll
 *.exp
-*.ppm
-*.ib_pdb_index
+*.o
+*.obj
+*.so
+*.a
+*.dylib
+
+# Debug files
 *.idb
+*.ib_pdb_index
+*.ilk
+
+# Documentation
+html/
+*.pdf
+
+# Assets and media
+assets/
+cpp-smallpt-master/
+*.png
+*.jpg
+*.pptx
+*.bin
+*.ppm
 *.tga
 *.BMP
+
+# Environment and logs
+.env
+.env.*
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.tmp

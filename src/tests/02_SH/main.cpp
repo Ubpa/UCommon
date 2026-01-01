@@ -338,6 +338,244 @@ void TestHallucinateZH_ScalingProperties()
 	std::cout << "[PASSED] Scaling properties tested" << std::endl;
 }
 
+// ============================================================================
+// TSHBandVector Tests
+// ============================================================================
+
+void TestTSHBandVector_DefaultConstructor()
+{
+	std::cout << "\n=== Test: TSHBandVector Default Constructor ===" << std::endl;
+
+	FSHBandVector2 Vec;
+
+	bool AllZero = true;
+	for (uint64_t i = 0; i < FSHBandVector2::MaxSHBasis; ++i)
+	{
+		if (!IsNearlyEqual(Vec[i], 0.0f))
+		{
+			AllZero = false;
+			break;
+		}
+	}
+
+	if (AllZero)
+	{
+		std::cout << "[PASSED] Default constructor zero-initializes" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Default constructor did not zero-initialize" << std::endl;
+	}
+}
+
+void TestTSHBandVector_InitializerList()
+{
+	std::cout << "\n=== Test: TSHBandVector Initializer List ===" << std::endl;
+
+	FSHBandVector2 Vec = { 1.0f, 2.0f, 3.0f };
+
+	if (IsNearlyEqual(Vec[0], 1.0f) && IsNearlyEqual(Vec[1], 2.0f) && IsNearlyEqual(Vec[2], 3.0f))
+	{
+		std::cout << "[PASSED] Initializer list constructor works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Initializer list constructor failed" << std::endl;
+	}
+}
+
+void TestTSHBandVector_CopyConstructor()
+{
+	std::cout << "\n=== Test: TSHBandVector Copy Constructor ===" << std::endl;
+
+	FSHBandVector2 Vec1 = { 1.0f, 2.0f, 3.0f };
+	FSHBandVector2 Vec2(Vec1);
+
+	bool Equal = true;
+	for (uint64_t i = 0; i < FSHBandVector2::MaxSHBasis; ++i)
+	{
+		if (!IsNearlyEqual(Vec1[i], Vec2[i]))
+		{
+			Equal = false;
+			break;
+		}
+	}
+
+	if (Equal)
+	{
+		std::cout << "[PASSED] Copy constructor works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Copy constructor failed" << std::endl;
+	}
+}
+
+void TestTSHBandVector_BinaryOperators()
+{
+	std::cout << "\n=== Test: TSHBandVector Binary Operators ===" << std::endl;
+
+	FSHBandVector2 Vec1 = { 1.0f, 2.0f, 3.0f };
+	FSHBandVector2 Vec2 = { 4.0f, 5.0f, 6.0f };
+
+	// Test addition
+	FSHBandVector2 Sum = Vec1 + Vec2;
+	if (IsNearlyEqual(Sum[0], 5.0f) && IsNearlyEqual(Sum[1], 7.0f) && IsNearlyEqual(Sum[2], 9.0f))
+	{
+		std::cout << "[PASSED] Addition operator works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Addition operator failed" << std::endl;
+	}
+
+	// Test subtraction
+	FSHBandVector2 Diff = Vec2 - Vec1;
+	if (IsNearlyEqual(Diff[0], 3.0f) && IsNearlyEqual(Diff[1], 3.0f) && IsNearlyEqual(Diff[2], 3.0f))
+	{
+		std::cout << "[PASSED] Subtraction operator works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Subtraction operator failed" << std::endl;
+	}
+
+	// Test scalar multiplication
+	FSHBandVector2 Scaled = Vec1 * 2.0f;
+	if (IsNearlyEqual(Scaled[0], 2.0f) && IsNearlyEqual(Scaled[1], 4.0f) && IsNearlyEqual(Scaled[2], 6.0f))
+	{
+		std::cout << "[PASSED] Scalar multiplication (vec * scalar) works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Scalar multiplication (vec * scalar) failed" << std::endl;
+	}
+
+	// Test scalar multiplication (commutative)
+	FSHBandVector2 Scaled2 = 2.0f * Vec1;
+	if (IsNearlyEqual(Scaled2[0], 2.0f) && IsNearlyEqual(Scaled2[1], 4.0f) && IsNearlyEqual(Scaled2[2], 6.0f))
+	{
+		std::cout << "[PASSED] Scalar multiplication (scalar * vec) works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Scalar multiplication (scalar * vec) failed" << std::endl;
+	}
+
+	// Test scalar division
+	FSHBandVector2 Divided = Vec1 / 2.0f;
+	if (IsNearlyEqual(Divided[0], 0.5f) && IsNearlyEqual(Divided[1], 1.0f) && IsNearlyEqual(Divided[2], 1.5f))
+	{
+		std::cout << "[PASSED] Scalar division works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Scalar division failed" << std::endl;
+	}
+}
+
+void TestTSHBandVector_DotProduct()
+{
+	std::cout << "\n=== Test: TSHBandVector Dot Product ===" << std::endl;
+
+	FSHBandVector2 Vec1 = { 1.0f, 2.0f, 3.0f };
+	FSHBandVector2 Vec2 = { 4.0f, 5.0f, 6.0f };
+
+	float DotResult = Dot(Vec1, Vec2);
+	float Expected = 1.0f * 4.0f + 2.0f * 5.0f + 3.0f * 6.0f; // = 4 + 10 + 18 = 32
+
+	if (IsNearlyEqual(DotResult, Expected))
+	{
+		std::cout << "[PASSED] Dot product works (result: " << DotResult << ")" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Dot product failed (expected: " << Expected << ", got: " << DotResult << ")" << std::endl;
+	}
+}
+
+void TestTSHBandVector_ImplicitConversion()
+{
+	std::cout << "\n=== Test: TSHBandVector Implicit Conversion ===" << std::endl;
+
+	FSHBandVector2 Vec = { 1.0f, 2.0f, 3.0f };
+
+	// Implicit conversion to const view
+	FSHBandConstView2 ConstView = Vec;
+
+	bool Equal = true;
+	for (uint64_t i = 0; i < FSHBandVector2::MaxSHBasis; ++i)
+	{
+		if (!IsNearlyEqual(Vec[i], ConstView[i]))
+		{
+			Equal = false;
+			break;
+		}
+	}
+
+	if (Equal)
+	{
+		std::cout << "[PASSED] Implicit conversion to const view works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] Implicit conversion to const view failed" << std::endl;
+	}
+}
+
+void TestTSHBandVectorRGB_BasicOperations()
+{
+	std::cout << "\n=== Test: TSHBandVectorRGB Basic Operations ===" << std::endl;
+
+	FSHBandVector2 R = { 1.0f, 2.0f, 3.0f };
+	FSHBandVector2 G = { 4.0f, 5.0f, 6.0f };
+	FSHBandVector2 B = { 7.0f, 8.0f, 9.0f };
+
+	FSHBandVectorRGB2 RGB(R, G, B);
+
+	bool Equal = true;
+	for (uint64_t i = 0; i < FSHBandVector2::MaxSHBasis; ++i)
+	{
+		if (!IsNearlyEqual(RGB.R[i], R[i]) || !IsNearlyEqual(RGB.G[i], G[i]) || !IsNearlyEqual(RGB.B[i], B[i]))
+		{
+			Equal = false;
+			break;
+		}
+	}
+
+	if (Equal)
+	{
+		std::cout << "[PASSED] TSHBandVectorRGB constructor works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] TSHBandVectorRGB constructor failed" << std::endl;
+	}
+
+	// Test scalar multiplication
+	FSHBandVectorRGB2 Scaled = RGB * 2.0f;
+	bool ScaledCorrect = true;
+	for (uint64_t i = 0; i < FSHBandVector2::MaxSHBasis; ++i)
+	{
+		if (!IsNearlyEqual(Scaled.R[i], R[i] * 2.0f) ||
+		    !IsNearlyEqual(Scaled.G[i], G[i] * 2.0f) ||
+		    !IsNearlyEqual(Scaled.B[i], B[i] * 2.0f))
+		{
+			ScaledCorrect = false;
+			break;
+		}
+	}
+
+	if (ScaledCorrect)
+	{
+		std::cout << "[PASSED] TSHBandVectorRGB scalar multiplication works" << std::endl;
+	}
+	else
+	{
+		std::cout << "[FAILED] TSHBandVectorRGB scalar multiplication failed" << std::endl;
+	}
+}
+
 int main(int argc, char** argv)
 {
 	std::cout << "========================================" << std::endl;
@@ -394,6 +632,19 @@ int main(int argc, char** argv)
 	TestHallucinateZH_MathematicalConsistency();
 	TestHallucinateZH_SymmetryProperties();
 	TestHallucinateZH_ScalingProperties();
+
+	// TSHBandVector tests
+	std::cout << "\n========================================" << std::endl;
+	std::cout << "  TSHBandVector Tests" << std::endl;
+	std::cout << "========================================" << std::endl;
+
+	TestTSHBandVector_DefaultConstructor();
+	TestTSHBandVector_InitializerList();
+	TestTSHBandVector_CopyConstructor();
+	TestTSHBandVector_BinaryOperators();
+	TestTSHBandVector_DotProduct();
+	TestTSHBandVector_ImplicitConversion();
+	TestTSHBandVectorRGB_BasicOperations();
 
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;

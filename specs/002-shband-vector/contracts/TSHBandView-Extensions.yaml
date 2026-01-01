@@ -1,0 +1,128 @@
+# API Contract: TSHBandView Extensions
+
+metadata:
+  feature: TSHBandVector - Owning SH Band Storage
+  version: 1.0.0
+  date: 2026-01-01
+  type: Non-member Functions (Extensions to existing TSHBandView)
+  namespace: UCommon
+  header: include/UCommon/SH.h
+  inline_impl: include/UCommon/SH.inl
+
+description: |
+  This contract defines new binary arithmetic operators for TSHBandView that return
+  TSHBandVector instances. These operators enable arithmetic operations on views
+  without requiring manual memory allocation. TSHBandVector participates in these
+  operations via implicit conversion to TSHBandView.
+
+new_operators:
+  - signature: template<int Order> TSHBandVector<Order> operator+(const TSHBandView<Order, true>& Lhs, const TSHBandView<Order, true>& Rhs) noexcept
+    description: Element-wise addition of two views, returns owning vector
+    preconditions: Lhs.GetData() != nullptr, Rhs.GetData() != nullptr
+    postconditions: Result[i] == Lhs[i] + Rhs[i] for all i in [0, 2*Order-1)
+    returns: New TSHBandVector<Order> instance
+    complexity: O(2*Order-1)
+    note: Accepts const views; TSHBandVector and mutable TSHBandView implicitly convert to const view
+    
+  - signature: template<int Order> TSHBandVector<Order> operator-(const TSHBandView<Order, true>& Lhs, const TSHBandView<Order, true>& Rhs) noexcept
+    description: Element-wise subtraction of two views, returns owning vector
+    preconditions: Lhs.GetData() != nullptr, Rhs.GetData() != nullptr
+    postconditions: Result[i] == Lhs[i] - Rhs[i] for all i in [0, 2*Order-1)
+    returns: New TSHBandVector<Order> instance
+    complexity: O(2*Order-1)
+    
+  - signature: template<int Order> TSHBandVector<Order> operator*(const TSHBandView<Order, true>& View, float Scalar) noexcept
+    description: Scalar multiplication (view * scalar), returns owning vector
+    preconditions: View.GetData() != nullptr
+    postconditions: Result[i] == View[i] * Scalar for all i in [0, 2*Order-1)
+    returns: New TSHBandVector<Order> instance
+    complexity: O(2*Order-1)
+    
+  - signature: template<int Order> TSHBandVector<Order> operator*(float Scalar, const TSHBandView<Order, true>& View) noexcept
+    description: Scalar multiplication (scalar * view), returns owning vector
+    preconditions: View.GetData() != nullptr
+    postconditions: Result[i] == Scalar * View[i] for all i in [0, 2*Order-1)
+    returns: New TSHBandVector<Order> instance
+    complexity: O(2*Order-1)
+    implementation: Forwards to operator*(View, Scalar)
+    
+  - signature: template<int Order> TSHBandVector<Order> operator/(const TSHBandView<Order, true>& View, float Scalar) noexcept
+    description: Scalar division, returns owning vector
+    preconditions: View.GetData() != nullptr, Scalar != 0.0f (undefined behavior if zero)
+    postconditions: Result[i] == View[i] / Scalar for all i in [0, 2*Order-1)
+    returns: New TSHBandVector<Order> instance
+    complexity: O(2*Order-1)
+
+usage_examples:
+  - description: View + View returns Vector
+    code: |
+      float data1[3] = {1.0f, 2.0f, 3.0f};
+      float data2[3] = {4.0f, 5.0f, 6.0f};
+      TSHBandView<2, false> view1(data1);
+      TSHBandView<2, false> view2(data2);
+      TSHBandVector<2> result = view1 + view2;  // {5.0f, 7.0f, 9.0f}
+      
+  - description: Vector + Vector returns Vector (via implicit conversion)
+    code: |
+      TSHBandVector<2> vec1 = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> vec2 = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> result = vec1 + vec2;  // Implicit conversion to views
+      
+  - description: View + Vector returns Vector (mixed operands)
+    code: |
+      float data[3] = {1.0f, 2.0f, 3.0f};
+      TSHBandView<2, false> view(data);
+      TSHBandVector<2> vec = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> result = view + vec;  // vec converts to view
+      
+  - description: Scalar multiplication (both orders)
+    code: |
+      TSHBandVector<2> vec = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> result1 = vec * 2.0f;  // {2.0f, 4.0f, 6.0f}
+      TSHBandVector<2> result2 = 3.0f * vec;  // {3.0f, 6.0f, 9.0f}
+      
+  - description: Chained operations
+    code: |
+      TSHBandVector<2> a = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> b = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> c = {7.0f, 8.0f, 9.0f};
+      TSHBandVector<2> result = (a + b) * 2.0f - c;  // All return vectors
+      
+  - description: Const-correctness
+    code: |
+      const TSHBandVector<2> vec1 = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> vec2 = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> result = vec1 + vec2;  // OK: vec1 converts to const view
+
+design_rationale:
+  - reason: Unified operator interface
+    explanation: Single set of operators handles all combinations (View+View, Vector+Vector, View+Vector, Vector+View)
+    
+  - reason: Implicit conversion strategy
+    explanation: TSHBandVector provides implicit conversion to TSHBandView, enabling participation in view-based operators
+    
+  - reason: Const view parameters
+    explanation: Operators accept const views (TSHBandView<Order, true>) to support both const and non-const operands
+    
+  - reason: Return owning vector
+    explanation: Binary operators return TSHBandVector (owning) rather than TSHBandView (non-owning) to avoid dangling references
+    
+  - reason: Non-member functions
+    explanation: Enables symmetric operations (e.g., scalar * view) and avoids modifying existing TSHBandView class definition
+    
+  - reason: Commutative scalar multiplication
+    explanation: Both vector*scalar and scalar*vector forms supported for mathematical intuitiveness
+
+compatibility:
+  - Existing TSHBandView compound assignment operators (operator+=, operator-=, etc.) remain unchanged
+  - Existing TSHBandView member functions remain unchanged
+  - Binary compatibility maintained with existing code
+  - No breaking changes to TSHBandView API
+
+notes:
+  - All operators are non-member functions in the UCommon namespace
+  - All operators are noexcept (no exceptions thrown)
+  - Division by zero results in undefined behavior (consistent with standard floating-point semantics)
+  - Null pointer dereference results in assertion failure in debug builds, undefined behavior in release builds
+  - These operators complement (not replace) existing compound assignment operators in TSHBandView
+

@@ -1,0 +1,142 @@
+# API Contract: TSHBandViewCommon<Derived, Order, bConst>
+
+metadata:
+  feature: SHBand View Design
+  version: 4.0.0
+  date: 2026-01-01
+  type: CRTP Base Class Template
+  namespace: UCommon
+
+template_parameters:
+  - name: Derived
+    type: typename
+    description: Derived class type (CRTP pattern)
+    constraints: Must inherit from TSHBandViewCommon
+  
+  - name: Order
+    type: int
+    description: SH band order (1-based)
+    constraints: Order >= 1
+    
+  - name: bConst
+    type: bool
+    description: Const-correctness flag
+    values: [false, true]
+
+type_aliases:
+  - name: DataType
+    definition: std::conditional_t<bConst, const float*, float*>
+    description: Pointer type (const or non-const based on bConst)
+    
+  - name: RGBType
+    definition: TSHBandViewRGB<Order, bConst>
+    description: Corresponding RGB view type
+
+constants:
+  - name: MaxSHOrder
+    type: int
+    value: Order
+    constexpr: true
+    description: Maximum SH order for this view
+    
+  - name: MaxSHBasis
+    type: int
+    value: 2 * Order - 1
+    constexpr: true
+    description: Number of SH basis functions in this band
+
+methods:
+  - name: operator[]
+    signature: const float& operator[](uint64_t Index) const noexcept
+    description: Const array access (available in all specializations)
+    parameters:
+      - name: Index
+        type: uint64_t
+        description: Coefficient index
+        constraints: Index < MaxSHBasis
+    returns:
+      type: const float&
+      description: Reference to coefficient at Index
+    preconditions:
+      - GetData() != nullptr
+      - Index < MaxSHBasis
+    postconditions: []
+    exceptions: none (noexcept)
+    complexity: O(1)
+    
+  - name: GetSize
+    signature: static constexpr uint64_t GetSize() noexcept
+    description: Get number of coefficients in this band
+    parameters: []
+    returns:
+      type: uint64_t
+      description: MaxSHBasis (2*Order-1)
+    preconditions: []
+    postconditions: []
+    exceptions: none (noexcept)
+    complexity: O(1)
+    
+  - name: Dot
+    signature: template<bool bOtherConst> float Dot(const TSHBandView<Order, bOtherConst>& Other) const noexcept
+    description: Compute dot product with another view
+    parameters:
+      - name: Other
+        type: const TSHBandView<Order, bOtherConst>&
+        description: Other view to dot with
+        constraints: Other.GetData() != nullptr
+    returns:
+      type: float
+      description: Sum of element-wise products
+    preconditions:
+      - GetData() != nullptr
+      - Other.GetData() != nullptr
+    postconditions: []
+    exceptions: none (noexcept)
+    complexity: O(MaxSHBasis)
+
+protected_methods:
+  - name: AsDerived
+    signature: Derived& AsDerived() noexcept
+    description: Cast to derived type (CRTP helper)
+    returns:
+      type: Derived&
+      description: Reference to derived object
+      
+  - name: AsDerived (const)
+    signature: const Derived& AsDerived() const noexcept
+    description: Const cast to derived type (CRTP helper)
+    returns:
+      type: const Derived&
+      description: Const reference to derived object
+      
+  - name: GetData
+    signature: DataType GetData() const noexcept
+    description: Get pointer to data (delegates to derived class)
+    returns:
+      type: DataType
+      description: Pointer to coefficient array
+    note: Implemented by calling AsDerived().GetData()
+
+invariants:
+  - MaxSHBasis == 2 * Order - 1
+  - Order >= 1
+
+notes:
+  - This is a CRTP base class and should not be instantiated directly
+  - Derived classes must implement GetData() method
+  - All methods are inline and have zero runtime overhead
+  - No virtual functions (zero-overhead polymorphism)
+
+examples:
+  - description: CRTP inheritance pattern
+    code: |
+      template<int Order>
+      class TSHBandView<Order, false> 
+        : public TSHBandViewCommon<TSHBandView<Order, false>, Order, false>
+      {
+        float* Data;
+      public:
+        float* GetData() noexcept { return Data; }
+        const float* GetData() const noexcept { return Data; }
+      };
+
