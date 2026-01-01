@@ -481,7 +481,7 @@ void TestTSHBandVector_DotProduct()
 	FSHBandVector2 Vec1 = { 1.0f, 2.0f, 3.0f };
 	FSHBandVector2 Vec2 = { 4.0f, 5.0f, 6.0f };
 
-	float DotResult = Dot(Vec1, Vec2);
+	float DotResult = FSHBandVector2::Dot(Vec1, Vec2);
 	float Expected = 1.0f * 4.0f + 2.0f * 5.0f + 3.0f * 6.0f; // = 4 + 10 + 18 = 32
 
 	if (IsNearlyEqual(DotResult, Expected))
