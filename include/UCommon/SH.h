@@ -35,8 +35,8 @@ namespace NameSpace \
 	template<int i> constexpr int SHIndexToM = UCommon::SHIndexToM<i>; \
 	template<int Order, bool bConst = false> using TSHBandView = UCommon::TSHBandView<Order, bConst>; \
 	template<int Order, bool bConst = false> using TSHBandViewRGB = UCommon::TSHBandViewRGB<Order, bConst>; \
-	template<int Order> using TSHBandVector = UCommon::TSHBandView<Order, false>; \
-	template<int Order> using TSHBandVectorRGB = UCommon::TSHBandViewRGB<Order, false>; \
+	template<int Order> using TSHBandVector = UCommon::TSHBandVector<Order>; \
+	template<int Order> using TSHBandVectorRGB = UCommon::TSHBandVectorRGB<Order>; \
 	template<int Order> using TSHVector = UCommon::TSHVector<Order>; \
 	template<int Order> using TSHVectorAC = UCommon::TSHVectorAC<Order>; \
 	template<int Order> using TSHVectorRGB = UCommon::TSHVectorRGB<Order>; \
@@ -699,6 +699,97 @@ namespace UCommon
 		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 	};
 
+	// Forward declarations for owning containers
+	template<int Order>
+	class TSHBandVector;
+
+	template<int Order>
+	class TSHBandVectorRGB;
+
+	/** Owning container for spherical harmonic band coefficients. */
+	template<int Order>
+	class TSHBandVector
+	{
+	public:
+		static constexpr int MaxSHOrder = Order;
+		static constexpr int MaxSHBasis = 2 * Order - 1;
+
+		// Constructors
+		TSHBandVector() noexcept;
+		TSHBandVector(std::initializer_list<float> InitList) noexcept;
+		TSHBandVector(const TSHBandVector& Other) noexcept;
+		TSHBandVector(TSHBandVector&& Other) noexcept;
+		template<bool bConst>
+		explicit TSHBandVector(const TSHBandView<Order, bConst>& View) noexcept;
+
+		// Assignment operators
+		TSHBandVector& operator=(const TSHBandVector& Other) noexcept;
+		TSHBandVector& operator=(TSHBandVector&& Other) noexcept;
+
+		// Element access
+		float& operator[](uint64_t Index) noexcept;
+		const float& operator[](uint64_t Index) const noexcept;
+
+		// Data access
+		float* GetData() noexcept { return Data; }
+		const float* GetData() const noexcept { return Data; }
+		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
+
+		// Compound assignment operators
+		TSHBandVector& operator+=(const TSHBandView<Order, true>& Other) noexcept;
+		TSHBandVector& operator-=(const TSHBandView<Order, true>& Other) noexcept;
+		TSHBandVector& operator*=(float Scalar) noexcept;
+		TSHBandVector& operator/=(float Scalar) noexcept;
+
+		// Dot product
+		template<bool bConst>
+		float Dot(const TSHBandView<Order, bConst>& Other) const noexcept;
+
+		// Implicit conversion to view
+		operator TSHBandView<Order, false>() noexcept;
+		operator TSHBandView<Order, true>() const noexcept;
+
+	private:
+		float Data[MaxSHBasis];
+	};
+
+	/** Owning container for RGB spherical harmonic band coefficients. */
+	template<int Order>
+	class TSHBandVectorRGB
+	{
+	public:
+		static constexpr int MaxSHOrder = Order;
+		static constexpr int MaxSHBasis = 2 * Order - 1;
+
+		TSHBandVector<Order> R;
+		TSHBandVector<Order> G;
+		TSHBandVector<Order> B;
+
+		// Constructors
+		TSHBandVectorRGB() noexcept;
+		TSHBandVectorRGB(const TSHBandVector<Order>& InR, const TSHBandVector<Order>& InG, const TSHBandVector<Order>& InB) noexcept;
+		TSHBandVectorRGB(const TSHBandVectorRGB& Other) noexcept;
+		TSHBandVectorRGB(TSHBandVectorRGB&& Other) noexcept;
+		template<bool bConst>
+		explicit TSHBandVectorRGB(const TSHBandViewRGB<Order, bConst>& View) noexcept;
+
+		// Assignment operators
+		TSHBandVectorRGB& operator=(const TSHBandVectorRGB& Other) noexcept;
+		TSHBandVectorRGB& operator=(TSHBandVectorRGB&& Other) noexcept;
+
+		// Compound assignment operators
+		TSHBandVectorRGB& operator+=(const TSHBandViewRGB<Order, true>& Other) noexcept;
+		TSHBandVectorRGB& operator-=(const TSHBandViewRGB<Order, true>& Other) noexcept;
+		TSHBandVectorRGB& operator*=(float Scalar) noexcept;
+		TSHBandVectorRGB& operator/=(float Scalar) noexcept;
+
+		// Implicit conversion to view
+		operator TSHBandViewRGB<Order, false>() noexcept;
+		operator TSHBandViewRGB<Order, true>() const noexcept;
+
+		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
+	};
+
 	/** A vector of spherical harmonic coefficients. */
 	template<int Order>
 	class TSHVector : public TSHVectorBase<TSHVector<Order>, Order, Order* Order>
@@ -993,15 +1084,15 @@ namespace UCommon
 	using FSHBandConstViewRGB4 = TSHBandViewRGB<4, true>;
 	using FSHBandConstViewRGB5 = TSHBandViewRGB<5, true>;
 
-	// Legacy aliases for backward compatibility (deprecated - use FSHBandView* instead)
-	using FSHBandVector2 = FSHBandView2;
-	using FSHBandVector3 = FSHBandView3;
-	using FSHBandVector4 = FSHBandView4;
-	using FSHBandVector5 = FSHBandView5;
-	using FSHBandVectorRGB2 = FSHBandViewRGB2;
-	using FSHBandVectorRGB3 = FSHBandViewRGB3;
-	using FSHBandVectorRGB4 = FSHBandViewRGB4;
-	using FSHBandVectorRGB5 = FSHBandViewRGB5;
+	// Owning container type aliases
+	using FSHBandVector2 = TSHBandVector<2>;
+	using FSHBandVector3 = TSHBandVector<3>;
+	using FSHBandVector4 = TSHBandVector<4>;
+	using FSHBandVector5 = TSHBandVector<5>;
+	using FSHBandVectorRGB2 = TSHBandVectorRGB<2>;
+	using FSHBandVectorRGB3 = TSHBandVectorRGB<3>;
+	using FSHBandVectorRGB4 = TSHBandVectorRGB<4>;
+	using FSHBandVectorRGB5 = TSHBandVectorRGB<5>;
 
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;
@@ -1043,6 +1134,91 @@ namespace UCommon
 	// RotateMatrix       : (3, 3)
 	// SHBand2RotateMatrix: (5, 5)
 	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix);
+
+	// ============================================================================
+	// Binary operators for TSHBandView (return TSHBandVector)
+	// ============================================================================
+
+	// Addition
+	template<int Order, bool bConst1, bool bConst2>
+	TSHBandVector<Order> operator+(const TSHBandView<Order, bConst1>& Lhs, const TSHBandView<Order, bConst2>& Rhs) noexcept;
+
+	// Subtraction
+	template<int Order, bool bConst1, bool bConst2>
+	TSHBandVector<Order> operator-(const TSHBandView<Order, bConst1>& Lhs, const TSHBandView<Order, bConst2>& Rhs) noexcept;
+
+	// Scalar multiplication (view * scalar)
+	template<int Order, bool bConst>
+	TSHBandVector<Order> operator*(const TSHBandView<Order, bConst>& View, float Scalar) noexcept;
+
+	// Scalar multiplication (scalar * view)
+	template<int Order, bool bConst>
+	TSHBandVector<Order> operator*(float Scalar, const TSHBandView<Order, bConst>& View) noexcept;
+
+	// Scalar division
+	template<int Order, bool bConst>
+	TSHBandVector<Order> operator/(const TSHBandView<Order, bConst>& View, float Scalar) noexcept;
+
+	// Non-member Dot function for TSHBandVector
+	template<int Order>
+	float Dot(const TSHBandVector<Order>& A, const TSHBandVector<Order>& B) noexcept;
+
+	// Binary operators for TSHBandVector (return TSHBandVector)
+	template<int Order>
+	TSHBandVector<Order> operator+(const TSHBandVector<Order>& Lhs, const TSHBandVector<Order>& Rhs) noexcept;
+
+	template<int Order>
+	TSHBandVector<Order> operator-(const TSHBandVector<Order>& Lhs, const TSHBandVector<Order>& Rhs) noexcept;
+
+	template<int Order>
+	TSHBandVector<Order> operator*(const TSHBandVector<Order>& Vec, float Scalar) noexcept;
+
+	template<int Order>
+	TSHBandVector<Order> operator*(float Scalar, const TSHBandVector<Order>& Vec) noexcept;
+
+	template<int Order>
+	TSHBandVector<Order> operator/(const TSHBandVector<Order>& Vec, float Scalar) noexcept;
+
+	// ============================================================================
+	// Binary operators for TSHBandViewRGB (return TSHBandVectorRGB)
+	// ============================================================================
+
+	// Addition
+	template<int Order, bool bConst1, bool bConst2>
+	TSHBandVectorRGB<Order> operator+(const TSHBandViewRGB<Order, bConst1>& Lhs, const TSHBandViewRGB<Order, bConst2>& Rhs) noexcept;
+
+	// Subtraction
+	template<int Order, bool bConst1, bool bConst2>
+	TSHBandVectorRGB<Order> operator-(const TSHBandViewRGB<Order, bConst1>& Lhs, const TSHBandViewRGB<Order, bConst2>& Rhs) noexcept;
+
+	// Scalar multiplication (view * scalar)
+	template<int Order, bool bConst>
+	TSHBandVectorRGB<Order> operator*(const TSHBandViewRGB<Order, bConst>& View, float Scalar) noexcept;
+
+	// Scalar multiplication (scalar * view)
+	template<int Order, bool bConst>
+	TSHBandVectorRGB<Order> operator*(float Scalar, const TSHBandViewRGB<Order, bConst>& View) noexcept;
+
+	// Scalar division
+	template<int Order, bool bConst>
+	TSHBandVectorRGB<Order> operator/(const TSHBandViewRGB<Order, bConst>& View, float Scalar) noexcept;
+
+	// Binary operators for TSHBandVectorRGB (return TSHBandVectorRGB)
+	template<int Order>
+	TSHBandVectorRGB<Order> operator+(const TSHBandVectorRGB<Order>& Lhs, const TSHBandVectorRGB<Order>& Rhs) noexcept;
+
+	template<int Order>
+	TSHBandVectorRGB<Order> operator-(const TSHBandVectorRGB<Order>& Lhs, const TSHBandVectorRGB<Order>& Rhs) noexcept;
+
+	template<int Order>
+	TSHBandVectorRGB<Order> operator*(const TSHBandVectorRGB<Order>& Vec, float Scalar) noexcept;
+
+	template<int Order>
+	TSHBandVectorRGB<Order> operator*(float Scalar, const TSHBandVectorRGB<Order>& Vec) noexcept;
+
+	template<int Order>
+	TSHBandVectorRGB<Order> operator/(const TSHBandVectorRGB<Order>& Vec, float Scalar) noexcept;
+
 } // namespace UCommon
 
 UBPA_UCOMMON_SH_TO_NAMESPACE(UCommonTest)
