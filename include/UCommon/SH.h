@@ -561,6 +561,20 @@ namespace UCommon
 		TSHBandVector<Order> operator*(float Scalar) const noexcept;
 		TSHBandVector<Order> operator/(float Scalar) const noexcept;
 
+		// Multiply by FVector3f to create RGB band (each component multiplied by R, G, B)
+		TSHBandVectorRGB<Order> operator*(const FVector3f& Color) const noexcept
+		{
+			const Derived& derived = AsDerived();
+			TSHBandVectorRGB<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result.R[i] = derived[i] * Color.X;
+				Result.G[i] = derived[i] * Color.Y;
+				Result.B[i] = derived[i] * Color.Z;
+			}
+			return Result;
+		}
+
 		// GetLinearVector - only available for Order 2 (L1 band)
 		template<int O = Order>
 		std::enable_if_t<O == 2, FVector3f> GetLinearVector() const
@@ -572,28 +586,6 @@ namespace UCommon
 			// Data[2] = L1, m=1
 			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
 			return FVector3f{ -Derived[2], -Derived[0], Derived[1] };
-		}
-
-		// Type conversion (similar to TSHVectorCommon::As)
-		template<typename U>
-		U& As()&
-		{
-			static_assert(sizeof(U) == sizeof(Derived), "The size of U is not same with Derived");
-			return *reinterpret_cast<U*>(&AsDerived());
-		}
-
-		template<typename U>
-		const U& As() const&
-		{
-			return const_cast<TSHBandCommon*>(this)->As<U>();
-		}
-
-		template<typename U>
-		const U&& As() const&&
-		{
-			static_assert(sizeof(U) == sizeof(Derived), "The size of U is not same with Derived");
-			static_assert(alignof(Derived) % alignof(U) == 0, "The alignment of U is not compatible with Derived");
-			return reinterpret_cast<const U&&>(AsDerived());
 		}
 
 	protected:
@@ -714,6 +706,8 @@ namespace UCommon
 			return (&derived.R)[Index];
 		}
 
+		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
+
 	protected:
 		~TSHBandRGBCommon() = default;
 	};
@@ -723,6 +717,7 @@ namespace UCommon
 	class TSHBandViewRGBCommon : public TSHBandRGBCommon<TSHBandViewRGBCommon<Order, bConst>, Order>
 	{
 	public:
+		using Super = TSHBandRGBCommon<TSHBandViewRGBCommon<Order, bConst>, Order>;
 		using ViewType = TSHBandView<Order, bConst>;
 		using DataType = typename ViewType::DataType;
 
@@ -768,8 +763,6 @@ namespace UCommon
 		TSHBandVectorRGB<Order> operator-(TSHBandConstViewRGB<Order> Other) const noexcept;
 		TSHBandVectorRGB<Order> operator*(float Scalar) const noexcept;
 		TSHBandVectorRGB<Order> operator/(float Scalar) const noexcept;
-
-		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 	};
 
 	// TSHBandViewRGB<Order, false> - Mutable RGB view specialization
@@ -847,6 +840,28 @@ namespace UCommon
 		operator TSHBandView<Order, false>() noexcept;
 		operator TSHBandConstView<Order>() const noexcept;
 
+		// Type conversion (similar to TSHVectorCommon::As)
+		template<typename U>
+		U& As()&
+		{
+			static_assert(sizeof(U) == sizeof(TSHBandVector), "The size of U is not same with TSHBandVector");
+			return *reinterpret_cast<U*>(this);
+		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TSHBandVector*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U&& As() const&&
+		{
+			static_assert(sizeof(U) == sizeof(TSHBandVector), "The size of U is not same with TSHBandVector");
+			static_assert(alignof(TSHBandVector) % alignof(U) == 0, "The alignment of U is not compatible with TSHBandVector");
+			return reinterpret_cast<const U&&>(*this);
+		}
+
 		// Note: GetLinearVector is inherited from TSHBandCommon
 
 	private:
@@ -889,8 +904,6 @@ namespace UCommon
 		// Implicit conversion to view
 		operator TSHBandViewRGB<Order, false>() noexcept;
 		operator TSHBandConstViewRGB<Order>() const noexcept;
-
-		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 	};
 
 	// Scalar multiplication (scalar * vector) - non-member for commutativity
@@ -947,6 +960,12 @@ namespace UCommon
 			{
 				Super::V[i] = Band[i - TSHVector<Order - 1>::Super::MaxSHBasis];
 			}
+		}
+
+		/** Returns the DC component (L0, m=0) */
+		float DC() const noexcept
+		{
+			return Super::V[0];
 		}
 
 		template<int BandOrder>
@@ -1062,6 +1081,12 @@ namespace UCommon
 			Super::R = TSHVector<Order>(Other.R, Band.R);
 			Super::G = TSHVector<Order>(Other.G, Band.G);
 			Super::B = TSHVector<Order>(Other.B, Band.B);
+		}
+
+		/** Returns the DC component (L0, m=0) as RGB */
+		FVector3f DC() const noexcept
+		{
+			return FVector3f{ Super::R.DC(), Super::G.DC(), Super::B.DC() };
 		}
 
 		template<int BandOrder>
@@ -1255,6 +1280,13 @@ namespace UCommon
 		return View * Scalar;
 	}
 
+	// FVector3f multiplication (color * view) - non-member for commutativity
+	template<int Order, bool bConst>
+	inline TSHBandVectorRGB<Order> operator*(const FVector3f& Color, TSHBandView<Order, bConst> View) noexcept
+	{
+		return View * Color;
+	}
+
 	// Note: Dot function is now a static member of TSHBandCommon
 	// Use TSHBandCommon<Derived, Order>::Dot(A, B) or the member function A.Dot(B)
 
@@ -1264,6 +1296,14 @@ namespace UCommon
 	inline TSHBandVector<Order> operator*(float Scalar, const TSHBandVector<Order>& Vec) noexcept
 	{
 		return Vec * Scalar;
+	}
+
+	// FVector3f multiplication (color * vector) - non-member for commutativity
+	// Note: Cannot rely on implicit conversion to TSHBandConstView because template argument deduction doesn't consider user-defined conversions
+	template<int Order>
+	inline TSHBandVectorRGB<Order> operator*(const FVector3f& Color, const TSHBandVector<Order>& Vec) noexcept
+	{
+		return Vec * Color;
 	}
 
 	// ============================================================================
