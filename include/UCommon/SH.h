@@ -504,7 +504,7 @@ namespace UCommon
 	};
 
 	// Forward declarations for CRTP base class
-	template<typename Derived, int Order>
+	template<typename DerivedType, int Order>
 	class TSHBandCommon;
 
 	template<int Order, bool bConst = false>
@@ -528,7 +528,7 @@ namespace UCommon
 
 	// Common base class for TSHBandView and TSHBandVector (const-agnostic operations)
 	// Uses CRTP to avoid virtual functions and maintain memory layout
-	template<typename Derived, int Order>
+	template<typename DerivedType, int Order>
 	class TSHBandCommon
 	{
 	public:
@@ -553,7 +553,7 @@ namespace UCommon
 			return Result;
 		}
 
-		// Common operations (implemented in terms of Derived class's GetData() and operator[])
+		// Common operations (implemented in terms of DerivedType class's GetData() and operator[])
 		float Dot(TSHBandConstView<Order> Other) const noexcept;
 
 		TSHBandVector<Order> operator+(TSHBandConstView<Order> Other) const noexcept;
@@ -564,13 +564,13 @@ namespace UCommon
 		// Multiply by FVector3f to create RGB band (each component multiplied by R, G, B)
 		TSHBandVectorRGB<Order> operator*(const FVector3f& Color) const noexcept
 		{
-			const Derived& derived = AsDerived();
+			const DerivedType& Derived = AsDerivedType();
 			TSHBandVectorRGB<Order> Result;
 			for (uint64_t i = 0; i < MaxSHBasis; ++i)
 			{
-				Result.R[i] = derived[i] * Color.X;
-				Result.G[i] = derived[i] * Color.Y;
-				Result.B[i] = derived[i] * Color.Z;
+				Result.R[i] = Derived[i] * Color.X;
+				Result.G[i] = Derived[i] * Color.Y;
+				Result.B[i] = Derived[i] * Color.Z;
 			}
 			return Result;
 		}
@@ -579,19 +579,19 @@ namespace UCommon
 		template<int O = Order>
 		std::enable_if_t<O == 2, FVector3f> GetLinearVector() const
 		{
-			const Derived& Derived = AsDerived();
+			const DerivedType& DerivedType = AsDerivedType();
 			// For Order 2 band, we have 3 coefficients (2*2-1 = 3)
 			// Data[0] = L1, m=-1
 			// Data[1] = L1, m=0
 			// Data[2] = L1, m=1
 			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
-			return FVector3f{ -Derived[2], -Derived[0], Derived[1] };
+			return FVector3f{ -DerivedType[2], -DerivedType[0], DerivedType[1] };
 		}
 
 	protected:
 		// CRTP helper methods
-		Derived& AsDerived() noexcept { return static_cast<Derived&>(*this); }
-		const Derived& AsDerived() const noexcept { return static_cast<const Derived&>(*this); }
+		DerivedType& AsDerivedType() noexcept { return static_cast<DerivedType&>(*this); }
+		const DerivedType& AsDerivedType() const noexcept { return static_cast<const DerivedType&>(*this); }
 
 		~TSHBandCommon() = default;  // Protected destructor to prevent deletion through base pointer
 	};
@@ -670,40 +670,63 @@ namespace UCommon
 	};
 
 	// Common base class for RGB band types (provides Dot functionality)
-	template<typename Derived, int Order>
+	template<typename DerivedType, int Order>
 	class TSHBandRGBCommon
 	{
 	public:
 		static constexpr int MaxSHOrder = Order;
 		static constexpr int MaxSHBasis = 2 * Order - 1;
 
-		// Dot product with single-channel band - static version
+		// Dot product with single-channel band - static version (returns RGB result)
 		static FVector3f Dot(TSHBandConstViewRGB<Order> A, TSHBandConstView<Order> B) noexcept
 		{
 			return FVector3f{ A.R.Dot(B), A.G.Dot(B), A.B.Dot(B) };
 		}
 
-		// Dot product with single-channel band (returns RGB result)
+		// Dot product with single-channel band - member version (returns RGB result)
 		FVector3f Dot(TSHBandConstView<Order> Other) const noexcept
 		{
-			const Derived& derived = static_cast<const Derived&>(*this);
-			return FVector3f{ derived.R.Dot(Other), derived.G.Dot(Other), derived.B.Dot(Other) };
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			return FVector3f{ Derived.R.Dot(Other), Derived.G.Dot(Other), Derived.B.Dot(Other) };
+		}
+
+		// Dot product with FVector3f - static version (returns single-channel band)
+		static TSHBandVector<Order> Dot(TSHBandConstViewRGB<Order> A, const FVector3f& Color) noexcept
+		{
+			TSHBandVector<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result[i] = A.R[i] * Color.X + A.G[i] * Color.Y + A.B[i] * Color.Z;
+			}
+			return Result;
+		}
+
+		// Dot product with FVector3f - member version (returns single-channel band)
+		TSHBandVector<Order> Dot(const FVector3f& Color) const noexcept
+		{
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			TSHBandVector<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result[i] = Derived.R[i] * Color.X + Derived.G[i] * Color.Y + Derived.B[i] * Color.Z;
+			}
+			return Result;
 		}
 
 		// Channel access via operator[] (similar to TSHVectorRGBCommon)
-		// Note: Return type depends on derived class (could be TSHBandView or TSHBandVector)
+		// Note: Return type depends on Derived class (could be TSHBandView or TSHBandVector)
 		auto& operator[](uint64_t Index) noexcept
 		{
 			UBPA_UCOMMON_ASSERT(Index < 3);
-			Derived& derived = static_cast<Derived&>(*this);
-			return (&derived.R)[Index];
+			DerivedType& Derived = static_cast<DerivedType&>(*this);
+			return (&Derived.R)[Index];
 		}
 
 		auto& operator[](uint64_t Index) const noexcept
 		{
 			UBPA_UCOMMON_ASSERT(Index < 3);
-			const Derived& derived = static_cast<const Derived&>(*this);
-			return (&derived.R)[Index];
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			return (&Derived.R)[Index];
 		}
 
 		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
@@ -1288,7 +1311,7 @@ namespace UCommon
 	}
 
 	// Note: Dot function is now a static member of TSHBandCommon
-	// Use TSHBandCommon<Derived, Order>::Dot(A, B) or the member function A.Dot(B)
+	// Use TSHBandCommon<DerivedType, Order>::Dot(A, B) or the member function A.Dot(B)
 
 	// Scalar multiplication (scalar * vector) - non-member for commutativity
 	// Note: Cannot rely on implicit conversion to TSHBandConstView because template argument deduction doesn't consider user-defined conversions
