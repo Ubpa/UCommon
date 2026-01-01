@@ -537,6 +537,9 @@ namespace UCommon
 
 		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 
+		// Returns the value of the SH basis for this band at the point on the sphere defined by the unit vector Vector
+		static TSHBandVector<Order> SHBasisFunction(const FVector3f& Vector);
+
 		// Common operations (implemented in terms of derived class's GetData() and operator[])
 		float Dot(TSHBandConstView<Order> Other) const noexcept;
 
@@ -730,6 +733,9 @@ namespace UCommon
 	template<int Order>
 	class TSHBandVector : public TSHBandCommon<TSHBandVector<Order>, Order>
 	{
+		// Allow base class to access Data for SHBasisFunction
+		friend class TSHBandCommon<TSHBandVector<Order>, Order>;
+
 	public:
 		// Constructors
 		TSHBandVector() noexcept;
