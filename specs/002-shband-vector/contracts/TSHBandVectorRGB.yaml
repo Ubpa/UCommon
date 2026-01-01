@@ -1,0 +1,222 @@
+# API Contract: TSHBandVectorRGB<Order>
+
+metadata:
+  feature: TSHBandVector - Owning SH Band Storage
+  version: 1.0.0
+  date: 2026-01-01
+  type: Class Template
+  namespace: UCommon
+  header: include/UCommon/SH.h
+  inline_impl: include/UCommon/SH.inl
+
+template_parameters:
+  - name: Order
+    type: int
+    description: SH band order (1-based)
+    constraints: Order >= 1
+    compile_time: true
+
+class_definition:
+  name: TSHBandVectorRGB<Order>
+  description: Owning container for RGB color data as SH coefficients
+  storage: Three independent TSHBandVector<Order> members (R, G, B)
+  semantics: Value semantics (deep copy, move support)
+  
+constants:
+  - name: MaxSHOrder
+    type: static constexpr int
+    value: Order
+    description: Maximum SH order for this band
+    
+  - name: MaxSHBasis
+    type: static constexpr int
+    value: 2*Order-1
+    description: Number of coefficients per channel
+
+members:
+  - name: R
+    type: TSHBandVector<Order>
+    access: public
+    description: Red channel coefficients
+    
+  - name: G
+    type: TSHBandVector<Order>
+    access: public
+    description: Green channel coefficients
+    
+  - name: B
+    type: TSHBandVector<Order>
+    access: public
+    description: Blue channel coefficients
+
+constructors:
+  - signature: TSHBandVectorRGB() noexcept
+    description: Default constructor, zero-initializes all channels
+    preconditions: None
+    postconditions: R, G, B are all zero-initialized
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB(const TSHBandVector<Order>& InR, const TSHBandVector<Order>& InG, const TSHBandVector<Order>& InB) noexcept
+    description: Construct from three vectors
+    preconditions: None
+    postconditions: R == InR, G == InG, B == InB (deep copy)
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB(const TSHBandVectorRGB& Other) noexcept
+    description: Copy constructor, deep copy all channels
+    preconditions: None
+    postconditions: R == Other.R, G == Other.G, B == Other.B
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB(TSHBandVectorRGB&& Other) noexcept
+    description: Move constructor
+    preconditions: None
+    postconditions: R, G, B contain Other's values
+    complexity: O(3 * MaxSHBasis)
+    note: Move is equivalent to copy for stack-allocated arrays
+    
+  - signature: template<bool bConst> explicit TSHBandVectorRGB(const TSHBandViewRGB<Order, bConst>& View) noexcept
+    description: Construct from RGB view, deep copy all channels
+    preconditions: View.R.GetData() != nullptr, View.G.GetData() != nullptr, View.B.GetData() != nullptr
+    postconditions: R[i] == View.R[i], G[i] == View.G[i], B[i] == View.B[i] for all i
+    complexity: O(3 * MaxSHBasis)
+
+assignment_operators:
+  - signature: TSHBandVectorRGB& operator=(const TSHBandVectorRGB& Other) noexcept
+    description: Copy assignment, deep copy all channels
+    preconditions: None
+    postconditions: R == Other.R, G == Other.G, B == Other.B
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB& operator=(TSHBandVectorRGB&& Other) noexcept
+    description: Move assignment
+    preconditions: None
+    postconditions: R, G, B contain Other's values
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+
+arithmetic_operators:
+  - signature: TSHBandVectorRGB operator+(const TSHBandVectorRGB& Other) const noexcept
+    description: Channel-wise addition, returns new instance
+    preconditions: None
+    postconditions: Result.R == R + Other.R, Result.G == G + Other.G, Result.B == B + Other.B
+    returns: New TSHBandVectorRGB instance
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB operator-(const TSHBandVectorRGB& Other) const noexcept
+    description: Channel-wise subtraction, returns new instance
+    preconditions: None
+    postconditions: Result.R == R - Other.R, Result.G == G - Other.G, Result.B == B - Other.B
+    returns: New TSHBandVectorRGB instance
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB operator*(float Scalar) const noexcept
+    description: Scalar multiplication (all channels), returns new instance
+    preconditions: None
+    postconditions: Result.R == R * Scalar, Result.G == G * Scalar, Result.B == B * Scalar
+    returns: New TSHBandVectorRGB instance
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: friend TSHBandVectorRGB operator*(float Scalar, const TSHBandVectorRGB& Vec) noexcept
+    description: Scalar multiplication (commutative), returns new instance
+    preconditions: None
+    postconditions: Result.R == Scalar * Vec.R, Result.G == Scalar * Vec.G, Result.B == Scalar * Vec.B
+    returns: New TSHBandVectorRGB instance
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: TSHBandVectorRGB operator/(float Scalar) const noexcept
+    description: Scalar division (all channels), returns new instance
+    preconditions: Scalar != 0.0f (undefined behavior if zero)
+    postconditions: Result.R == R / Scalar, Result.G == G / Scalar, Result.B == B / Scalar
+    returns: New TSHBandVectorRGB instance
+    complexity: O(3 * MaxSHBasis)
+
+compound_assignment_operators:
+  - signature: template<bool bConst> TSHBandVectorRGB& operator+=(const TSHBandViewRGB<Order, bConst>& Other) noexcept
+    description: In-place channel-wise addition
+    preconditions: Other.R.GetData() != nullptr, Other.G.GetData() != nullptr, Other.B.GetData() != nullptr
+    postconditions: R += Other.R, G += Other.G, B += Other.B
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+    
+  - signature: template<bool bConst> TSHBandVectorRGB& operator-=(const TSHBandViewRGB<Order, bConst>& Other) noexcept
+    description: In-place channel-wise subtraction
+    preconditions: Other.R.GetData() != nullptr, Other.G.GetData() != nullptr, Other.B.GetData() != nullptr
+    postconditions: R -= Other.R, G -= Other.G, B -= Other.B
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+
+  - signature: TSHBandVectorRGB& operator*=(float Scalar) noexcept
+    description: In-place scalar multiplication (all channels)
+    preconditions: None
+    postconditions: R *= Scalar, G *= Scalar, B *= Scalar
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+
+  - signature: TSHBandVectorRGB& operator/=(float Scalar) noexcept
+    description: In-place scalar division (all channels)
+    preconditions: Scalar != 0.0f (undefined behavior if zero)
+    postconditions: R /= Scalar, G /= Scalar, B /= Scalar
+    returns: *this
+    complexity: O(3 * MaxSHBasis)
+
+conversion_operators:
+  - signature: operator TSHBandViewRGB<Order, false>() noexcept
+    description: Implicit conversion to mutable RGB view
+    preconditions: None
+    postconditions: None
+    returns: TSHBandViewRGB<Order, false> with views to R, G, B
+    complexity: O(1)
+
+  - signature: operator TSHBandViewRGB<Order, true>() const noexcept
+    description: Implicit conversion to const RGB view
+    preconditions: None
+    postconditions: None
+    returns: TSHBandViewRGB<Order, true> with const views to R, G, B
+    complexity: O(1)
+
+usage_examples:
+  - description: Default construction
+    code: |
+      TSHBandVectorRGB<2> rgb;  // All channels zero-initialized
+
+  - description: Construct from three vectors
+    code: |
+      TSHBandVector<2> r = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> g = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> b = {7.0f, 8.0f, 9.0f};
+      TSHBandVectorRGB<2> rgb(r, g, b);
+
+  - description: Channel-wise arithmetic
+    code: |
+      TSHBandVectorRGB<2> rgb1, rgb2;
+      TSHBandVectorRGB<2> rgb3 = rgb1 + rgb2;  // Channel-wise addition
+      TSHBandVectorRGB<2> rgb4 = rgb1 * 2.0f;  // Scale all channels
+
+  - description: Individual channel access
+    code: |
+      TSHBandVectorRGB<2> rgb;
+      rgb.R[0] = 1.0f;  // Set first coefficient of red channel
+      rgb.G[1] = 0.5f;  // Set second coefficient of green channel
+      rgb.B[2] = 0.25f; // Set third coefficient of blue channel
+
+  - description: Implicit conversion to view
+    code: |
+      TSHBandVectorRGB<2> rgb;
+      TSHBandViewRGB<2, false> view = rgb;  // Implicit conversion
+      view.R[0] = 10.0f;  // Modifies rgb.R[0]
+
+  - description: Construct from view (deep copy)
+    code: |
+      float r_data[3], g_data[3], b_data[3];
+      TSHBandViewRGB<2, false> view(r_data, g_data, b_data);
+      TSHBandVectorRGB<2> rgb(view);  // Deep copy, rgb owns its own storage
+
+notes:
+  - All arithmetic operations are applied channel-wise (independently to R, G, B)
+  - Binary operators are implemented via member TSHBandVector operators
+  - Implicit conversion to TSHBandViewRGB enables interoperability with view-based APIs
+  - All operations are noexcept (no exceptions thrown)
+  - Public R, G, B members allow direct channel manipulation
+

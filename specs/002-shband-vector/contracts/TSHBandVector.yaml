@@ -1,0 +1,254 @@
+# API Contract: TSHBandVector<Order>
+
+metadata:
+  feature: TSHBandVector - Owning SH Band Storage
+  version: 1.0.0
+  date: 2026-01-01
+  type: Class Template
+  namespace: UCommon
+  header: include/UCommon/SH.h
+  inline_impl: include/UCommon/SH.inl
+
+template_parameters:
+  - name: Order
+    type: int
+    description: SH band order (1-based)
+    constraints: Order >= 1
+    compile_time: true
+
+class_definition:
+  name: TSHBandVector<Order>
+  description: Owning container for spherical harmonic band coefficients
+  storage: Stack-allocated fixed-size array (float Data[2*Order-1])
+  semantics: Value semantics (deep copy, move support)
+  
+constants:
+  - name: MaxSHOrder
+    type: static constexpr int
+    value: Order
+    description: Maximum SH order for this band
+    
+  - name: MaxSHBasis
+    type: static constexpr int
+    value: 2*Order-1
+    description: Number of coefficients in this band
+
+constructors:
+  - signature: TSHBandVector() noexcept
+    description: Default constructor, zero-initializes all coefficients
+    preconditions: None
+    postconditions: All Data[i] == 0.0f for i in [0, MaxSHBasis)
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector(std::initializer_list<float> InitList) noexcept
+    description: Initializer list constructor
+    preconditions: InitList.size() == MaxSHBasis
+    postconditions: Data[i] == InitList[i] for all i
+    validation: UBPA_UCOMMON_ASSERT(InitList.size() == MaxSHBasis)
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector(const TSHBandVector& Other) noexcept
+    description: Copy constructor, deep copy
+    preconditions: None
+    postconditions: Data[i] == Other.Data[i] for all i
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector(TSHBandVector&& Other) noexcept
+    description: Move constructor
+    preconditions: None
+    postconditions: Data contains Other's values, Other in valid but unspecified state
+    complexity: O(MaxSHBasis) (trivial copy for stack array)
+    note: Move is equivalent to copy for stack-allocated arrays
+    
+  - signature: template<bool bConst> explicit TSHBandVector(const TSHBandView<Order, bConst>& View) noexcept
+    description: Construct from view, deep copy
+    preconditions: View.GetData() != nullptr
+    postconditions: Data[i] == View[i] for all i
+    validation: UBPA_UCOMMON_ASSERT(View.GetData() != nullptr) in debug builds
+    complexity: O(MaxSHBasis)
+
+assignment_operators:
+  - signature: TSHBandVector& operator=(const TSHBandVector& Other) noexcept
+    description: Copy assignment, deep copy
+    preconditions: None
+    postconditions: Data[i] == Other.Data[i] for all i
+    returns: *this
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector& operator=(TSHBandVector&& Other) noexcept
+    description: Move assignment
+    preconditions: None
+    postconditions: Data contains Other's values
+    returns: *this
+    complexity: O(MaxSHBasis)
+
+element_access:
+  - signature: float& operator[](uint64_t Index) noexcept
+    description: Mutable element access
+    preconditions: Index < MaxSHBasis
+    postconditions: None
+    returns: Reference to Data[Index]
+    validation: UBPA_UCOMMON_ASSERT(Index < MaxSHBasis)
+    complexity: O(1)
+    
+  - signature: const float& operator[](uint64_t Index) const noexcept
+    description: Const element access
+    preconditions: Index < MaxSHBasis
+    postconditions: None
+    returns: Const reference to Data[Index]
+    validation: UBPA_UCOMMON_ASSERT(Index < MaxSHBasis)
+    complexity: O(1)
+    
+  - signature: float* GetData() noexcept
+    description: Get mutable pointer to underlying array
+    preconditions: None
+    postconditions: None
+    returns: Pointer to Data[0]
+    complexity: O(1)
+    
+  - signature: const float* GetData() const noexcept
+    description: Get const pointer to underlying array
+    preconditions: None
+    postconditions: None
+    returns: Const pointer to Data[0]
+    complexity: O(1)
+    
+  - signature: static constexpr uint64_t GetSize() noexcept
+    description: Get number of coefficients
+    preconditions: None
+    postconditions: None
+    returns: MaxSHBasis
+    complexity: O(1)
+
+arithmetic_operators:
+  - signature: TSHBandVector operator+(const TSHBandVector& Other) const noexcept
+    description: Element-wise addition, returns new instance
+    preconditions: None
+    postconditions: Result[i] == (*this)[i] + Other[i] for all i
+    returns: New TSHBandVector instance
+    complexity: O(MaxSHBasis)
+    note: Implemented via implicit conversion to TSHBandView and non-member operator+
+    
+  - signature: TSHBandVector operator-(const TSHBandVector& Other) const noexcept
+    description: Element-wise subtraction, returns new instance
+    preconditions: None
+    postconditions: Result[i] == (*this)[i] - Other[i] for all i
+    returns: New TSHBandVector instance
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector operator*(float Scalar) const noexcept
+    description: Scalar multiplication, returns new instance
+    preconditions: None
+    postconditions: Result[i] == (*this)[i] * Scalar for all i
+    returns: New TSHBandVector instance
+    complexity: O(MaxSHBasis)
+    
+  - signature: friend TSHBandVector operator*(float Scalar, const TSHBandVector& Vec) noexcept
+    description: Scalar multiplication (commutative), returns new instance
+    preconditions: None
+    postconditions: Result[i] == Scalar * Vec[i] for all i
+    returns: New TSHBandVector instance
+    complexity: O(MaxSHBasis)
+    
+  - signature: TSHBandVector operator/(float Scalar) const noexcept
+    description: Scalar division, returns new instance
+    preconditions: Scalar != 0.0f (undefined behavior if zero)
+    postconditions: Result[i] == (*this)[i] / Scalar for all i
+    returns: New TSHBandVector instance
+    complexity: O(MaxSHBasis)
+
+compound_assignment_operators:
+  - signature: template<bool bConst> TSHBandVector& operator+=(const TSHBandView<Order, bConst>& Other) noexcept
+    description: In-place element-wise addition
+    preconditions: Other.GetData() != nullptr
+    postconditions: Data[i] += Other[i] for all i
+    returns: *this
+    complexity: O(MaxSHBasis)
+
+  - signature: template<bool bConst> TSHBandVector& operator-=(const TSHBandView<Order, bConst>& Other) noexcept
+    description: In-place element-wise subtraction
+    preconditions: Other.GetData() != nullptr
+    postconditions: Data[i] -= Other[i] for all i
+    returns: *this
+    complexity: O(MaxSHBasis)
+
+  - signature: TSHBandVector& operator*=(float Scalar) noexcept
+    description: In-place scalar multiplication
+    preconditions: None
+    postconditions: Data[i] *= Scalar for all i
+    returns: *this
+    complexity: O(MaxSHBasis)
+
+  - signature: TSHBandVector& operator/=(float Scalar) noexcept
+    description: In-place scalar division
+    preconditions: Scalar != 0.0f (undefined behavior if zero)
+    postconditions: Data[i] /= Scalar for all i
+    returns: *this
+    complexity: O(MaxSHBasis)
+
+conversion_operators:
+  - signature: operator TSHBandView<Order, false>() noexcept
+    description: Implicit conversion to mutable view
+    preconditions: None
+    postconditions: None
+    returns: TSHBandView<Order, false> pointing to Data
+    complexity: O(1)
+
+  - signature: operator TSHBandView<Order, true>() const noexcept
+    description: Implicit conversion to const view
+    preconditions: None
+    postconditions: None
+    returns: TSHBandView<Order, true> pointing to Data
+    complexity: O(1)
+
+other_operations:
+  - signature: template<bool bConst> float Dot(const TSHBandView<Order, bConst>& Other) const noexcept
+    description: Compute dot product with another band
+    preconditions: Other.GetData() != nullptr
+    postconditions: None
+    returns: Sum of Data[i] * Other[i] for all i
+    complexity: O(MaxSHBasis)
+
+usage_examples:
+  - description: Default construction and initialization
+    code: |
+      TSHBandVector<2> vec;  // Zero-initialized, 3 coefficients
+
+  - description: Initializer list construction
+    code: |
+      TSHBandVector<2> vec = {1.0f, 2.0f, 3.0f};  // Exactly 3 elements required
+
+  - description: Arithmetic operations
+    code: |
+      TSHBandVector<2> a = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> b = {4.0f, 5.0f, 6.0f};
+      TSHBandVector<2> c = a + b;  // {5.0f, 7.0f, 9.0f}
+      TSHBandVector<2> d = a * 2.0f;  // {2.0f, 4.0f, 6.0f}
+      TSHBandVector<2> e = 3.0f * a;  // {3.0f, 6.0f, 9.0f}
+
+  - description: Implicit conversion to view
+    code: |
+      TSHBandVector<2> vec = {1.0f, 2.0f, 3.0f};
+      TSHBandView<2, false> view = vec;  // Implicit conversion
+      view[0] = 10.0f;  // Modifies vec.Data[0]
+
+  - description: Construct from view (deep copy)
+    code: |
+      float data[3] = {1.0f, 2.0f, 3.0f};
+      TSHBandView<2, false> view(data);
+      TSHBandVector<2> vec(view);  // Deep copy, vec owns its own storage
+
+  - description: Dot product
+    code: |
+      TSHBandVector<2> a = {1.0f, 2.0f, 3.0f};
+      TSHBandVector<2> b = {4.0f, 5.0f, 6.0f};
+      float dot = a.Dot(b);  // 1*4 + 2*5 + 3*6 = 32.0f
+
+notes:
+  - Binary operators (operator+, operator-, etc.) are implemented as non-member functions accepting TSHBandView parameters
+  - TSHBandVector participates in these operations via implicit conversion to TSHBandView
+  - Move operations are equivalent to copy for stack-allocated arrays (no performance benefit)
+  - All operations are noexcept (no exceptions thrown)
+  - Division by zero results in undefined behavior (consistent with standard floating-point semantics)
+  - Index out of bounds results in assertion failure in debug builds, undefined behavior in release builds
+
