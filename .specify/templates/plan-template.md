@@ -1,192 +1,104 @@
-# Plan: [FEATURE_NAME]
+# Implementation Plan: [FEATURE]
 
-**Created**: [YYYY-MM-DD]
-**Author**: [AUTHOR_NAME]
-**Status**: [Draft | In Review | Approved | Implemented]
-**Related Issues**: [#ISSUE_NUMBER]
+**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
+**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
----
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
-## Overview
+## Summary
 
-### Purpose
-[Brief description of what this plan aims to achieve]
+[Extract from feature spec: primary requirement + technical approach from research]
 
-### Scope
-[Define what is included and excluded from this plan]
+## Technical Context
 
-### Success Criteria
-- [ ] [Criterion 1]
-- [ ] [Criterion 2]
-- [ ] [Criterion 3]
+<!--
+  ACTION REQUIRED: Replace the content in this section with the technical details
+  for the project. The structure here is presented in advisory capacity to guide
+  the iteration process.
+-->
 
----
+**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
+**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
+**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
+**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
+**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Project Type**: [single/web/mobile - determines source structure]  
+**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
+**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
+**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
 
-## Constitution Compliance Check
+## Constitution Check
 
-Before proceeding, verify alignment with [UCommon Project Constitution](../memory/constitution.md):
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-### Principle 1: Unified Naming Conventions
-- [ ] All new types follow F/T/E/I prefix conventions
-- [ ] All variables, functions, and parameters use PascalCase
-- [ ] All macros use UPPER_SNAKE_CASE with `UBPA_UCOMMON_` prefix
+[Gates determined based on constitution file]
 
-### Principle 2: Strict Code Formatting Standards
-- [ ] Code will use Allman brace style
-- [ ] Tab indentation will be used
-- [ ] MIT license header will be included in all new files
+## Project Structure
 
-### Principle 3: Type Safety and Explicitness
-- [ ] `enum class` will be used instead of traditional `enum`
-- [ ] Explicitly-sized integer types will be used
-- [ ] Functions marked with `noexcept` where appropriate
-- [ ] Single-parameter constructors marked as `explicit`
+### Documentation (this feature)
 
-### Principle 4: Resource Management and Ownership Clarity
-- [ ] Resource ownership clearly indicated using `EOwnership` enum
-- [ ] Move constructors and move assignment operators implemented
-- [ ] `UBPA_UCOMMON_MALLOC`/`FREE` macros used for memory management
-
-### Principle 5: Modularity and Namespace Organization
-- [ ] All code resides within `UCommon` namespace
-- [ ] Independent header file created for new module
-- [ ] `UBPA_UCOMMON_*_TO_NAMESPACE` macro provided if applicable
-
-### Principle 6: Cross-Platform Compatibility
-- [ ] CMake build configuration updated
-- [ ] Code tested on MSVC, Clang, and GCC
-- [ ] Standard C++17 features used (no compiler-specific extensions)
-
-### Principle 7: Performance First
-- [ ] Performance-critical paths use inline functions (`.inl` files)
-- [ ] `constexpr` used for compile-time computation
-- [ ] Move semantics used to avoid unnecessary copies
-
-### Principle 8: Comprehensive Error Handling
-- [ ] `UBPA_UCOMMON_ASSERT` used for precondition checks
-- [ ] `IsValid()` or similar state-checking methods provided
-- [ ] No exceptions thrown; return values or status flags used
-
-### Principle 9: Documentation and Testing
-- [ ] Public APIs documented with clear comments
-- [ ] Example code provided in `src/examples`
-- [ ] Unit tests provided in `src/tests`
-- [ ] Complex algorithms documented in README
-
-### Principle 10: Version Management and Backward Compatibility
-- [ ] Version impact assessed (MAJOR/MINOR/PATCH)
-- [ ] Backward compatibility maintained or breaking changes documented
-- [ ] Serialization version control implemented if applicable
-
----
-
-## Technical Design
-
-### Architecture
-[Describe the high-level architecture and design decisions]
-
-### API Design
-```cpp
-// Example API signatures
-namespace UCommon
-{
-    class FNewFeature
-    {
-    public:
-        FNewFeature();
-        ~FNewFeature();
-        
-        void DoSomething();
-        bool IsValid() const;
-    };
-}
+```text
+specs/[###-feature]/
+├── plan.md              # This file (/speckit.plan command output)
+├── research.md          # Phase 0 output (/speckit.plan command)
+├── data-model.md        # Phase 1 output (/speckit.plan command)
+├── quickstart.md        # Phase 1 output (/speckit.plan command)
+├── contracts/           # Phase 1 output (/speckit.plan command)
+└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
 ```
 
-### Data Structures
-[Describe key data structures and their relationships]
+### Source Code (repository root)
+<!--
+  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
+  for this feature. Delete unused options and expand the chosen structure with
+  real paths (e.g., apps/admin, packages/something). The delivered plan must
+  not include Option labels.
+-->
 
-### Dependencies
-- Internal: [List UCommon modules this depends on]
-- External: [List external dependencies if any]
+```text
+# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
+src/
+├── models/
+├── services/
+├── cli/
+└── lib/
 
----
+tests/
+├── contract/
+├── integration/
+└── unit/
 
-## Implementation Plan
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
+backend/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
+└── tests/
 
-### Phase 1: [Phase Name]
-**Duration**: [Estimated time]
-**Tasks**:
-1. [Task 1]
-2. [Task 2]
-3. [Task 3]
+frontend/
+├── src/
+│   ├── components/
+│   ├── pages/
+│   └── services/
+└── tests/
 
-### Phase 2: [Phase Name]
-**Duration**: [Estimated time]
-**Tasks**:
-1. [Task 1]
-2. [Task 2]
-3. [Task 3]
+# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
+api/
+└── [same as backend above]
 
-### Phase 3: [Phase Name]
-**Duration**: [Estimated time]
-**Tasks**:
-1. [Task 1]
-2. [Task 2]
-3. [Task 3]
+ios/ or android/
+└── [platform-specific structure: feature modules, UI flows, platform tests]
+```
 
----
+**Structure Decision**: [Document the selected structure and reference the real
+directories captured above]
 
-## Testing Strategy
+## Complexity Tracking
 
-### Unit Tests
-- [ ] Test core functionality
-- [ ] Test edge cases
-- [ ] Test error conditions
+> **Fill ONLY if Constitution Check has violations that must be justified**
 
-### Integration Tests
-- [ ] Test interaction with existing modules
-- [ ] Test cross-platform compatibility
-
-### Performance Tests
-- [ ] Benchmark critical paths
-- [ ] Compare with baseline performance
-
----
-
-## Documentation Plan
-
-- [ ] Update main README if necessary
-- [ ] Create module-specific README
-- [ ] Add example code to `src/examples`
-- [ ] Update API documentation
-- [ ] Add inline code comments
-
----
-
-## Risks and Mitigations
-
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| [Risk 1] | [High/Medium/Low] | [High/Medium/Low] | [Mitigation strategy] |
-| [Risk 2] | [High/Medium/Low] | [High/Medium/Low] | [Mitigation strategy] |
-
----
-
-## Review and Approval
-
-### Reviewers
-- [ ] [Reviewer 1]
-- [ ] [Reviewer 2]
-
-### Approval
-- [ ] Technical design approved
-- [ ] Constitution compliance verified
-- [ ] Implementation plan approved
-
----
-
-## References
-
-- [UCommon Project Constitution](../memory/constitution.md)
-- [Related documentation or specifications]
-
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
+| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |

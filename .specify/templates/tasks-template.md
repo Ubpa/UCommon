@@ -1,205 +1,251 @@
-# Tasks: [FEATURE_NAME]
+---
 
-**Created**: [YYYY-MM-DD]
-**Last Updated**: [YYYY-MM-DD]
-**Owner**: [OWNER_NAME]
-**Sprint/Milestone**: [SPRINT_NAME]
-**Related Plan**: [Link to plan document]
-**Related Spec**: [Link to spec document]
+description: "Task list template for feature implementation"
+---
+
+# Tasks: [FEATURE NAME]
+
+**Input**: Design documents from `/specs/[###-feature-name]/`
+**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+
+**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+
+**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+
+## Format: `[ID] [P?] [Story] Description`
+
+- **[P]**: Can run in parallel (different files, no dependencies)
+- **[Story]**: Which user story this task belongs to (e.g., US1, US2, US3)
+- Include exact file paths in descriptions
+
+## Path Conventions
+
+- **Single project**: `src/`, `tests/` at repository root
+- **Web app**: `backend/src/`, `frontend/src/`
+- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
+- Paths shown below assume single project - adjust based on plan.md structure
+
+<!-- 
+  ============================================================================
+  IMPORTANT: The tasks below are SAMPLE TASKS for illustration purposes only.
+  
+  The /speckit.tasks command MUST replace these with actual tasks based on:
+  - User stories from spec.md (with their priorities P1, P2, P3...)
+  - Feature requirements from plan.md
+  - Entities from data-model.md
+  - Endpoints from contracts/
+  
+  Tasks MUST be organized by user story so each story can be:
+  - Implemented independently
+  - Tested independently
+  - Delivered as an MVP increment
+  
+  DO NOT keep these sample tasks in the generated tasks.md file.
+  ============================================================================
+-->
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Project initialization and basic structure
+
+- [ ] T001 Create project structure per implementation plan
+- [ ] T002 Initialize [language] project with [framework] dependencies
+- [ ] T003 [P] Configure linting and formatting tools
 
 ---
 
-## Task Overview
+## Phase 2: Foundational (Blocking Prerequisites)
 
-**Total Tasks**: [X]
-**Completed**: [Y]
-**In Progress**: [Z]
-**Blocked**: [W]
+**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
 
----
+**⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-## Constitution Compliance Tasks
+Examples of foundational tasks (adjust based on your project):
 
-These tasks ensure adherence to the [UCommon Project Constitution](../memory/constitution.md).
+- [ ] T004 Setup database schema and migrations framework
+- [ ] T005 [P] Implement authentication/authorization framework
+- [ ] T006 [P] Setup API routing and middleware structure
+- [ ] T007 Create base models/entities that all stories depend on
+- [ ] T008 Configure error handling and logging infrastructure
+- [ ] T009 Setup environment configuration management
 
-### Naming and Formatting (Principles 1-2)
-- [ ] **TASK-001**: Review all new type names for F/T/E/I prefix compliance
-- [ ] **TASK-002**: Verify all variables/functions use PascalCase
-- [ ] **TASK-003**: Verify all macros use UPPER_SNAKE_CASE with `UBPA_UCOMMON_` prefix
-- [ ] **TASK-004**: Apply Allman brace style to all new code
-- [ ] **TASK-005**: Verify tab indentation throughout
-- [ ] **TASK-006**: Add MIT license header to all new source files
-
-### Type Safety (Principle 3)
-- [ ] **TASK-007**: Replace traditional `enum` with `enum class`
-- [ ] **TASK-008**: Use explicitly-sized integer types (uint64_t, int32_t, etc.)
-- [ ] **TASK-009**: Mark non-throwing functions with `noexcept`
-- [ ] **TASK-010**: Mark compile-time constants with `constexpr`
-- [ ] **TASK-011**: Add `static_assert` for compile-time checks
-- [ ] **TASK-012**: Mark single-parameter constructors as `explicit`
-
-### Resource Management (Principle 4)
-- [ ] **TASK-013**: Implement move constructor
-- [ ] **TASK-014**: Implement move assignment operator
-- [ ] **TASK-015**: Implement destructor with proper resource cleanup
-- [ ] **TASK-016**: Use `UBPA_UCOMMON_MALLOC`/`FREE` for memory management
-- [ ] **TASK-017**: Add `EOwnership` parameter where applicable
-- [ ] **TASK-018**: Verify moved-from objects are in valid state
-
-### Modularity (Principle 5)
-- [ ] **TASK-019**: Create independent header file in `include/UCommon/`
-- [ ] **TASK-020**: Create implementation file in `src/Runtime/`
-- [ ] **TASK-021**: Add `#pragma once` to header
-- [ ] **TASK-022**: Wrap all code in `UCommon` namespace
-- [ ] **TASK-023**: Create `UBPA_UCOMMON_*_TO_NAMESPACE` macro
-- [ ] **TASK-024**: Update `UCommon.h` to include new module
-
-### Cross-Platform (Principle 6)
-- [ ] **TASK-025**: Update CMakeLists.txt
-- [ ] **TASK-026**: Test build on MSVC
-- [ ] **TASK-027**: Test build on Clang
-- [ ] **TASK-028**: Test build on GCC
-- [ ] **TASK-029**: Verify no compiler-specific extensions used
-- [ ] **TASK-030**: Test both static and dynamic library builds
-
-### Performance (Principle 7)
-- [ ] **TASK-031**: Create `.inl` file for inline functions
-- [ ] **TASK-032**: Use `constexpr` for compile-time computation
-- [ ] **TASK-033**: Use move semantics to avoid copies
-- [ ] **TASK-034**: Implement SIMD optimizations if applicable
-- [ ] **TASK-035**: Profile performance-critical paths
-- [ ] **TASK-036**: Create performance benchmarks
-
-### Error Handling (Principle 8)
-- [ ] **TASK-037**: Add `UBPA_UCOMMON_ASSERT` for precondition checks
-- [ ] **TASK-038**: Implement `IsValid()` method
-- [ ] **TASK-039**: Return error codes/status instead of throwing exceptions
-- [ ] **TASK-040**: Document all preconditions and postconditions
-
-### Documentation and Testing (Principle 9)
-- [ ] **TASK-041**: Add Doxygen-style comments to all public APIs
-- [ ] **TASK-042**: Create example code in `src/examples/`
-- [ ] **TASK-043**: Create unit tests in `src/tests/`
-- [ ] **TASK-044**: Create README for complex features
-- [ ] **TASK-045**: Test core functionality
-- [ ] **TASK-046**: Test edge cases and boundary conditions
-
-### Versioning (Principle 10)
-- [ ] **TASK-047**: Determine version impact (MAJOR/MINOR/PATCH)
-- [ ] **TASK-048**: Update version in CMakeLists.txt if needed
-- [ ] **TASK-049**: Implement serialization version control if applicable
-- [ ] **TASK-050**: Update CHANGELOG
-- [ ] **TASK-051**: Mark deprecated APIs with `[[deprecated]]` if applicable
+**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---
 
-## Implementation Tasks
+## Phase 3: User Story 1 - [Title] (Priority: P1) 🎯 MVP
 
-### Core Implementation
-- [ ] **TASK-101**: [Specific implementation task 1]
-  - **Owner**: [Name]
-  - **Estimate**: [Hours/Days]
-  - **Dependencies**: [Task IDs]
-  - **Status**: [Not Started | In Progress | Blocked | Complete]
+**Goal**: [Brief description of what this story delivers]
 
-- [ ] **TASK-102**: [Specific implementation task 2]
-  - **Owner**: [Name]
-  - **Estimate**: [Hours/Days]
-  - **Dependencies**: [Task IDs]
-  - **Status**: [Not Started | In Progress | Blocked | Complete]
+**Independent Test**: [How to verify this story works on its own]
 
-- [ ] **TASK-103**: [Specific implementation task 3]
-  - **Owner**: [Name]
-  - **Estimate**: [Hours/Days]
-  - **Dependencies**: [Task IDs]
-  - **Status**: [Not Started | In Progress | Blocked | Complete]
+### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
 
-### API Design
-- [ ] **TASK-201**: Design public API interface
-- [ ] **TASK-202**: Design internal implementation structure
-- [ ] **TASK-203**: Define data structures
-- [ ] **TASK-204**: Define error handling strategy
+> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-### Integration
-- [ ] **TASK-301**: Integrate with [Module 1]
-- [ ] **TASK-302**: Integrate with [Module 2]
-- [ ] **TASK-303**: Update build system
-- [ ] **TASK-304**: Update export macros
+- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+
+### Implementation for User Story 1
+
+- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
+- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
+- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
+- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T016 [US1] Add validation and error handling
+- [ ] T017 [US1] Add logging for user story 1 operations
+
+**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
 
 ---
 
-## Testing Tasks
+## Phase 4: User Story 2 - [Title] (Priority: P2)
 
-### Unit Testing
-- [ ] **TASK-401**: Write tests for [Component 1]
-- [ ] **TASK-402**: Write tests for [Component 2]
-- [ ] **TASK-403**: Write tests for error conditions
-- [ ] **TASK-404**: Write tests for edge cases
-- [ ] **TASK-405**: Achieve [X]% code coverage
+**Goal**: [Brief description of what this story delivers]
 
-### Integration Testing
-- [ ] **TASK-501**: Test integration with [Module 1]
-- [ ] **TASK-502**: Test integration with [Module 2]
-- [ ] **TASK-503**: Test cross-module interactions
+**Independent Test**: [How to verify this story works on its own]
 
-### Performance Testing
-- [ ] **TASK-601**: Create performance benchmarks
-- [ ] **TASK-602**: Run benchmarks on different platforms
-- [ ] **TASK-603**: Compare with baseline performance
-- [ ] **TASK-604**: Optimize bottlenecks if needed
+### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
 
----
+- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
 
-## Documentation Tasks
+### Implementation for User Story 2
 
-- [ ] **TASK-701**: Write API documentation
-- [ ] **TASK-702**: Write usage examples
-- [ ] **TASK-703**: Create README for module
-- [ ] **TASK-704**: Update main project README if needed
-- [ ] **TASK-705**: Add inline code comments
-- [ ] **TASK-706**: Review documentation for clarity
+- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
+- [ ] T021 [US2] Implement [Service] in src/services/[service].py
+- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T023 [US2] Integrate with User Story 1 components (if needed)
+
+**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
 
 ---
 
-## Review and Quality Assurance
+## Phase 5: User Story 3 - [Title] (Priority: P3)
 
-- [ ] **TASK-801**: Code review by [Reviewer 1]
-- [ ] **TASK-802**: Code review by [Reviewer 2]
-- [ ] **TASK-803**: Constitution compliance review
-- [ ] **TASK-804**: Performance review
-- [ ] **TASK-805**: Documentation review
-- [ ] **TASK-806**: Final approval
+**Goal**: [Brief description of what this story delivers]
 
----
+**Independent Test**: [How to verify this story works on its own]
 
-## Blocked Tasks
+### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
 
-| Task ID | Description | Blocker | Owner | Resolution Plan |
-|---------|-------------|---------|-------|-----------------|
-| [ID] | [Description] | [What's blocking] | [Name] | [How to resolve] |
+- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
+- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
 
----
+### Implementation for User Story 3
 
-## Completed Tasks
+- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
+- [ ] T027 [US3] Implement [Service] in src/services/[service].py
+- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
 
-| Task ID | Description | Completed By | Completed Date |
-|---------|-------------|--------------|----------------|
-| [ID] | [Description] | [Name] | [YYYY-MM-DD] |
+**Checkpoint**: All user stories should now be independently functional
 
 ---
 
-## Notes and Decisions
-
-### [YYYY-MM-DD] - [Decision Title]
-**Decision**: [What was decided]
-**Rationale**: [Why this decision was made]
-**Impact**: [What this affects]
+[Add more user story phases as needed, following the same pattern]
 
 ---
 
-## References
+## Phase N: Polish & Cross-Cutting Concerns
 
-- [UCommon Project Constitution](../memory/constitution.md)
-- [Related Plan](../plans/[plan-name].md)
-- [Related Spec](../specs/[spec-name].md)
+**Purpose**: Improvements that affect multiple user stories
 
+- [ ] TXXX [P] Documentation updates in docs/
+- [ ] TXXX Code cleanup and refactoring
+- [ ] TXXX Performance optimization across all stories
+- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Security hardening
+- [ ] TXXX Run quickstart.md validation
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+- **Setup (Phase 1)**: No dependencies - can start immediately
+- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
+- **User Stories (Phase 3+)**: All depend on Foundational phase completion
+  - User stories can then proceed in parallel (if staffed)
+  - Or sequentially in priority order (P1 → P2 → P3)
+- **Polish (Final Phase)**: Depends on all desired user stories being complete
+
+### User Story Dependencies
+
+- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
+- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
+- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
+
+### Within Each User Story
+
+- Tests (if included) MUST be written and FAIL before implementation
+- Models before services
+- Services before endpoints
+- Core implementation before integration
+- Story complete before moving to next priority
+
+### Parallel Opportunities
+
+- All Setup tasks marked [P] can run in parallel
+- All Foundational tasks marked [P] can run in parallel (within Phase 2)
+- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
+- All tests for a user story marked [P] can run in parallel
+- Models within a story marked [P] can run in parallel
+- Different user stories can be worked on in parallel by different team members
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Launch all tests for User Story 1 together (if tests requested):
+Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
+Task: "Integration test for [user journey] in tests/integration/test_[name].py"
+
+# Launch all models for User Story 1 together:
+Task: "Create [Entity1] model in src/models/[entity1].py"
+Task: "Create [Entity2] model in src/models/[entity2].py"
+```
+
+---
+
+## Implementation Strategy
+
+### MVP First (User Story 1 Only)
+
+1. Complete Phase 1: Setup
+2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+3. Complete Phase 3: User Story 1
+4. **STOP and VALIDATE**: Test User Story 1 independently
+5. Deploy/demo if ready
+
+### Incremental Delivery
+
+1. Complete Setup + Foundational → Foundation ready
+2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
+3. Add User Story 2 → Test independently → Deploy/Demo
+4. Add User Story 3 → Test independently → Deploy/Demo
+5. Each story adds value without breaking previous stories
+
+### Parallel Team Strategy
+
+With multiple developers:
+
+1. Team completes Setup + Foundational together
+2. Once Foundational is done:
+   - Developer A: User Story 1
+   - Developer B: User Story 2
+   - Developer C: User Story 3
+3. Stories complete and integrate independently
+
+---
+
+## Notes
+
+- [P] tasks = different files, no dependencies
+- [Story] label maps task to specific user story for traceability
+- Each user story should be independently completable and testable
+- Verify tests fail before implementing
+- Commit after each task or logical group
+- Stop at any checkpoint to validate story independently
+- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
