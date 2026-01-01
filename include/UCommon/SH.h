@@ -111,7 +111,7 @@ namespace UCommon
 	template<int Order> class TSHBandVectorRGB;
 
 	template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
-	class TSHVectorBase
+	class TSHVectorCommon
 	{
 	public:
 		static constexpr int MaxSHOrder = InMaxSHOrder;
@@ -121,9 +121,9 @@ namespace UCommon
 		static_assert(MaxSHOrder > 0 && MaxSHBasis > 0, "Invalid MaxSHOrder or MaxSHBasis");
 
 		/** Default constructor. */
-		TSHVectorBase() : V{ 0 } {}
+		TSHVectorCommon() : V{ 0 } {}
 
-		TSHVectorBase(std::initializer_list<float> InitList)
+		TSHVectorCommon(std::initializer_list<float> InitList)
 		{
 			UBPA_UCOMMON_ASSERT(InitList.size() == MaxSHBasis);
 			int i = 0;
@@ -136,21 +136,21 @@ namespace UCommon
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorBase), "The size of U is not same with TSHVectorBase");
+			static_assert(sizeof(U) == sizeof(TSHVectorCommon), "The size of U is not same with TSHVectorCommon");
 			return *reinterpret_cast<U*>(this);
 		}
 
 		template<typename U>
 		const U& As() const&
 		{
-			return const_cast<TSHVectorBase*>(this)->As<U>();
+			return const_cast<TSHVectorCommon*>(this)->As<U>();
 		}
 
 		template<typename U>
 		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorBase), "The size of U is not same with TSHVectorBase");
-			static_assert(alignof(TSHVectorBase) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorBase");
+			static_assert(sizeof(U) == sizeof(TSHVectorCommon), "The size of U is not same with TSHVectorCommon");
+			static_assert(alignof(TSHVectorCommon) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorCommon");
 			return reinterpret_cast<const U&&>(*this);
 		}
 
@@ -295,7 +295,7 @@ namespace UCommon
 	};
 
 	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
-	class TSHVectorRGBBase
+	class TSHVectorRGBCommon
 	{
 	public:
 		static constexpr int MaxSHOrder = InMaxSHOrder;
@@ -307,29 +307,29 @@ namespace UCommon
 		TElement<MaxSHOrder> G;
 		TElement<MaxSHOrder> B;
 
-		TSHVectorRGBBase() {}
+		TSHVectorRGBCommon() {}
 
-		TSHVectorRGBBase(const TElement<MaxSHOrder>& InR, const TElement<MaxSHOrder>& InG, const TElement<MaxSHOrder>& InB)
+		TSHVectorRGBCommon(const TElement<MaxSHOrder>& InR, const TElement<MaxSHOrder>& InG, const TElement<MaxSHOrder>& InB)
 			: R(InR), G(InG), B(InB) {}
 
 		template<typename U>
 		U& As()&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase), "The size of U is not same with TSHVectorRGBBase");
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBCommon), "The size of U is not same with TSHVectorRGBCommon");
 			return *reinterpret_cast<U*>(this);
 		}
 
 		template<typename U>
 		const U& As() const&
 		{
-			return const_cast<TSHVectorRGBBase*>(this)->As<U>();
+			return const_cast<TSHVectorRGBCommon*>(this)->As<U>();
 		}
 
 		template<typename U>
 		const U&& As() const &&
 		{
-			static_assert(sizeof(U) == sizeof(TSHVectorRGBBase), "The size of U is not same with TSHVectorRGBBase");
-			static_assert(alignof(TSHVectorRGBBase) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorRGBBase");
+			static_assert(sizeof(U) == sizeof(TSHVectorRGBCommon), "The size of U is not same with TSHVectorRGBCommon");
+			static_assert(alignof(TSHVectorRGBCommon) % alignof(U) == 0, "The alignment of U is not compatible with TSHVectorRGBCommon");
 			return reinterpret_cast<const U&&>(*this);
 		}
 
@@ -445,7 +445,7 @@ namespace UCommon
 		/** In-place addition operator. */
 		/** Changed from (*this = *this + InB;) to separate all calc to avoid LHS **/
 
-		/** Now it calls directly += operator in TSHVector (avoid TSHVectorRGBBase + operator) **/
+		/** Now it calls directly += operator in TSHVector (avoid TSHVectorRGBCommon + operator) **/
 		inline DerivedType& operator+=(const DerivedType& InB)
 		{
 			R += InB.R;
@@ -457,7 +457,7 @@ namespace UCommon
 
 		/** In-place subtraction operator. */
 		/** Changed from (*this = *this - InB;) to separate all calc to avoid LHS **/
-		/** Now it calls directly -= operator in TSHVector (avoid TSHVectorRGBBase - operator) **/
+		/** Now it calls directly -= operator in TSHVector (avoid TSHVectorRGBCommon - operator) **/
 		inline DerivedType& operator-=(const DerivedType& InB)
 		{
 			R -= InB.R;
@@ -469,7 +469,7 @@ namespace UCommon
 
 		/** In-place scalar multiplication operator. */
 		/** Changed from (*this = *this * InB;) to separate all calc to avoid LHS **/
-		/** Now it calls directly *= operator in TSHVector (avoid TSHVectorRGBBase * operator) **/
+		/** Now it calls directly *= operator in TSHVector (avoid TSHVectorRGBCommon * operator) **/
 		inline DerivedType& operator*=(const float& Scalar)
 		{
 			R *= Scalar;
@@ -487,7 +487,7 @@ namespace UCommon
 
 		inline const TElement<MaxSHOrder>& operator[](uint64_t Index) const
 		{
-			return const_cast<TSHVectorRGBBase*>(this)->operator[](Index);
+			return const_cast<TSHVectorRGBCommon*>(this)->operator[](Index);
 		}
 
 		inline FVector3f operator()(const FVector3f& Vector) const;
@@ -566,10 +566,10 @@ namespace UCommon
 		explicit constexpr TSHBandViewCommon(DataType InData) noexcept : Data(InData) {}
 
 		// Data access
-		const float* GetData() const noexcept { return Data; }
+		DataType GetData() const noexcept { return Data; }
 
 		// Array access
-		const float& operator[](uint64_t Index) const noexcept
+		decltype(auto) operator[](uint64_t Index) const noexcept
 		{
 			UBPA_UCOMMON_ASSERT(Data != nullptr);
 			UBPA_UCOMMON_ASSERT(Index < (TSHBandCommon<TSHBandView<Order, bConst>, Order>::MaxSHBasis));
@@ -771,7 +771,7 @@ namespace UCommon
 			// Data[0] = L1, m=-1
 			// Data[1] = L1, m=0
 			// Data[2] = L1, m=1
-			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorBase::GetLinearVector pattern
+			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
 			return FVector3f{ -Data[2], -Data[0], Data[1] };
 		}
 
@@ -822,11 +822,11 @@ namespace UCommon
 
 	/** A vector of spherical harmonic coefficients. */
 	template<int Order>
-	class TSHVector : public TSHVectorBase<TSHVector<Order>, Order, Order* Order>
+	class TSHVector : public TSHVectorCommon<TSHVector<Order>, Order, Order* Order>
 	{
 	public:
-		using Super = TSHVectorBase<TSHVector<Order>, Order, Order* Order>;
-		using TSHVectorBase<TSHVector<Order>, Order, Order* Order>::TSHVectorBase;
+		using Super = TSHVectorCommon<TSHVector<Order>, Order, Order* Order>;
+		using TSHVectorCommon<TSHVector<Order>, Order, Order* Order>::TSHVectorCommon;
 
 		using RGBType = TSHVectorRGB<Order>;
 
@@ -888,11 +888,11 @@ namespace UCommon
 
 	/** A vector of spherical harmonic coefficients without DC. */
 	template<int Order>
-	class TSHVectorAC : public TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>
+	class TSHVectorAC : public TSHVectorCommon<TSHVectorAC<Order>, Order, Order* Order - 1>
 	{
 	public:
-		using Super = TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>;
-		using TSHVectorBase<TSHVectorAC<Order>, Order, Order* Order - 1>::TSHVectorBase;
+		using Super = TSHVectorCommon<TSHVectorAC<Order>, Order, Order* Order - 1>;
+		using TSHVectorCommon<TSHVectorAC<Order>, Order, Order* Order - 1>::TSHVectorCommon;
 
 		using RGBType = TSHVectorACRGB<Order>;
 
@@ -955,11 +955,11 @@ namespace UCommon
 
 	/** A vector of colored spherical harmonic coefficients. */
 	template<int Order>
-	class TSHVectorRGB : public TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order * Order>
+	class TSHVectorRGB : public TSHVectorRGBCommon<TSHVectorRGB<Order>, TSHVector, Order, Order * Order>
 	{
 	public:
-		using Super = TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>;
-		using TSHVectorRGBBase<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>::TSHVectorRGBBase;
+		using Super = TSHVectorRGBCommon<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>;
+		using TSHVectorRGBCommon<TSHVectorRGB<Order>, TSHVector, Order, Order* Order>::TSHVectorRGBCommon;
 
 		template<int OtherOrder>
 		explicit TSHVectorRGB(const TSHVectorRGB<OtherOrder>& Other)
@@ -1024,11 +1024,11 @@ namespace UCommon
 
 	/** A vector of colored spherical harmonic coefficients without DC. */
 	template<int Order>
-	class TSHVectorACRGB : public TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>
+	class TSHVectorACRGB : public TSHVectorRGBCommon<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>
 	{
 	public:
-		using Super = TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>;
-		using TSHVectorRGBBase<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>::TSHVectorRGBBase;
+		using Super = TSHVectorRGBCommon<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>;
+		using TSHVectorRGBCommon<TSHVectorACRGB<Order>, TSHVectorAC, Order, Order* Order>::TSHVectorRGBCommon;
 
 		template<int OtherOrder>
 		explicit TSHVectorACRGB(const TSHVectorACRGB<OtherOrder>& Other)
