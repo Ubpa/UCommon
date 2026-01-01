@@ -831,6 +831,57 @@ int main(int argc, char** argv)
 		std::cout << "[" << (passedR && passedG && passedB ? "PASSED" : "FAILED") << "] TSHVectorRGB(lower order, band) works" << std::endl;
 	}
 
+	// Test TSHBandCommon::SHBasisFunction
+	{
+		std::cout << "\n=== Test: TSHBandCommon::SHBasisFunction ===" << std::endl;
+
+		FVector3f testDir(0.577350f, 0.577350f, 0.577350f); // normalized (1,1,1)
+
+		// Test Band 2 (L1)
+		{
+			auto band2Basis = TSHBandVector<2>::SHBasisFunction(testDir);
+			// L1: m=-1, m=0, m=1
+			float expected_m_neg1 = SH<1, -1>(testDir);
+			float expected_m_0 = SH<1, 0>(testDir);
+			float expected_m_1 = SH<1, 1>(testDir);
+
+			bool passed = std::abs(band2Basis[0] - expected_m_neg1) < 1e-5f &&
+				std::abs(band2Basis[1] - expected_m_0) < 1e-5f &&
+				std::abs(band2Basis[2] - expected_m_1) < 1e-5f;
+
+			std::cout << "Band 2 (L1): [" << band2Basis[0] << ", " << band2Basis[1] << ", " << band2Basis[2] << "]" << std::endl;
+			std::cout << "Expected:    [" << expected_m_neg1 << ", " << expected_m_0 << ", " << expected_m_1 << "]" << std::endl;
+			std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Band 2 SHBasisFunction works" << std::endl;
+		}
+
+		// Test Band 3 (L2)
+		{
+			auto band3Basis = TSHBandVector<3>::SHBasisFunction(testDir);
+			// L2: m=-2, m=-1, m=0, m=1, m=2
+			float expected[5] = {
+				SH<2, -2>(testDir),
+				SH<2, -1>(testDir),
+				SH<2, 0>(testDir),
+				SH<2, 1>(testDir),
+				SH<2, 2>(testDir)
+			};
+
+			bool passed = true;
+			for (int i = 0; i < 5; ++i)
+			{
+				if (std::abs(band3Basis[i] - expected[i]) >= 1e-5f)
+				{
+					passed = false;
+					break;
+				}
+			}
+
+			std::cout << "Band 3 (L2): [" << band3Basis[0] << ", " << band3Basis[1] << ", " << band3Basis[2] << ", " << band3Basis[3] << ", " << band3Basis[4] << "]" << std::endl;
+			std::cout << "Expected:    [" << expected[0] << ", " << expected[1] << ", " << expected[2] << ", " << expected[3] << ", " << expected[4] << "]" << std::endl;
+			std::cout << "[" << (passed ? "PASSED" : "FAILED") << "] Band 3 SHBasisFunction works" << std::endl;
+		}
+	}
+
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;

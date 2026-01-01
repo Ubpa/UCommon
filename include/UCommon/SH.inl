@@ -262,6 +262,20 @@ float UCommon::Dot(TSHBandView<Order, bConst1> A, TSHBandView<Order, bConst2> B)
 // TSHBandCommon member functions (common operations for View and Vector)
 // ============================================================================
 
+// SHBasisFunction - compute SH basis values for this band at given direction
+template<typename Derived, int Order>
+UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<Derived, Order>::SHBasisFunction(const FVector3f& Vector)
+{
+	// For band Order, we need coefficients for L = Order-1
+	// SHIndexOffset is the starting index in the global SH array
+	// L=0: index 0, L=1: index 1-3, L=2: index 4-8, L=3: index 9-15, L=4: index 16-24
+	// Formula: SHIndexOffset = (Order-1)^2
+	constexpr int SHIndexOffset = (Order - 1) * (Order - 1);
+	TSHBandVector<Order> Result;
+	Details::SHs<SHIndexOffset>(Result.Data, Vector.X, Vector.Y, Vector.Z);
+	return Result;
+}
+
 // Dot product
 template<typename Derived, int Order>
 float UCommon::TSHBandCommon<Derived, Order>::Dot(TSHBandConstView<Order> Other) const noexcept
