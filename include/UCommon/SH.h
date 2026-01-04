@@ -504,7 +504,7 @@ namespace UCommon
 	};
 
 	// Forward declarations for CRTP base class
-	template<typename Derived, int Order>
+	template<typename DerivedType, int Order>
 	class TSHBandCommon;
 
 	template<int Order, bool bConst = false>
@@ -528,7 +528,7 @@ namespace UCommon
 
 	// Common base class for TSHBandView and TSHBandVector (const-agnostic operations)
 	// Uses CRTP to avoid virtual functions and maintain memory layout
-	template<typename Derived, int Order>
+	template<typename DerivedType, int Order>
 	class TSHBandCommon
 	{
 	public:
@@ -540,7 +540,20 @@ namespace UCommon
 		// Returns the value of the SH basis for this band at the point on the sphere defined by the unit vector Vector
 		static TSHBandVector<Order> SHBasisFunction(const FVector3f& Vector);
 
-		// Common operations (implemented in terms of derived class's GetData() and operator[])
+		// Static Dot function (accepts any combination of views and vectors)
+		static float Dot(TSHBandConstView<Order> A, TSHBandConstView<Order> B) noexcept
+		{
+			UBPA_UCOMMON_ASSERT(A.GetData() != nullptr);
+			UBPA_UCOMMON_ASSERT(B.GetData() != nullptr);
+			float Result = 0.0f;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result += A[i] * B[i];
+			}
+			return Result;
+		}
+
+		// Common operations (implemented in terms of DerivedType class's GetData() and operator[])
 		float Dot(TSHBandConstView<Order> Other) const noexcept;
 
 		TSHBandVector<Order> operator+(TSHBandConstView<Order> Other) const noexcept;
@@ -548,10 +561,37 @@ namespace UCommon
 		TSHBandVector<Order> operator*(float Scalar) const noexcept;
 		TSHBandVector<Order> operator/(float Scalar) const noexcept;
 
+		// Multiply by FVector3f to create RGB band (each component multiplied by R, G, B)
+		TSHBandVectorRGB<Order> operator*(const FVector3f& Color) const noexcept
+		{
+			const DerivedType& Derived = AsDerivedType();
+			TSHBandVectorRGB<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result.R[i] = Derived[i] * Color.X;
+				Result.G[i] = Derived[i] * Color.Y;
+				Result.B[i] = Derived[i] * Color.Z;
+			}
+			return Result;
+		}
+
+		// GetLinearVector - only available for Order 2 (L1 band)
+		template<int O = Order>
+		std::enable_if_t<O == 2, FVector3f> GetLinearVector() const
+		{
+			const DerivedType& DerivedType = AsDerivedType();
+			// For Order 2 band, we have 3 coefficients (2*2-1 = 3)
+			// Data[0] = L1, m=-1
+			// Data[1] = L1, m=0
+			// Data[2] = L1, m=1
+			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
+			return FVector3f{ -DerivedType[2], -DerivedType[0], DerivedType[1] };
+		}
+
 	protected:
 		// CRTP helper methods
-		Derived& AsDerived() noexcept { return static_cast<Derived&>(*this); }
-		const Derived& AsDerived() const noexcept { return static_cast<const Derived&>(*this); }
+		DerivedType& AsDerivedType() noexcept { return static_cast<DerivedType&>(*this); }
+		const DerivedType& AsDerivedType() const noexcept { return static_cast<const DerivedType&>(*this); }
 
 		~TSHBandCommon() = default;  // Protected destructor to prevent deletion through base pointer
 	};
@@ -629,14 +669,78 @@ namespace UCommon
 			: Super(Other.GetData()) {}
 	};
 
-	// Base class for TSHBandViewRGB
-	template<int Order, bool bConst>
-	class TSHBandViewRGBCommon
+	// Common base class for RGB band types (provides Dot functionality)
+	template<typename DerivedType, int Order>
+	class TSHBandRGBCommon
 	{
 	public:
 		static constexpr int MaxSHOrder = Order;
 		static constexpr int MaxSHBasis = 2 * Order - 1;
 
+		// Dot product with single-channel band - static version (returns RGB result)
+		static FVector3f Dot(TSHBandConstViewRGB<Order> A, TSHBandConstView<Order> B) noexcept
+		{
+			return FVector3f{ A.R.Dot(B), A.G.Dot(B), A.B.Dot(B) };
+		}
+
+		// Dot product with single-channel band - member version (returns RGB result)
+		FVector3f Dot(TSHBandConstView<Order> Other) const noexcept
+		{
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			return FVector3f{ Derived.R.Dot(Other), Derived.G.Dot(Other), Derived.B.Dot(Other) };
+		}
+
+		// Dot product with FVector3f - static version (returns single-channel band)
+		static TSHBandVector<Order> Dot(TSHBandConstViewRGB<Order> A, const FVector3f& Color) noexcept
+		{
+			TSHBandVector<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result[i] = A.R[i] * Color.X + A.G[i] * Color.Y + A.B[i] * Color.Z;
+			}
+			return Result;
+		}
+
+		// Dot product with FVector3f - member version (returns single-channel band)
+		TSHBandVector<Order> Dot(const FVector3f& Color) const noexcept
+		{
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			TSHBandVector<Order> Result;
+			for (uint64_t i = 0; i < MaxSHBasis; ++i)
+			{
+				Result[i] = Derived.R[i] * Color.X + Derived.G[i] * Color.Y + Derived.B[i] * Color.Z;
+			}
+			return Result;
+		}
+
+		// Channel access via operator[] (similar to TSHVectorRGBCommon)
+		// Note: Return type depends on Derived class (could be TSHBandView or TSHBandVector)
+		auto& operator[](uint64_t Index) noexcept
+		{
+			UBPA_UCOMMON_ASSERT(Index < 3);
+			DerivedType& Derived = static_cast<DerivedType&>(*this);
+			return (&Derived.R)[Index];
+		}
+
+		auto& operator[](uint64_t Index) const noexcept
+		{
+			UBPA_UCOMMON_ASSERT(Index < 3);
+			const DerivedType& Derived = static_cast<const DerivedType&>(*this);
+			return (&Derived.R)[Index];
+		}
+
+		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
+
+	protected:
+		~TSHBandRGBCommon() = default;
+	};
+
+	// Base class for TSHBandViewRGB
+	template<int Order, bool bConst>
+	class TSHBandViewRGBCommon : public TSHBandRGBCommon<TSHBandViewRGBCommon<Order, bConst>, Order>
+	{
+	public:
+		using Super = TSHBandRGBCommon<TSHBandViewRGBCommon<Order, bConst>, Order>;
 		using ViewType = TSHBandView<Order, bConst>;
 		using DataType = typename ViewType::DataType;
 
@@ -662,12 +766,7 @@ namespace UCommon
 			return static_cast<TSHBandViewRGB<Order, bConst>&>(*this);
 		}
 
-		// Channel access (const version - always available)
-		decltype(auto) operator[](uint64_t Index) const noexcept
-		{
-			UBPA_UCOMMON_ASSERT(Index < 3);
-			return (&R)[Index];
-		}
+		// Note: operator[] is inherited from TSHBandRGBCommon
 
 		// Luminance calculation methods
 		TSHBandVector<Order> GetLuminance() const noexcept
@@ -680,13 +779,13 @@ namespace UCommon
 			return R * 0.2126f + G * 0.7152f + B * 0.0722f;
 		}
 
+		// Note: Dot functions are inherited from TSHBandRGBCommon
+
 		// Binary operators (return TSHBandVectorRGB) - implemented in .inl
 		TSHBandVectorRGB<Order> operator+(TSHBandConstViewRGB<Order> Other) const noexcept;
 		TSHBandVectorRGB<Order> operator-(TSHBandConstViewRGB<Order> Other) const noexcept;
 		TSHBandVectorRGB<Order> operator*(float Scalar) const noexcept;
 		TSHBandVectorRGB<Order> operator/(float Scalar) const noexcept;
-
-		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 	};
 
 	// TSHBandViewRGB<Order, false> - Mutable RGB view specialization
@@ -699,12 +798,7 @@ namespace UCommon
 		// Constructors
 		using Super::Super;
 
-		// Non-const channel access (only in mutable version)
-		TSHBandView<Order, false>& operator[](uint64_t Index) noexcept
-		{
-			UBPA_UCOMMON_ASSERT(Index < 3);
-			return (&Super::R)[Index];
-		}
+		// Note: operator[] is inherited from TSHBandRGBCommon
 	};
 
 	// TSHBandViewRGB<Order, true> - Const RGB view specialization
@@ -769,17 +863,29 @@ namespace UCommon
 		operator TSHBandView<Order, false>() noexcept;
 		operator TSHBandConstView<Order>() const noexcept;
 
-		// GetLinearVector - only available for Order 2
-		template<int O = Order>
-		std::enable_if_t<O == 2, FVector3f> GetLinearVector() const
+		// Type conversion (similar to TSHVectorCommon::As)
+		template<typename U>
+		U& As()&
 		{
-			// For Order 2 band, we have 3 coefficients (2*2-1 = 3)
-			// Data[0] = L1, m=-1
-			// Data[1] = L1, m=0
-			// Data[2] = L1, m=1
-			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
-			return FVector3f{ -Data[2], -Data[0], Data[1] };
+			static_assert(sizeof(U) == sizeof(TSHBandVector), "The size of U is not same with TSHBandVector");
+			return *reinterpret_cast<U*>(this);
 		}
+
+		template<typename U>
+		const U& As() const&
+		{
+			return const_cast<TSHBandVector*>(this)->As<U>();
+		}
+
+		template<typename U>
+		const U&& As() const&&
+		{
+			static_assert(sizeof(U) == sizeof(TSHBandVector), "The size of U is not same with TSHBandVector");
+			static_assert(alignof(TSHBandVector) % alignof(U) == 0, "The alignment of U is not compatible with TSHBandVector");
+			return reinterpret_cast<const U&&>(*this);
+		}
+
+		// Note: GetLinearVector is inherited from TSHBandCommon
 
 	private:
 		float Data[TSHBandCommon<TSHBandVector<Order>, Order>::MaxSHBasis];
@@ -787,12 +893,9 @@ namespace UCommon
 
 	/** Owning container for RGB spherical harmonic band coefficients. */
 	template<int Order>
-	class TSHBandVectorRGB
+	class TSHBandVectorRGB : public TSHBandRGBCommon<TSHBandVectorRGB<Order>, Order>
 	{
 	public:
-		static constexpr int MaxSHOrder = Order;
-		static constexpr int MaxSHBasis = 2 * Order - 1;
-
 		TSHBandVector<Order> R;
 		TSHBandVector<Order> G;
 		TSHBandVector<Order> B;
@@ -813,6 +916,8 @@ namespace UCommon
 		TSHBandVectorRGB& operator*=(float Scalar) noexcept;
 		TSHBandVectorRGB& operator/=(float Scalar) noexcept;
 
+		// Note: Dot functions are inherited from TSHBandRGBCommon
+
 		// Binary operators (return TSHBandVectorRGB)
 		TSHBandVectorRGB operator+(TSHBandConstViewRGB<Order> Other) const noexcept;
 		TSHBandVectorRGB operator-(TSHBandConstViewRGB<Order> Other) const noexcept;
@@ -822,9 +927,14 @@ namespace UCommon
 		// Implicit conversion to view
 		operator TSHBandViewRGB<Order, false>() noexcept;
 		operator TSHBandConstViewRGB<Order>() const noexcept;
-
-		static constexpr uint64_t GetSize() noexcept { return MaxSHBasis; }
 	};
+
+	// Scalar multiplication (scalar * vector) - non-member for commutativity
+	template<int Order>
+	inline TSHBandVectorRGB<Order> operator*(float Scalar, const TSHBandVectorRGB<Order>& Vec) noexcept
+	{
+		return Vec * Scalar;
+	}
 
 	/** A vector of spherical harmonic coefficients. */
 	template<int Order>
@@ -873,6 +983,12 @@ namespace UCommon
 			{
 				Super::V[i] = Band[i - TSHVector<Order - 1>::Super::MaxSHBasis];
 			}
+		}
+
+		/** Returns the DC component (L0, m=0) */
+		float DC() const noexcept
+		{
+			return Super::V[0];
 		}
 
 		template<int BandOrder>
@@ -988,6 +1104,12 @@ namespace UCommon
 			Super::R = TSHVector<Order>(Other.R, Band.R);
 			Super::G = TSHVector<Order>(Other.G, Band.G);
 			Super::B = TSHVector<Order>(Other.B, Band.B);
+		}
+
+		/** Returns the DC component (L0, m=0) as RGB */
+		FVector3f DC() const noexcept
+		{
+			return FVector3f{ Super::R.DC(), Super::G.DC(), Super::B.DC() };
 		}
 
 		template<int BandOrder>
@@ -1175,35 +1297,37 @@ namespace UCommon
 	// Note: operator+, operator-, operator*, operator/ are now member functions in TSHBandViewCommon
 
 	// Scalar multiplication (scalar * view) - non-member for commutativity
-	template<int Order, bool bConst>
-	TSHBandVector<Order> operator*(float Scalar, const TSHBandView<Order, bConst>& View) noexcept
+	template<int Order>
+	TSHBandVector<Order> operator*(float Scalar, TSHBandConstView<Order> View) noexcept
 	{
 		return View * Scalar;
 	}
 
-	// Non-member Dot function for TSHBandView (handles all const combinations)
-	template<int Order, bool bConst1, bool bConst2>
-	float Dot(TSHBandView<Order, bConst1> A, TSHBandView<Order, bConst2> B) noexcept;
-
-	// Non-member Dot function for TSHBandVector
-	template<int Order>
-	float Dot(const TSHBandVector<Order>& A, const TSHBandVector<Order>& B) noexcept;
-
-	// ============================================================================
-	// Binary operators for TSHBandView (return TSHBandVector)
-	// ============================================================================
-
-	// Scalar multiplication (scalar * view) - non-member for commutativity
+	// FVector3f multiplication (color * view) - non-member for commutativity
 	template<int Order, bool bConst>
-	TSHBandVector<Order> operator*(float Scalar, TSHBandView<Order, bConst> View) noexcept;
+	inline TSHBandVectorRGB<Order> operator*(const FVector3f& Color, TSHBandView<Order, bConst> View) noexcept
+	{
+		return View * Color;
+	}
 
-	// ============================================================================
-	// Binary operators for TSHBandVector (return TSHBandVector)
-	// ============================================================================
+	// Note: Dot function is now a static member of TSHBandCommon
+	// Use TSHBandCommon<DerivedType, Order>::Dot(A, B) or the member function A.Dot(B)
 
 	// Scalar multiplication (scalar * vector) - non-member for commutativity
+	// Note: Cannot rely on implicit conversion to TSHBandConstView because template argument deduction doesn't consider user-defined conversions
 	template<int Order>
-	TSHBandVector<Order> operator*(float Scalar, const TSHBandVector<Order>& Vec) noexcept;
+	inline TSHBandVector<Order> operator*(float Scalar, const TSHBandVector<Order>& Vec) noexcept
+	{
+		return Vec * Scalar;
+	}
+
+	// FVector3f multiplication (color * vector) - non-member for commutativity
+	// Note: Cannot rely on implicit conversion to TSHBandConstView because template argument deduction doesn't consider user-defined conversions
+	template<int Order>
+	inline TSHBandVectorRGB<Order> operator*(const FVector3f& Color, const TSHBandVector<Order>& Vec) noexcept
+	{
+		return Vec * Color;
+	}
 
 	// ============================================================================
 	// Binary operators for TSHBandViewRGB (return TSHBandVectorRGB)
@@ -1211,7 +1335,10 @@ namespace UCommon
 
 	// Scalar multiplication (scalar * view) - non-member for commutativity
 	template<int Order, bool bConst>
-	TSHBandVectorRGB<Order> operator*(float Scalar, TSHBandViewRGB<Order, bConst> View) noexcept;
+	inline TSHBandVectorRGB<Order> operator*(float Scalar, TSHBandViewRGB<Order, bConst> View) noexcept
+	{
+		return View * Scalar;
+	}
 
 	// ============================================================================
 	// Binary operators for TSHBandVectorRGB (return TSHBandVectorRGB)
