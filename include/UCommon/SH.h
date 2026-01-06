@@ -564,7 +564,7 @@ namespace UCommon
 		// Multiply by FVector3f to create RGB band (each component multiplied by R, G, B)
 		TSHBandVectorRGB<Order> operator*(const FVector3f& Color) const noexcept
 		{
-			const DerivedType& Derived = AsDerivedType();
+			const DerivedType& Derived = AsDerived();
 			TSHBandVectorRGB<Order> Result;
 			for (uint64_t i = 0; i < MaxSHBasis; ++i)
 			{
@@ -579,19 +579,19 @@ namespace UCommon
 		template<int O = Order>
 		std::enable_if_t<O == 2, FVector3f> GetLinearVector() const
 		{
-			const DerivedType& DerivedType = AsDerivedType();
+			const DerivedType& Derived = AsDerived();
 			// For Order 2 band, we have 3 coefficients (2*2-1 = 3)
 			// Data[0] = L1, m=-1
 			// Data[1] = L1, m=0
 			// Data[2] = L1, m=1
 			// Return: { -m=1, -m=-1, m=0 } to match TSHVectorCommon::GetLinearVector pattern
-			return FVector3f{ -DerivedType[2], -DerivedType[0], DerivedType[1] };
+			return FVector3f{ -Derived[2], -Derived[0], Derived[1] };
 		}
 
 	protected:
 		// CRTP helper methods
-		DerivedType& AsDerivedType() noexcept { return static_cast<DerivedType&>(*this); }
-		const DerivedType& AsDerivedType() const noexcept { return static_cast<const DerivedType&>(*this); }
+		DerivedType& AsDerived() noexcept { return static_cast<DerivedType&>(*this); }
+		const DerivedType& AsDerived() const noexcept { return static_cast<const DerivedType&>(*this); }
 
 		~TSHBandCommon() = default;  // Protected destructor to prevent deletion through base pointer
 	};
@@ -1062,7 +1062,7 @@ namespace UCommon
 		TSHBandView<BandOrder, false> GetBand() noexcept
 		{
 			static_assert(BandOrder <= Order, "BandOrder must be <= Order");
-			constexpr int IndexBase = Pow2(BandOrder - 1);
+			constexpr int IndexBase = Pow2(BandOrder - 1) - 1;
 			return TSHBandView<BandOrder, false>(&Super::V[IndexBase]);
 		}
 
@@ -1070,7 +1070,7 @@ namespace UCommon
 		TSHBandView<BandOrder, true> GetBand() const noexcept
 		{
 			static_assert(BandOrder <= Order, "BandOrder must be <= Order");
-			constexpr int IndexBase = Pow2(BandOrder - 1);
+			constexpr int IndexBase = Pow2(BandOrder - 1) - 1;
 			return TSHBandView<BandOrder, true>(&Super::V[IndexBase]);
 		}
 	};
