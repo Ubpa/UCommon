@@ -380,6 +380,16 @@ namespace UCommon
 			return{ static_cast<U>(X), static_cast<U>(Y) };
 		}
 
+		operator TSpan<T>() noexcept
+		{
+			return { &X, 2 };
+		}
+
+		operator TSpan<const T>() const noexcept
+		{
+			return { &X, 2 };
+		}
+
 		TVector2 Clamp(T Min, T Max) const noexcept
 		{
 			return { UCommon::Clamp(X, Min, Max), UCommon::Clamp(Y, Min, Max) };
@@ -715,6 +725,16 @@ namespace UCommon
 		operator TVector<U>() const noexcept
 		{
 			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z) };
+		}
+
+		operator TSpan<T>() noexcept
+		{
+			return { &X, 3 };
+		}
+
+		operator TSpan<const T>() const noexcept
+		{
+			return { &X, 3 };
 		}
 
 		TVector Clamp(T Min, T Max) const noexcept
@@ -1077,6 +1097,16 @@ namespace UCommon
 		operator TVector4<U>() const noexcept
 		{
 			return { static_cast<U>(X), static_cast<U>(Y), static_cast<U>(Z), static_cast<U>(W) };
+		}
+
+		operator TSpan<T>() noexcept
+		{
+			return { &X, 4 };
+		}
+
+		operator TSpan<const T>() const noexcept
+		{
+			return { &X, 4 };
 		}
 
 		TVector4 Clamp(T Min, T Max) const noexcept
