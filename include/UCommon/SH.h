@@ -1282,7 +1282,7 @@ namespace UCommon
 	// z1 = dot(Buffer.xyz, n)
 	// Buffer.w + z1 + z1*z1*k
 	// == Buffer.w + z1*(1 + z1*k)
-	UBPA_UCOMMON_API float HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer);
+	UBPA_UCOMMON_API float HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer, float Delta = UBPA_UCOMMON_DELTA);
 
 	// RotateMatrix       : (3, 3)
 	// SHBand2RotateMatrix: (3, 3)

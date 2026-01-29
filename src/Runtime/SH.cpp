@@ -24,33 +24,29 @@ SOFTWARE.
 
 #include <UCommon/SH.h>
 
-float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer)
+float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer, float Delta)
 {
 	UBPA_UCOMMON_ASSERT(t >= 0.f && t <= 1.f);
 
 	Buffer = FVector4f(0.f);
 
-	if (SHVector2.V[0] <= UBPA_UCOMMON_DELTA)
+	const float L0 = SHVector2.V[0];
+
+	if (L0 <= Delta)
 	{
 		return 0.f;
 	}
-
-	const float L0 = SHVector2.V[0];
 
 	Buffer[3] = L0 * 0.28209479f;
 
 	const FVector3f LinearVector = SHVector2.GetLinearVector();
 	float L1 = LinearVector.GetLength();
-	if (L1 <= UBPA_UCOMMON_DELTA)
+	if (L1 <= Delta)
 	{
 		return 0.f;
 	}
 
 	const float MaxL1 = 3.f / 2.f * (1.f - t) * 0.975f * L0;
-	if (MaxL1 <= UBPA_UCOMMON_DELTA)
-	{
-		return 0.f;
-	}
 	float Scale = 1.f;
 	if (L1 >= MaxL1)
 	{
