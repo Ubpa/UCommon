@@ -1,4 +1,4 @@
-/*
+﻿/*
 MIT License
 
 Copyright (c) 2024 Ubpa
@@ -710,6 +710,10 @@ namespace UCommon
 		{
 			return std::isnan(X) || std::isnan(Y) || std::isnan(Z);
 		}
+		bool IsNaN() const
+		{
+			return std::isnan(X) || std::isnan(Y);
+		}
 
 		TVector SafeNormalize(T SquaredDelta = UBPA_UCOMMON_DELTA) const
 		{
@@ -1090,7 +1094,7 @@ namespace UCommon
 
 		bool IsNaN() const
 		{
-			return std::isnan(X) || std::isnan(Y) || std::isnan(Z) || std::isnan(W);
+			return std::isnan(X) || std::isnan(Y);
 		}
 
 		TVector4 SafeNormalize(T SquaredDelta = UBPA_UCOMMON_DELTA) const
