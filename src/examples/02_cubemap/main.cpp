@@ -10,6 +10,11 @@ int main()
 	FTex2D TexCubeTex2D;
 	{
 		FFileArchive Reader(IArchive::EState::Loading, "Cubemap_128.bin");
+		if (!Reader.IsValid())
+		{
+			std::cerr << "Error: Cubemap_128.bin not found, skipping.\n";
+			return 0;
+		}
 		TexCubeTex2D.Serialize(Reader);
 	}
 	SaveImage("Cubemap_128.hdr", TexCubeTex2D);
