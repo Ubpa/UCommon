@@ -510,9 +510,14 @@ namespace UCommon
 			return std::max(X, Y);
 		}
 
+		T Sum() const noexcept
+		{
+			return X + Y;
+		}
+
 		T Average() const noexcept
 		{
-			return (X + Y) * static_cast<T>(1. / 2.);
+			return Sum() * static_cast<T>(1. / 2.);
 		}
 
 		T Area() const noexcept
@@ -857,9 +862,14 @@ namespace UCommon
 			return std::max(std::max(X, Y), Z);
 		}
 
+		T Sum() const noexcept
+		{
+			return X + Y + Z;
+		}
+
 		T Average() const noexcept
 		{
-			return (X + Y + Z) * static_cast<T>(1. / 3.);
+			return Sum() * static_cast<T>(1. / 3.);
 		}
 
 		T Volume() const noexcept
@@ -1229,9 +1239,14 @@ namespace UCommon
 			return std::min(std::min(X, Y), std::min(Z, W));
 		}
 
+		T Sum() const noexcept
+		{
+			return X + Y + Z + W;
+		}
+
 		T Average() const noexcept
 		{
-			return (X + Y + Z + W) * static_cast<T>(1. / 4.);
+			return Sum() * static_cast<T>(1. / 4.);
 		}
 
 		T Volume() const noexcept
