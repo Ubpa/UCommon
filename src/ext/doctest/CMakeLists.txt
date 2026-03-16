@@ -25,10 +25,9 @@ set(private_defines "")
 if(Ubpa_UCommon_UsingSharedLibrary)
   set(mode SHARED)
   list(APPEND defines "UBPA_UCOMMON_USING_SHARED_LIBRARY" "DOCTEST_CONFIG_IMPLEMENTATION_IN_DLL")
-  list(APPEND private_defines "UBPA_UCOMMON_BUILDING_SHARED_LIBRARY" "DOCTEST_CONFIG_IMPLEMENT")
+  list(APPEND private_defines "UBPA_UCOMMON_BUILDING_SHARED_LIBRARY")
 else()
   set(mode STATIC)
-  list(APPEND private_defines "DOCTEST_CONFIG_IMPLEMENT")
 endif()
 
 Ubpa_AddTarget(

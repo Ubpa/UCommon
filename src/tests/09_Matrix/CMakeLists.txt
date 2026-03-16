@@ -4,4 +4,5 @@ Ubpa_AddTarget(
   CXX_STANDARD 17
   LIB
     Ubpa::UCommon_Runtime
+    Ubpa::UCommon_ext_doctest
 )
