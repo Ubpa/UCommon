@@ -1288,7 +1288,7 @@ namespace UCommon
 	// SHBand2RotateMatrix: (3, 3)
 	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const float* RotateMatrix);
 	// RotateMatrix       : (3, 3)
-	// SHBand2RotateMatrix: (5, 5)
+	// SHBand3RotateMatrix: (5, 5)
 	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix);
 
 	// ============================================================================

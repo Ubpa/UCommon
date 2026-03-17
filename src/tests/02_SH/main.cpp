@@ -912,6 +912,30 @@ int main(int argc, char** argv)
 		}
 	};
 
+	// Helper: Apply SH Band2 rotation in-place (l=1, 3 coefficients)
+	// M = SHBand2RotateMatrix (3x3, row-major), coeffs updated as: out = M * in
+	auto RotateSHBand2 = [](float* coeffs, const float* rotMatrix) {
+		float shRotMat[9];
+		ComputeSHBand2RotateMatrix(shRotMat, rotMatrix);
+		float tmp[3] = {};
+		for (int i = 0; i < 3; ++i)
+			for (int j = 0; j < 3; ++j)
+				tmp[i] += shRotMat[i * 3 + j] * coeffs[j];
+		for (int i = 0; i < 3; ++i) coeffs[i] = tmp[i];
+	};
+
+	// Helper: Apply SH Band3 rotation in-place (l=2, 5 coefficients)
+	// M = SHBand3RotateMatrix (5x5, row-major), coeffs updated as: out = M * in
+	auto RotateSHBand3 = [](float* coeffs, const float* rotMatrix) {
+		float shRotMat[25];
+		ComputeSHBand3RotateMatrix(shRotMat, rotMatrix);
+		float tmp[5] = {};
+		for (int i = 0; i < 5; ++i)
+			for (int j = 0; j < 5; ++j)
+				tmp[i] += shRotMat[i * 5 + j] * coeffs[j];
+		for (int i = 0; i < 5; ++i) coeffs[i] = tmp[i];
+	};
+
 	// Test 1: Identity rotation should preserve SH coefficients
 	{
 		std::cout << "\n=== Test 1: Identity Rotation ===" << std::endl;
@@ -1282,6 +1306,93 @@ int main(int argc, char** argv)
 		                        IsNearlyEqual(band3In[3], band3Rotated[3], 1e-4f) &&
 		                        IsNearlyEqual(band3In[4], band3Rotated[4], 1e-4f);
 		std::cout << "[" << (inverseBand3Pass ? "PASSED" : "FAILED") << "] Inverse rotation restores Band 3" << std::endl;
+	}
+
+	// Test 7: Random rotation + random direction robustness
+	// Verifies Y(R*w) = M * Y(w) for both bands across many random rotations and directions.
+	// Uses Rodrigues' rotation formula to build arbitrary rotation matrices.
+	{
+		std::cout << "\n=== Test 7: Random Rotation & Direction Robustness ===" << std::endl;
+
+		std::mt19937 rng(42);
+		std::uniform_real_distribution<float> angleDist(0.f, 2.f * UCommon::Pi);
+		std::uniform_real_distribution<float> cosDist(-1.f, 1.f);
+		std::uniform_real_distribution<float> phiDist(0.f, 1.f);
+		constexpr float eps = 1e-4f;
+		constexpr int numTests = 200;
+
+		// Rodrigues' rotation: rotate by `angle` around unit axis `axis`
+		auto makeRotMatrix = [](float* R, FVector3f axis, float angle) {
+			float c = std::cos(angle), s = std::sin(angle), t = 1.f - c;
+			float x = axis.X, y = axis.Y, z = axis.Z;
+			R[0] = t*x*x + c;   R[1] = t*x*y - s*z; R[2] = t*x*z + s*y;
+			R[3] = t*x*y + s*z; R[4] = t*y*y + c;   R[5] = t*y*z - s*x;
+			R[6] = t*x*z - s*y; R[7] = t*y*z + s*x; R[8] = t*z*z + c;
+		};
+
+		// Generate a uniformly random unit direction
+		auto randDir = [&]() -> FVector3f {
+			float cosTheta = cosDist(rng);
+			float sinTheta = std::sqrt(std::max(0.f, 1.f - cosTheta * cosTheta));
+			float phi = angleDist(rng);
+			return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
+		};
+
+		int band2Fail = 0, band3Fail = 0;
+
+		for (int t = 0; t < numTests; ++t)
+		{
+			// Random rotation axis (uniform on sphere) and angle
+			FVector3f axis = randDir();
+			float angle = angleDist(rng);
+			float R[9];
+			makeRotMatrix(R, axis, angle);
+
+			// Random test direction
+			FVector3f w = randDir();
+			FVector3f Rw = {
+				R[0]*w.X + R[1]*w.Y + R[2]*w.Z,
+				R[3]*w.X + R[4]*w.Y + R[5]*w.Z,
+				R[6]*w.X + R[7]*w.Y + R[8]*w.Z
+			};
+
+			// --- Band 2 (l=1): verify M * Y(w) == Y(R*w) ---
+			{
+				float shRotMat[9];
+				ComputeSHBand2RotateMatrix(shRotMat, R);
+
+				float Yw[3]  = { SH<1,-1>(w),  SH<1,0>(w),  SH<1,1>(w)  };
+				float YRw[3] = { SH<1,-1>(Rw), SH<1,0>(Rw), SH<1,1>(Rw) };
+				float MYw[3] = {};
+				for (int i = 0; i < 3; ++i)
+					for (int j = 0; j < 3; ++j)
+						MYw[i] += shRotMat[i * 3 + j] * Yw[j];
+
+				for (int i = 0; i < 3; ++i)
+					if (std::abs(YRw[i] - MYw[i]) > eps) { ++band2Fail; break; }
+			}
+
+			// --- Band 3 (l=2): verify M * Y(w) == Y(R*w) ---
+			{
+				float shRotMat[25];
+				ComputeSHBand3RotateMatrix(shRotMat, R);
+
+				float Yw[5]  = { SH<2,-2>(w),  SH<2,-1>(w),  SH<2,0>(w),  SH<2,1>(w),  SH<2,2>(w)  };
+				float YRw[5] = { SH<2,-2>(Rw), SH<2,-1>(Rw), SH<2,0>(Rw), SH<2,1>(Rw), SH<2,2>(Rw) };
+				float MYw[5] = {};
+				for (int i = 0; i < 5; ++i)
+					for (int j = 0; j < 5; ++j)
+						MYw[i] += shRotMat[i * 5 + j] * Yw[j];
+
+				for (int i = 0; i < 5; ++i)
+					if (std::abs(YRw[i] - MYw[i]) > eps) { ++band3Fail; break; }
+			}
+		}
+
+		std::cout << "[" << (band2Fail == 0 ? "PASSED" : "FAILED") << "] Band2: "
+		          << (numTests - band2Fail) << "/" << numTests << " random cases passed" << std::endl;
+		std::cout << "[" << (band3Fail == 0 ? "PASSED" : "FAILED") << "] Band3: "
+		          << (numTests - band3Fail) << "/" << numTests << " random cases passed" << std::endl;
 	}
 
 	std::cout << "\n========================================" << std::endl;
