@@ -914,7 +914,7 @@ int main(int argc, char** argv)
 
 	// Helper: Apply SH Band2 rotation in-place (l=1, 3 coefficients)
 	// M = SHBand2RotateMatrix (3x3, row-major), coeffs updated as: out = M * in
-	auto RotateSHBand2 = [](float* coeffs, const float* rotMatrix) {
+	auto RotateSHBand2 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
 		float shRotMat[9];
 		ComputeSHBand2RotateMatrix(shRotMat, rotMatrix);
 		float tmp[3] = {};
@@ -926,7 +926,7 @@ int main(int argc, char** argv)
 
 	// Helper: Apply SH Band3 rotation in-place (l=2, 5 coefficients)
 	// M = SHBand3RotateMatrix (5x5, row-major), coeffs updated as: out = M * in
-	auto RotateSHBand3 = [](float* coeffs, const float* rotMatrix) {
+	auto RotateSHBand3 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
 		float shRotMat[25];
 		ComputeSHBand3RotateMatrix(shRotMat, rotMatrix);
 		float tmp[5] = {};
@@ -940,11 +940,11 @@ int main(int argc, char** argv)
 	{
 		std::cout << "\n=== Test 1: Identity Rotation ===" << std::endl;
 
-		float identityMatrix[9] = {
+		FMatrix3x3f identityMatrix(
 			1, 0, 0,
 			0, 1, 0,
 			0, 0, 1
-		};
+		);
 
 		// Test Band 2 (L1)
 		float band2In[3] = { 1.0f, 2.0f, 3.0f };
@@ -981,13 +981,13 @@ int main(int argc, char** argv)
 
 		// 90 degree rotation around Z axis (row-major)
 		// (x,y,z) -> (-y, x, z)
-		float rotZ90Matrix[9] = {
+		FMatrix3x3f rotZ90Matrix(
 			0, -1, 0,
 			1,  0, 0,
 			0,  0, 1
-		};
+		);
 
-		printMatrix3x3("Rotation Matrix (Z 90°)", rotZ90Matrix);
+		printMatrix3x3("Rotation Matrix (Z 90°)", rotZ90Matrix.GetData());
 
 		// Test Band 2 (L1)
 		float band2In[3] = { 1.0f, 2.0f, 3.0f };
@@ -999,11 +999,11 @@ int main(int argc, char** argv)
 		std::cout << "[INFO] Applied 90° Z rotation to Band 2" << std::endl;
 
 		// Verify: rotate back should get original
-		float rotZNeg90Matrix[9] = {
+		FMatrix3x3f rotZNeg90Matrix(
 			0,  1, 0,
 			-1, 0, 0,
 			0,  0, 1
-		};
+		);
 		RotateSHBand2(band2Out, rotZNeg90Matrix);
 
 		bool z90Band2Pass = IsNearlyEqual(band2In[0], band2Out[0]) &&
@@ -1038,13 +1038,13 @@ int main(int argc, char** argv)
 
 		// Unity -> UE: [x,y,z] -> [y,z,x]
 		// R = [0,1,0; 0,0,1; 1,0,0]' = [0,0,1; 1,0,0; 0,1,0]
-		float unityToUEMatrix[9] = {
+		FMatrix3x3f unityToUEMatrix(
 			0, 0, 1,
 			1, 0, 0,
 			0, 1, 0
-		};
+		);
 
-		printMatrix3x3("Unity -> UE Rotation Matrix", unityToUEMatrix);
+		printMatrix3x3("Unity -> UE Rotation Matrix", unityToUEMatrix.GetData());
 
 		// Test Band 2 (L1)
 		float band2In[3] = { 1.0f, 2.0f, 3.0f };
@@ -1089,13 +1089,13 @@ int main(int argc, char** argv)
 	{
 		std::cout << "\n=== Test 4: Verify Rotation Formula ===" << std::endl;
 
-		float rotY45Matrix[9] = {
+		FMatrix3x3f rotY45Matrix(
 			0.7071f, 0, 0.7071f,
 			0, 1, 0,
 			-0.7071f, 0, 0.7071f
-		};
+		);
 
-		printMatrix3x3("Rotation Matrix (Y 45°)", rotY45Matrix);
+		printMatrix3x3("Rotation Matrix (Y 45°)", rotY45Matrix.GetData());
 
 		// Test directions (documented in SHRotate.md)
 		constexpr int numDirs = 5;
@@ -1131,11 +1131,7 @@ int main(int argc, char** argv)
 		for (int dirIdx = 0; dirIdx < numDirs; ++dirIdx)
 		{
 			FVector3f w = testDirs[dirIdx];
-			FVector3f Rw = {
-				rotY45Matrix[0] * w.X + rotY45Matrix[1] * w.Y + rotY45Matrix[2] * w.Z,
-				rotY45Matrix[3] * w.X + rotY45Matrix[4] * w.Y + rotY45Matrix[5] * w.Z,
-				rotY45Matrix[6] * w.X + rotY45Matrix[7] * w.Y + rotY45Matrix[8] * w.Z
-			};
+			FVector3f Rw = rotY45Matrix * w;
 
 			// Y(w) - SH basis at original direction
 			float Yw[5] = {
@@ -1188,11 +1184,11 @@ int main(int argc, char** argv)
 	{
 		std::cout << "\n=== Test 5: ComputeSHBand2RotateMatrix ===" << std::endl;
 
-		float rotX90Matrix[9] = {
+		FMatrix3x3f rotX90Matrix(
 			1,  0,  0,
 			0,  0, -1,
 			0,  1,  0
-		};
+		);
 
 		float SHRotateMatrix[9];
 		ComputeSHBand2RotateMatrix(SHRotateMatrix, rotX90Matrix);
@@ -1220,11 +1216,7 @@ int main(int argc, char** argv)
 
 		for (int dirIdx = 0; dirIdx < numDirs; ++dirIdx) {
 			FVector3f w = testDirs[dirIdx];
-			FVector3f Rw = {
-				rotX90Matrix[0] * w.X + rotX90Matrix[1] * w.Y + rotX90Matrix[2] * w.Z,
-				rotX90Matrix[3] * w.X + rotX90Matrix[4] * w.Y + rotX90Matrix[5] * w.Z,
-				rotX90Matrix[6] * w.X + rotX90Matrix[7] * w.Y + rotX90Matrix[8] * w.Z
-			};
+			FVector3f Rw = rotX90Matrix * w;
 
 			// Y(w)
 			float Yw[3] = { SH<1, -1>(w), SH<1, 0>(w), SH<1, 1>(w) };
@@ -1266,13 +1258,13 @@ int main(int argc, char** argv)
 		float angle = 30.0f * UCommon::Pi / 180.0f;
 		float c = std::cos(angle);
 		float s = std::sin(angle);
-		float rotationMatrix[9] = {
+		FMatrix3x3f rotationMatrix(
 			1,  0,  0,
 			0,  c, -s,
 			0,  s,  c
-		};
+		);
 
-		printMatrix3x3("Rotation Matrix (X 30°)", rotationMatrix);
+		printMatrix3x3("Rotation Matrix (X 30°)", rotationMatrix.GetData());
 
 		// Test Band 2
 		float band2In[3] = { 0.5f, 0.7f, 0.3f };
@@ -1281,11 +1273,11 @@ int main(int argc, char** argv)
 		RotateSHBand2(band2Rotated, rotationMatrix);
 
 		// Now rotate by inverse (transpose for rotation matrix)
-		float invRotationMatrix[9] = {
+		FMatrix3x3f invRotationMatrix(
 			1,  0,  0,
 			0,  c,  s,
 			0, -s,  c
-		};
+		);
 		RotateSHBand2(band2Rotated, invRotationMatrix);
 
 		bool inverseBand2Pass = IsNearlyEqual(band2In[0], band2Rotated[0], 1e-4f) &&
@@ -1322,12 +1314,14 @@ int main(int argc, char** argv)
 		constexpr int numTests = 200;
 
 		// Rodrigues' rotation: rotate by `angle` around unit axis `axis`
-		auto makeRotMatrix = [](float* R, FVector3f axis, float angle) {
+		auto makeRotMatrix = [](FVector3f axis, float angle) -> FMatrix3x3f {
 			float c = std::cos(angle), s = std::sin(angle), t = 1.f - c;
 			float x = axis.X, y = axis.Y, z = axis.Z;
-			R[0] = t*x*x + c;   R[1] = t*x*y - s*z; R[2] = t*x*z + s*y;
-			R[3] = t*x*y + s*z; R[4] = t*y*y + c;   R[5] = t*y*z - s*x;
-			R[6] = t*x*z - s*y; R[7] = t*y*z + s*x; R[8] = t*z*z + c;
+			return FMatrix3x3f(
+				t*x*x + c,   t*x*y - s*z, t*x*z + s*y,
+				t*x*y + s*z, t*y*y + c,   t*y*z - s*x,
+				t*x*z - s*y, t*y*z + s*x, t*z*z + c
+			);
 		};
 
 		// Generate a uniformly random unit direction
@@ -1345,16 +1339,11 @@ int main(int argc, char** argv)
 			// Random rotation axis (uniform on sphere) and angle
 			FVector3f axis = randDir();
 			float angle = angleDist(rng);
-			float R[9];
-			makeRotMatrix(R, axis, angle);
+			FMatrix3x3f R = makeRotMatrix(axis, angle);
 
 			// Random test direction
 			FVector3f w = randDir();
-			FVector3f Rw = {
-				R[0]*w.X + R[1]*w.Y + R[2]*w.Z,
-				R[3]*w.X + R[4]*w.Y + R[5]*w.Z,
-				R[6]*w.X + R[7]*w.Y + R[8]*w.Z
-			};
+			FVector3f Rw = R * w;
 
 			// --- Band 2 (l=1): verify M * Y(w) == Y(R*w) ---
 			{

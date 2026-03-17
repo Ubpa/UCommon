@@ -25,6 +25,7 @@ SOFTWARE.
 #pragma once
 
 #include "Config.h"
+#include "Matrix.h"
 #include "Utils.h"
 
 #define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
@@ -1284,12 +1285,10 @@ namespace UCommon
 	// == Buffer.w + z1*(1 + z1*k)
 	UBPA_UCOMMON_API float HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer, float Delta = UBPA_UCOMMON_DELTA);
 
-	// RotateMatrix       : (3, 3)
-	// SHBand2RotateMatrix: (3, 3)
-	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const float* RotateMatrix);
-	// RotateMatrix       : (3, 3)
-	// SHBand3RotateMatrix: (5, 5)
-	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix);
+	// SHBand2RotateMatrix: row-major 3x3 (float[9], [row*3+col])
+	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatrix3x3f& RotateMatrix);
+	// SHBand3RotateMatrix: row-major 5x5 (float[25], [row*5+col])
+	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatrix3x3f& RotateMatrix);
 
 	// ============================================================================
 	// Binary operators for TSHBandView (return TSHBandVector)
