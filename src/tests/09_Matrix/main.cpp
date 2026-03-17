@@ -950,9 +950,9 @@ TEST_CASE("Matrix4x4 - Inverse Advanced")
 
 		// Build a 4x4 with singular linear part
 		FMatrix4x4f M(
-			FVector4f(singular.r0.X, singular.r0.Y, singular.r0.Z, 0),
-			FVector4f(singular.r1.X, singular.r1.Y, singular.r1.Z, 0),
-			FVector4f(singular.r2.X, singular.r2.Y, singular.r2.Z, 0),
+			FVector4f(singular.Rows[0].X, singular.Rows[0].Y, singular.Rows[0].Z, 0),
+			FVector4f(singular.Rows[1].X, singular.Rows[1].Y, singular.Rows[1].Z, 0),
+			FVector4f(singular.Rows[2].X, singular.Rows[2].Y, singular.Rows[2].Z, 0),
 			FVector4f(0, 0, 0, 1)
 		);
 
