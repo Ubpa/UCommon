@@ -1516,5 +1516,156 @@ int main(int argc, char** argv)
 		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] ApplySHRotateMatrix" << std::endl;
 	}
 
+	// Test 9: TSHVector / TSHVectorRGB ApplySHRotateMatrix
+	{
+		std::cout << "\n=== Test 9: TSHVector/TSHVectorRGB ApplySHRotateMatrix ===" << std::endl;
+		constexpr float eps = 1e-5f;
+		bool pass = true;
+
+		// Verify TSHRotateMatrices BandOffset formula
+		static_assert(TSHRotateMatrices<2>::BandOffset<2> == 0);   // band 2: 3x3, starts at 0
+		static_assert(TSHRotateMatrices<3>::BandOffset<3> == 9);   // band 3: 5x5, starts at 9  (after one 3x3)
+		static_assert(TSHRotateMatrices<4>::BandOffset<4> == 34);  // band 4: 7x7, starts at 34 (after 3x3 + 5x5)
+
+		FMatrix3x3f rotX(
+			1.f, 0.f,            0.f,
+			0.f, std::cos(0.5f), -std::sin(0.5f),
+			0.f, std::sin(0.5f),  std::cos(0.5f)
+		);
+		FMatrix3x3f rotXInv = rotX.Transpose();
+
+		// --- ComputeSHRotateMatrices<2> builds the same matrix as ComputeSHBand2RotateMatrix ---
+		{
+			float mat2[9];
+			ComputeSHBand2RotateMatrix(mat2, rotX);
+
+			auto mats2 = TSHRotateMatrices<2>(rotX);
+			for (int i = 0; i < 9; ++i)
+			{
+				if (std::abs(mats2.GetBand<2>()[i] - mat2[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<2> band2 mismatch at [" << i << "]" << std::endl;
+					pass = false;
+					break;
+				}
+			}
+		}
+
+		// --- ComputeSHRotateMatrices<3> band 2 and band 3 match individual functions ---
+		{
+			float mat2[9], mat3[25];
+			ComputeSHBand2RotateMatrix(mat2, rotX);
+			ComputeSHBand3RotateMatrix(mat3, rotX);
+
+			auto mats3 = TSHRotateMatrices<3>(rotX);
+			for (int i = 0; i < 9; ++i)
+			{
+				if (std::abs(mats3.GetBand<2>()[i] - mat2[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<3> band2 mismatch at [" << i << "]" << std::endl;
+					pass = false; break;
+				}
+			}
+			for (int i = 0; i < 25; ++i)
+			{
+				if (std::abs(mats3.GetBand<3>()[i] - mat3[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<3> band3 mismatch at [" << i << "]" << std::endl;
+					pass = false; break;
+				}
+			}
+		}
+
+		// --- FSHVector3: identity matrices produce no change ---
+		{
+			auto mats = TSHRotateMatrices<3>(FMatrix3x3f::Identity());
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i + 1);
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - orig.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 identity: V[" << i << "] = "
+					          << result.V[i] << " expected " << orig.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVector3: apply R then R^-1 restores original ---
+		{
+			auto mats    = TSHRotateMatrices<3>(rotX);
+			auto matsInv = TSHRotateMatrices<3>(rotXInv);
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i) * 0.3f - 1.f;
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats).ApplySHRotateMatrix(matsInv);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - orig.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 R*R^-1: V[" << i << "] = "
+					          << result.V[i] << " expected " << orig.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVectorRGB3: apply R then R^-1 restores original per-channel ---
+		{
+			auto mats    = TSHRotateMatrices<3>(rotX);
+			auto matsInv = TSHRotateMatrices<3>(rotXInv);
+			FSHVectorRGB3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				orig.R.V[i] = static_cast<float>(i) * 0.1f;
+				orig.G.V[i] = static_cast<float>(i) * 0.2f + 0.5f;
+				orig.B.V[i] = static_cast<float>(i) * 0.3f - 0.5f;
+			}
+			FSHVectorRGB3 result = orig.ApplySHRotateMatrix(mats).ApplySHRotateMatrix(matsInv);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.R.V[i] - orig.R.V[i]) > eps ||
+				    std::abs(result.G.V[i] - orig.G.V[i]) > eps ||
+				    std::abs(result.B.V[i] - orig.B.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVectorRGB3 R*R^-1: channel mismatch at [" << i << "]" << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVector3::ApplySHRotateMatrix result matches per-band manual application ---
+		{
+			auto mats = TSHRotateMatrices<3>(rotX);
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i + 1) * 0.5f;
+
+			// reference: apply each band manually
+			FSHVector3 ref = orig;
+			{
+				float mat2[9]; ComputeSHBand2RotateMatrix(mat2, rotX);
+				ApplySHRotateMatrix<2>(ref.GetBand<2>(), mat2);
+			}
+			{
+				float mat3[25]; ComputeSHBand3RotateMatrix(mat3, rotX);
+				ApplySHRotateMatrix<3>(ref.GetBand<3>(), mat3);
+			}
+
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - ref.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 vs manual: V[" << i << "] = "
+					          << result.V[i] << " expected " << ref.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] TSHVector/TSHVectorRGB ApplySHRotateMatrix" << std::endl;
+	}
+
     return 0;
 }

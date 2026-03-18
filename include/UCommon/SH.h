@@ -94,6 +94,7 @@ SOFTWARE.
  */
 
 #include "Config.h"
+#include "Cpp17.h"
 #include "Matrix.h"
 #include "Utils.h"
 
@@ -153,6 +154,10 @@ namespace NameSpace \
 	using FSHVectorACRGB3 = UCommon::FSHVectorACRGB3; \
 	using FSHVectorACRGB4 = UCommon::FSHVectorACRGB4; \
 	using FSHVectorACRGB5 = UCommon::FSHVectorACRGB5; \
+	using FSHRotateMatrices2 = UCommon::FSHRotateMatrices2; \
+	using FSHRotateMatrices3 = UCommon::FSHRotateMatrices3; \
+	using FSHRotateMatrices4 = UCommon::FSHRotateMatrices4; \
+	using FSHRotateMatrices5 = UCommon::FSHRotateMatrices5; \
 }
 
 namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
@@ -175,6 +180,56 @@ namespace UCommon
 
 	template<int i>
 	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : (i < 9 ? i - 6 : (i < 16 ? i - 12 : i - 20)));
+
+	// Flat container for all SH band rotation matrices (bands 2..Order).
+	// Band k's matrix is (2k-1) x (2k-1), stored row-major in Data at offset BandOffset<k>.
+	// Construct from a 3x3 rotation matrix: TSHRotateMatrices<Order> mats(rotMatrix);
+	//
+	// Closed-form sizes (derived from the odd-square sum: 1^2+3^2+...+(2n-1)^2 = n(4n^2-1)/3):
+	//
+	//   TotalSize          = sum_{k=2}^{Order} (2k-1)^2
+	//                      = Order*(4*Order^2-1)/3 - 1
+	//
+	//   BandOffset<B>      = sum_{k=2}^{B-1} (2k-1)^2           (empty sum = 0 when B=2)
+	//                      = (B-1)*(4*(B-1)^2-1)/3 - 1          (evaluates to 0 for B=2)
+	template<int Order>
+	struct TSHRotateMatrices
+	{
+		static_assert(Order >= 2, "TSHRotateMatrices requires Order >= 2");
+
+		// Offset (in floats) of band BandOrder's block within Data.
+		// BandOrder=2 -> 0, BandOrder=3 -> 9, BandOrder=4 -> 34, ...
+		template<int BandOrder>
+		static constexpr int BandOffset =
+			(BandOrder - 1) * (4 * (BandOrder - 1) * (BandOrder - 1) - 1) / 3 - 1;
+
+		// Total number of floats: sum_{k=2}^{Order} (2k-1)^2 = BandOffset<Order+1>
+		static constexpr int TotalSize = BandOffset<Order + 1>;
+
+		// Flat storage: band 2 matrix, then band 3 matrix, ..., then band Order matrix
+		float Data[TotalSize];
+
+		// Construct from a 3x3 rotation matrix: fills all band rotation matrices in one call.
+		explicit TSHRotateMatrices(const FMatrix3x3f& RotateMatrix);
+
+		// Returns a TSpan over the row-major (2*BandOrder-1) x (2*BandOrder-1) rotation matrix for band BandOrder.
+		// Indexed as [row * (2*BandOrder-1) + col], size = (2*BandOrder-1)^2.
+		template<int BandOrder>
+		TSpan<float> GetBand() noexcept
+		{
+			static_assert(BandOrder >= 2 && BandOrder <= Order);
+			constexpr int N = 2 * BandOrder - 1;
+			return { Data + BandOffset<BandOrder>, N * N };
+		}
+
+		template<int BandOrder>
+		TSpan<const float> GetBand() const noexcept
+		{
+			static_assert(BandOrder >= 2 && BandOrder <= Order);
+			constexpr int N = 2 * BandOrder - 1;
+			return { Data + BandOffset<BandOrder>, N * N };
+		}
+	};
 
 	template<int Order> class TSHVectorRGB;
 	template<int Order> class TSHVectorACRGB;
@@ -362,6 +417,10 @@ namespace UCommon
 			}
 			return Result;
 		}
+
+		// Returns a new DerivedType with all bands 2..MaxSHOrder rotated by the given precomputed matrices.
+		// L0 (DC) is rotationally invariant and is left unchanged.
+		DerivedType ApplySHRotateMatrix(const TSHRotateMatrices<MaxSHOrder>& Matrices) const;
 	};
 
 	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
@@ -571,6 +630,10 @@ namespace UCommon
 			}
 			return SHVectorRGBBaseYCoCg;
 		}
+
+		// Returns a new DerivedType with all bands 2..MaxSHOrder rotated by the given precomputed matrices.
+		// L0 (DC) is rotationally invariant and is left unchanged.
+		DerivedType ApplySHRotateMatrix(const TSHRotateMatrices<MaxSHOrder>& Matrices) const;
 	};
 
 	// Forward declarations for CRTP base class
@@ -1319,6 +1382,11 @@ namespace UCommon
 	using FSHBandVectorRGB3 = TSHBandVectorRGB<3>;
 	using FSHBandVectorRGB4 = TSHBandVectorRGB<4>;
 	using FSHBandVectorRGB5 = TSHBandVectorRGB<5>;
+
+	using FSHRotateMatrices2 = TSHRotateMatrices<2>;
+	using FSHRotateMatrices3 = TSHRotateMatrices<3>;
+	using FSHRotateMatrices4 = TSHRotateMatrices<4>;
+	using FSHRotateMatrices5 = TSHRotateMatrices<5>;
 
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;

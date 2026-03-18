@@ -653,3 +653,82 @@ void UCommon::ApplySHRotateMatrix(TSHBandView<Order> SHBand, const float* SHBand
 	for (int i = 0; i < N; ++i)
 		SHBand[i] = Tmp[i];
 }
+
+// ============================================================================
+// TSHRotateMatrices constructor / TSHVectorCommon::ApplySHRotateMatrix /
+// TSHVectorRGBCommon::ApplySHRotateMatrix
+// ============================================================================
+
+namespace UCommon::Details
+{
+	// Dispatch: fill the rotation matrix for band BandOrder into Matrices.
+	// Only bands 2 and 3 are supported via ComputeSHBand2/3RotateMatrix.
+	// For higher bands (4, 5, ...) add explicit specializations here.
+	template<int BandOrder, int Order>
+	void ComputeOneBandRotateMatrix(TSHRotateMatrices<Order>& Matrices, const FMatrix3x3f& RotateMatrix)
+	{
+		static_assert(BandOrder >= 2 && BandOrder <= Order);
+		if constexpr (BandOrder == 2)
+			ComputeSHBand2RotateMatrix(Matrices.template GetBand<2>().GetData(), RotateMatrix);
+		else if constexpr (BandOrder == 3)
+			ComputeSHBand3RotateMatrix(Matrices.template GetBand<3>().GetData(), RotateMatrix);
+		else
+			static_assert(BandOrder < 4, "ComputeOneBandRotateMatrix: no implementation for BandOrder >= 4");
+	}
+
+	// Fold over bands 2..Order using integer_sequence (Is = 0, 1, ..., Order-2 => Band = 2, 3, ..., Order)
+	template<int Order, int... Is>
+	void FillSHRotateMatrices(TSHRotateMatrices<Order>& Matrices, const FMatrix3x3f& RotateMatrix,
+	                          std::integer_sequence<int, Is...>)
+	{
+		(ComputeOneBandRotateMatrix<Is + 2>(Matrices, RotateMatrix), ...);
+	}
+
+	// Apply per-band rotation for a single-channel V[] array.
+	// SHIndexOffset = Order*Order - Basis  (0 for TSHVector, 1 for TSHVectorAC)
+	// Band k's coefficients start at V[(k-1)^2 - SHIndexOffset].
+	template<int Order, int SHIndexOffset, int... Is>
+	void ApplyBandRotations(float* V, const TSHRotateMatrices<Order>& Matrices,
+	                        std::integer_sequence<int, Is...>)
+	{
+		// Is = 0, 1, ..., Order-2  =>  Band = Is+2 = 2, 3, ..., Order
+		// Band k base in V: (k-1)^2 - SHIndexOffset  =  Is*Is+2*Is+1 - SHIndexOffset
+		(ApplySHRotateMatrix(
+			TSHBandView<Is + 2>(&V[(Is + 1) * (Is + 1) - SHIndexOffset]),
+			Matrices.template GetBand<Is + 2>().GetData()
+		), ...);
+	}
+}
+
+template<int Order>
+UCommon::TSHRotateMatrices<Order>::TSHRotateMatrices(const FMatrix3x3f& RotateMatrix)
+{
+	Details::FillSHRotateMatrices(*this, RotateMatrix, std::make_integer_sequence<int, Order - 1>{});
+}
+
+template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
+DerivedType UCommon::TSHVectorCommon<DerivedType, InMaxSHOrder, InMaxSHBasis>::ApplySHRotateMatrix(
+	const TSHRotateMatrices<MaxSHOrder>& Matrices) const
+{
+	static_assert(MaxSHOrder >= 2, "ApplySHRotateMatrix requires MaxSHOrder >= 2");
+	DerivedType Result = static_cast<const DerivedType&>(*this);
+	// SHIndexOffset: how many leading coefficients are absent from V[]
+	//   TSHVector  (Basis = Order^2):      Offset = 0  (V[0] = L0)
+	//   TSHVectorAC (Basis = Order^2 - 1): Offset = 1  (V[0] = L1,m=-1)
+	constexpr int SHIndexOffset = InMaxSHOrder * InMaxSHOrder - InMaxSHBasis;
+	Details::ApplyBandRotations<MaxSHOrder, SHIndexOffset>(
+		Result.V, Matrices, std::make_integer_sequence<int, MaxSHOrder - 1>{});
+	return Result;
+}
+
+template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
+DerivedType UCommon::TSHVectorRGBCommon<DerivedType, TElement, InMaxSHOrder, InMaxSHBasis>::ApplySHRotateMatrix(
+	const TSHRotateMatrices<MaxSHOrder>& Matrices) const
+{
+	static_assert(MaxSHOrder >= 2, "ApplySHRotateMatrix requires MaxSHOrder >= 2");
+	DerivedType Result;
+	Result.R = static_cast<const DerivedType&>(*this).R.ApplySHRotateMatrix(Matrices);
+	Result.G = static_cast<const DerivedType&>(*this).G.ApplySHRotateMatrix(Matrices);
+	Result.B = static_cast<const DerivedType&>(*this).B.ApplySHRotateMatrix(Matrices);
+	return Result;
+}
