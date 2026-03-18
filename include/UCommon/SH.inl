@@ -636,3 +636,20 @@ UCommon::TSHBandVectorRGB<Order> UCommon::TSHBandVectorRGB<Order>::operator/(flo
 // Binary operators for TSHBandVectorRGB (return TSHBandVectorRGB)
 // Global operator* (scalar * vector) is defined inline in the header
 // ============================================================================
+
+template<int Order>
+void UCommon::ApplySHRotateMatrix(TSHBandView<Order> SHBand, const float* SHBandRotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(SHBand.GetData() != nullptr);
+	UBPA_UCOMMON_ASSERT(SHBandRotateMatrix != nullptr);
+	constexpr int N = TSHBandView<Order>::MaxSHBasis;
+	float Tmp[N];
+	for (int Row = 0; Row < N; ++Row)
+	{
+		Tmp[Row] = 0.f;
+		for (int Col = 0; Col < N; ++Col)
+			Tmp[Row] += SHBandRotateMatrix[Row * N + Col] * SHBand[Col];
+	}
+	for (int i = 0; i < N; ++i)
+		SHBand[i] = Tmp[i];
+}

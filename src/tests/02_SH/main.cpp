@@ -912,28 +912,18 @@ int main(int argc, char** argv)
 		}
 	};
 
-	// Helper: Apply SH Band2 rotation in-place (l=1, 3 coefficients)
-	// M = SHBand2RotateMatrix (3x3, row-major), coeffs updated as: out = M * in
+	// Helper: Apply SH Band2 rotation in-place via ApplySHRotateMatrix
 	auto RotateSHBand2 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
 		float shRotMat[9];
 		ComputeSHBand2RotateMatrix(shRotMat, rotMatrix);
-		float tmp[3] = {};
-		for (int i = 0; i < 3; ++i)
-			for (int j = 0; j < 3; ++j)
-				tmp[i] += shRotMat[i * 3 + j] * coeffs[j];
-		for (int i = 0; i < 3; ++i) coeffs[i] = tmp[i];
+		ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), shRotMat);
 	};
 
-	// Helper: Apply SH Band3 rotation in-place (l=2, 5 coefficients)
-	// M = SHBand3RotateMatrix (5x5, row-major), coeffs updated as: out = M * in
+	// Helper: Apply SH Band3 rotation in-place via ApplySHRotateMatrix
 	auto RotateSHBand3 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
 		float shRotMat[25];
 		ComputeSHBand3RotateMatrix(shRotMat, rotMatrix);
-		float tmp[5] = {};
-		for (int i = 0; i < 5; ++i)
-			for (int j = 0; j < 5; ++j)
-				tmp[i] += shRotMat[i * 5 + j] * coeffs[j];
-		for (int i = 0; i < 5; ++i) coeffs[i] = tmp[i];
+		ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), shRotMat);
 	};
 
 	// Test 1: Identity rotation should preserve SH coefficients
@@ -1387,6 +1377,144 @@ int main(int argc, char** argv)
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;
+
+	// Test 8: ApplySHRotateMatrix
+	{
+		std::cout << "\n=== Test 8: ApplySHRotateMatrix ===" << std::endl;
+		constexpr float eps = 1e-5f;
+		bool pass = true;
+
+		// --- Band2 (Order=2, 3 coefficients): identity should be a no-op ---
+		{
+			FMatrix3x3f identity = FMatrix3x3f::Identity();
+			float mat[9];
+			ComputeSHBand2RotateMatrix(mat, identity);
+
+			float coeffs[3] = { 1.f, 2.f, 3.f };
+			float expected[3] = { 1.f, 2.f, 3.f };
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - expected[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 identity: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << expected[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band3 (Order=3, 5 coefficients): identity should be a no-op ---
+		{
+			FMatrix3x3f identity = FMatrix3x3f::Identity();
+			float mat[25];
+			ComputeSHBand3RotateMatrix(mat, identity);
+
+			float coeffs[5] = { 1.f, 2.f, 3.f, 4.f, 5.f };
+			float expected[5] = { 1.f, 2.f, 3.f, 4.f, 5.f };
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), mat);
+
+			for (int i = 0; i < 5; ++i)
+			{
+				if (std::abs(coeffs[i] - expected[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band3 identity: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << expected[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band2: apply R then R^-1 (transpose) should restore original ---
+		{
+			FMatrix3x3f rotX30(
+				1.f,  0.f,            0.f,
+				0.f,  std::cos(0.3f), -std::sin(0.3f),
+				0.f,  std::sin(0.3f),  std::cos(0.3f)
+			);
+			FMatrix3x3f rotX30inv = rotX30.Transpose();
+
+			float mat[9], matInv[9];
+			ComputeSHBand2RotateMatrix(mat,    rotX30);
+			ComputeSHBand2RotateMatrix(matInv, rotX30inv);
+
+			float coeffs[3] = { 0.5f, 0.7f, 0.3f };
+			float original[3] = { 0.5f, 0.7f, 0.3f };
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), matInv);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - original[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 R*R^-1: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << original[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band3: apply R then R^-1 should restore original ---
+		{
+			FMatrix3x3f rotZ45(
+				 std::cos(0.4f), -std::sin(0.4f), 0.f,
+				 std::sin(0.4f),  std::cos(0.4f), 0.f,
+				 0.f,             0.f,             1.f
+			);
+			FMatrix3x3f rotZ45inv = rotZ45.Transpose();
+
+			float mat[25], matInv[25];
+			ComputeSHBand3RotateMatrix(mat,    rotZ45);
+			ComputeSHBand3RotateMatrix(matInv, rotZ45inv);
+
+			float coeffs[5] = { 0.5f, 0.7f, 0.3f, -0.2f, 0.1f };
+			float original[5] = { 0.5f, 0.7f, 0.3f, -0.2f, 0.1f };
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), mat);
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), matInv);
+
+			for (int i = 0; i < 5; ++i)
+			{
+				if (std::abs(coeffs[i] - original[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band3 R*R^-1: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << original[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band2: result matches manual M*v ---
+		{
+			FMatrix3x3f rotY(
+				 0.f, 0.f, 1.f,
+				 0.f, 1.f, 0.f,
+				-1.f, 0.f, 0.f
+			);
+			float mat[9];
+			ComputeSHBand2RotateMatrix(mat, rotY);
+
+			float coeffs[3] = { 1.f, -1.f, 2.f };
+			float manual[3] = {};
+			for (int i = 0; i < 3; ++i)
+				for (int j = 0; j < 3; ++j)
+					manual[i] += mat[i * 3 + j] * coeffs[j];
+
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - manual[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 manual check: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << manual[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] ApplySHRotateMatrix" << std::endl;
+	}
 
     return 0;
 }
