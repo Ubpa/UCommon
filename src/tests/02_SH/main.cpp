@@ -1667,5 +1667,74 @@ int main(int argc, char** argv)
 		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] TSHVector/TSHVectorRGB ApplySHRotateMatrix" << std::endl;
 	}
 
+	// Test 10: TSHRotateMatrices implicit conversion to lower order — zero-copy
+	{
+		std::cout << "\n=== Test 10: TSHRotateMatrices implicit lower-order conversion ===" << std::endl;
+		bool pass = true;
+		const float eps = 1e-6f;
+
+		const float angle = UCommon::Pi / 6.f; // 30 deg
+		FMatrix3x3f rotX(
+			1.f, 0.f,              0.f,
+			0.f, std::cos(angle), -std::sin(angle),
+			0.f, std::sin(angle),  std::cos(angle)
+		);
+
+		// Build order-3 matrices; lower-order view should agree with independently built order-2.
+		TSHRotateMatrices<3> mats3(rotX);
+		TSHRotateMatrices<2> mats2Ref(rotX);
+
+		// --- Implicit conversion to order-2 must match independently built TSHRotateMatrices<2> ---
+		{
+			const TSHRotateMatrices<2>& view2 = mats3;
+			static_assert(TSHRotateMatrices<2>::TotalSize == 9);
+			for (int i = 0; i < TSHRotateMatrices<2>::TotalSize; ++i)
+			{
+				if (std::abs(view2.Data[i] - mats2Ref.Data[i]) > eps)
+				{
+					std::cout << "  [FAILED] implicit order-2 Data[" << i << "] = "
+					          << view2.Data[i] << " expected " << mats2Ref.Data[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Conversion produces a reference (no copy): address must lie inside mats3 ---
+		{
+			const TSHRotateMatrices<2>& view2 = mats3;
+			if (reinterpret_cast<const float*>(&view2) != mats3.Data)
+			{
+				std::cout << "  [FAILED] order-2 view is not an alias of mats3.Data" << std::endl;
+				pass = false;
+			}
+		}
+
+		// --- ApplySHRotateMatrix with implicit lower-order conversion gives same result ---
+		{
+			FSHVector3 sh3;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) sh3.V[i] = static_cast<float>(i + 1);
+
+			// mats3 implicitly converts to const TSHRotateMatrices<3>& (same order, identity)
+			// Test: passing mats3 where TSHRotateMatrices<2> is expected (implicit downcast)
+			FSHVector2 sh2;
+			for (int i = 0; i < FSHVector2::MaxSHBasis; ++i) sh2.V[i] = static_cast<float>(i + 1);
+
+			FSHVector2 result_implicit = sh2.ApplySHRotateMatrix(mats3);
+			FSHVector2 result_ref      = sh2.ApplySHRotateMatrix(mats2Ref);
+
+			for (int i = 0; i < FSHVector2::MaxSHBasis; ++i)
+			{
+				if (std::abs(result_implicit.V[i] - result_ref.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] ApplySHRotateMatrix implicit conversion: V[" << i << "] = "
+					          << result_implicit.V[i] << " expected " << result_ref.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] TSHRotateMatrices implicit lower-order conversion" << std::endl;
+	}
+
     return 0;
 }

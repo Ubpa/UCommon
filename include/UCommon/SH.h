@@ -154,10 +154,9 @@ namespace NameSpace \
 	using FSHVectorACRGB3 = UCommon::FSHVectorACRGB3; \
 	using FSHVectorACRGB4 = UCommon::FSHVectorACRGB4; \
 	using FSHVectorACRGB5 = UCommon::FSHVectorACRGB5; \
+	template<int Order> using TSHRotateMatrices = UCommon::TSHRotateMatrices<Order>; \
 	using FSHRotateMatrices2 = UCommon::FSHRotateMatrices2; \
 	using FSHRotateMatrices3 = UCommon::FSHRotateMatrices3; \
-	using FSHRotateMatrices4 = UCommon::FSHRotateMatrices4; \
-	using FSHRotateMatrices5 = UCommon::FSHRotateMatrices5; \
 }
 
 namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
@@ -228,6 +227,22 @@ namespace UCommon
 			static_assert(BandOrder >= 2 && BandOrder <= Order);
 			constexpr int N = 2 * BandOrder - 1;
 			return { Data + BandOffset<BandOrder>, N * N };
+		}
+
+		// Implicit zero-copy conversion to a lower-order view.
+		// Valid because TSHRotateMatrices<LowerOrder>::Data is a strict prefix of this->Data.
+		template<int LowerOrder,
+			typename = std::enable_if_t<(LowerOrder >= 2 && LowerOrder < Order)>>
+		operator TSHRotateMatrices<LowerOrder>&() noexcept
+		{
+			return reinterpret_cast<TSHRotateMatrices<LowerOrder>&>(*this);
+		}
+
+		template<int LowerOrder,
+			typename = std::enable_if_t<(LowerOrder >= 2 && LowerOrder < Order)>>
+		operator const TSHRotateMatrices<LowerOrder>&() const noexcept
+		{
+			return reinterpret_cast<const TSHRotateMatrices<LowerOrder>&>(*this);
 		}
 	};
 
@@ -1385,8 +1400,6 @@ namespace UCommon
 
 	using FSHRotateMatrices2 = TSHRotateMatrices<2>;
 	using FSHRotateMatrices3 = TSHRotateMatrices<3>;
-	using FSHRotateMatrices4 = TSHRotateMatrices<4>;
-	using FSHRotateMatrices5 = TSHRotateMatrices<5>;
 
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;
