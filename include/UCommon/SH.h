@@ -24,7 +24,78 @@ SOFTWARE.
 
 #pragma once
 
+/*
+ * SH Type System Overview
+ * =======================
+ *
+ * This file defines template types for Spherical Harmonics (SH),
+ * organized along four orthogonal dimensions:
+ *   - Scope      : Band (single order) vs Vector (all orders, L0..L(N-1))
+ *   - Ownership  : View (non-owning reference) vs Vector/Owning (inline float array)
+ *   - Channel    : single-channel (grayscale) vs RGB (three single-channel members)
+ *   - DC         : with DC (includes L0) vs AC-only (excludes L0)
+ *
+ * --------------------------------------------------------------------
+ * 1. Full-order coefficients (spanning all SH orders 0 .. Order-1,
+ *    Order*Order basis functions total)
+ *
+ *   TSHVectorCommon<Derived, Order, Basis>       -- CRTP base, stores float V[Basis]
+ *     +-- TSHVector<N>                              N*N coefficients (with DC, L0..L(N-1))
+ *     +-- TSHVectorAC<N>                            N*N-1 coefficients (no DC, L1..L(N-1))
+ *
+ *   TSHVectorRGBCommon<Derived, TElem, Order, Basis>  -- CRTP base, stores TElem<N> R,G,B
+ *     +-- TSHVectorRGB<N>      R/G/B each a TSHVector<N>
+ *     +-- TSHVectorACRGB<N>    R/G/B each a TSHVectorAC<N> (no DC)
+ *
+ * --------------------------------------------------------------------
+ * 2. Single-band coefficients (single SH band, order N-1 has 2N-1 coefficients)
+ *
+ *   TSHBandCommon<Derived, Order>                -- CRTP base
+ *     +-- TSHBandViewCommon<Order, bConst>          -- View base (holds Data pointer, non-owning)
+ *     |   +-- TSHBandView<Order, false>              mutable view
+ *     |   +-- TSHBandView<Order, true>               const view
+ *     +-- TSHBandVector<Order>                       owning (inline float Data[2N-1])
+ *
+ *   TSHBandRGBCommon<Derived, Order>             -- CRTP base
+ *     +-- TSHBandViewRGBCommon<Order, bConst>       -- RGB View base (R, G, B as TSHBandView)
+ *     |   +-- TSHBandViewRGB<Order, false>           mutable RGB view
+ *     |   +-- TSHBandViewRGB<Order, true>            const RGB view
+ *     +-- TSHBandVectorRGB<Order>                    owning (R/G/B each a TSHBandVector<N>)
+ *
+ *   Const view aliases:
+ *     TSHBandConstView<N>    = TSHBandView<N, true>
+ *     TSHBandConstViewRGB<N> = TSHBandViewRGB<N, true>
+ *
+ * --------------------------------------------------------------------
+ * 3. Common F-prefixed aliases (suffix digit = order, range 2..5)
+ *
+ *   FSHVector{2..5}           = TSHVector<N>
+ *   FSHVectorAC{2..5}         = TSHVectorAC<N>
+ *   FSHVectorRGB{2..5}        = TSHVectorRGB<N>
+ *   FSHVectorACRGB{2..5}      = TSHVectorACRGB<N>
+ *   FSHBandView{2..5}         = TSHBandView<N, false>
+ *   FSHBandConstView{2..5}    = TSHBandView<N, true>
+ *   FSHBandVector{2..5}       = TSHBandVector<N>
+ *   FSHBandViewRGB{2..5}      = TSHBandViewRGB<N, false>
+ *   FSHBandConstViewRGB{2..5} = TSHBandViewRGB<N, true>
+ *   FSHBandVectorRGB{2..5}    = TSHBandVectorRGB<N>
+ *
+ * --------------------------------------------------------------------
+ * 4. Key relationships
+ *
+ *   TSHVector<N>::GetBand<K>()        -> TSHBandView<K>        (ref into internal data)
+ *   TSHVectorAC<N>::GetBand<K>()      -> TSHBandView<K>        (K >= 2, skips L0)
+ *   TSHVectorRGB<N>::GetBand<K>()     -> TSHBandViewRGB<K>
+ *   TSHBandView<N>::Vector()          -> TSHBandVector<N>&     (reinterpret, requires contiguous data)
+ *
+ *   TSHBandVector<N>     -> TSHBandView<N, false>  : implicit (operator TSHBandView<N,false>())
+ *   TSHBandView<N,false> -> TSHBandView<N, true>   : implicit (mutable to const)
+ *   TSHVector<N>(TSHVector<K>)                     : explicit truncation or zero-padding
+ */
+
 #include "Config.h"
+#include "Cpp17.h"
+#include "Matrix.h"
 #include "Utils.h"
 
 #define UBPA_UCOMMON_SH_TO_NAMESPACE(NameSpace) \
@@ -83,6 +154,10 @@ namespace NameSpace \
 	using FSHVectorACRGB3 = UCommon::FSHVectorACRGB3; \
 	using FSHVectorACRGB4 = UCommon::FSHVectorACRGB4; \
 	using FSHVectorACRGB5 = UCommon::FSHVectorACRGB5; \
+	using FSHRotateMatrices2 = UCommon::FSHRotateMatrices2; \
+	using FSHRotateMatrices3 = UCommon::FSHRotateMatrices3; \
+	using FSHRotateMatrices4 = UCommon::FSHRotateMatrices4; \
+	using FSHRotateMatrices5 = UCommon::FSHRotateMatrices5; \
 }
 
 namespace UCommon { namespace Details { template<int l, int m> constexpr float SHKImpl(); } }
@@ -105,6 +180,56 @@ namespace UCommon
 
 	template<int i>
 	constexpr int SHIndexToM = i == 0 ? 0 : (i < 4 ? i - 2 : (i < 9 ? i - 6 : (i < 16 ? i - 12 : i - 20)));
+
+	// Flat container for all SH band rotation matrices (bands 2..Order).
+	// Band k's matrix is (2k-1) x (2k-1), stored row-major in Data at offset BandOffset<k>.
+	// Construct from a 3x3 rotation matrix: TSHRotateMatrices<Order> mats(rotMatrix);
+	//
+	// Closed-form sizes (derived from the odd-square sum: 1^2+3^2+...+(2n-1)^2 = n(4n^2-1)/3):
+	//
+	//   TotalSize          = sum_{k=2}^{Order} (2k-1)^2
+	//                      = Order*(4*Order^2-1)/3 - 1
+	//
+	//   BandOffset<B>      = sum_{k=2}^{B-1} (2k-1)^2           (empty sum = 0 when B=2)
+	//                      = (B-1)*(4*(B-1)^2-1)/3 - 1          (evaluates to 0 for B=2)
+	template<int Order>
+	struct TSHRotateMatrices
+	{
+		static_assert(Order >= 2, "TSHRotateMatrices requires Order >= 2");
+
+		// Offset (in floats) of band BandOrder's block within Data.
+		// BandOrder=2 -> 0, BandOrder=3 -> 9, BandOrder=4 -> 34, ...
+		template<int BandOrder>
+		static constexpr int BandOffset =
+			(BandOrder - 1) * (4 * (BandOrder - 1) * (BandOrder - 1) - 1) / 3 - 1;
+
+		// Total number of floats: sum_{k=2}^{Order} (2k-1)^2 = BandOffset<Order+1>
+		static constexpr int TotalSize = BandOffset<Order + 1>;
+
+		// Flat storage: band 2 matrix, then band 3 matrix, ..., then band Order matrix
+		float Data[TotalSize];
+
+		// Construct from a 3x3 rotation matrix: fills all band rotation matrices in one call.
+		explicit TSHRotateMatrices(const FMatrix3x3f& RotateMatrix);
+
+		// Returns a TSpan over the row-major (2*BandOrder-1) x (2*BandOrder-1) rotation matrix for band BandOrder.
+		// Indexed as [row * (2*BandOrder-1) + col], size = (2*BandOrder-1)^2.
+		template<int BandOrder>
+		TSpan<float> GetBand() noexcept
+		{
+			static_assert(BandOrder >= 2 && BandOrder <= Order);
+			constexpr int N = 2 * BandOrder - 1;
+			return { Data + BandOffset<BandOrder>, N * N };
+		}
+
+		template<int BandOrder>
+		TSpan<const float> GetBand() const noexcept
+		{
+			static_assert(BandOrder >= 2 && BandOrder <= Order);
+			constexpr int N = 2 * BandOrder - 1;
+			return { Data + BandOffset<BandOrder>, N * N };
+		}
+	};
 
 	template<int Order> class TSHVectorRGB;
 	template<int Order> class TSHVectorACRGB;
@@ -292,6 +417,10 @@ namespace UCommon
 			}
 			return Result;
 		}
+
+		// Returns a new DerivedType with all bands 2..MaxSHOrder rotated by the given precomputed matrices.
+		// L0 (DC) is rotationally invariant and is left unchanged.
+		DerivedType ApplySHRotateMatrix(const TSHRotateMatrices<MaxSHOrder>& Matrices) const;
 	};
 
 	template<typename DerivedType, template<int> class TElement, int InMaxSHOrder, int InMaxSHBasis>
@@ -501,6 +630,10 @@ namespace UCommon
 			}
 			return SHVectorRGBBaseYCoCg;
 		}
+
+		// Returns a new DerivedType with all bands 2..MaxSHOrder rotated by the given precomputed matrices.
+		// L0 (DC) is rotationally invariant and is left unchanged.
+		DerivedType ApplySHRotateMatrix(const TSHRotateMatrices<MaxSHOrder>& Matrices) const;
 	};
 
 	// Forward declarations for CRTP base class
@@ -1250,6 +1383,11 @@ namespace UCommon
 	using FSHBandVectorRGB4 = TSHBandVectorRGB<4>;
 	using FSHBandVectorRGB5 = TSHBandVectorRGB<5>;
 
+	using FSHRotateMatrices2 = TSHRotateMatrices<2>;
+	using FSHRotateMatrices3 = TSHRotateMatrices<3>;
+	using FSHRotateMatrices4 = TSHRotateMatrices<4>;
+	using FSHRotateMatrices5 = TSHRotateMatrices<5>;
+
 	using FSHVector2 = TSHVector<2>;
 	using FSHVector3 = TSHVector<3>;
 	using FSHVector4 = TSHVector<4>;
@@ -1284,12 +1422,16 @@ namespace UCommon
 	// == Buffer.w + z1*(1 + z1*k)
 	UBPA_UCOMMON_API float HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer, float Delta = UBPA_UCOMMON_DELTA);
 
-	// RotateMatrix       : (3, 3)
-	// SHBand2RotateMatrix: (3, 3)
-	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const float* RotateMatrix);
-	// RotateMatrix       : (3, 3)
-	// SHBand2RotateMatrix: (5, 5)
-	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const float* RotateMatrix);
+	// SHBand2RotateMatrix: row-major 3x3 (float[9], [row*3+col])
+	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatrix3x3f& RotateMatrix);
+	// SHBand3RotateMatrix: row-major 5x5 (float[25], [row*5+col])
+	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatrix3x3f& RotateMatrix);
+
+	// Apply a precomputed SH band rotation matrix to a mutable SH band view (in-place).
+	// SHBand          : mutable view of 2*Order-1 coefficients, modified in place
+	// SHBandRotateMatrix: row-major (2*Order-1) x (2*Order-1) float array, [row*(2*Order-1)+col]
+	template<int Order>
+	void ApplySHRotateMatrix(TSHBandView<Order> SHBand, const float* SHBandRotateMatrix);
 
 	// ============================================================================
 	// Binary operators for TSHBandView (return TSHBandVector)

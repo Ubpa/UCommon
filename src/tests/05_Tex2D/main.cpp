@@ -1,9 +1,9 @@
 #include <UCommon/Tex2D.h>
 #include <UCommon/Half.h>
-#include <iostream>
-#include <iomanip>
-#include <cassert>
 #include <cmath>
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <UCommon_ext/doctest/doctest.h>
 
 using namespace UCommon;
 
@@ -13,10 +13,8 @@ bool FloatEqual(float A, float B, float Tolerance = 0.001f)
 	return std::abs(A - B) < Tolerance;
 }
 
-void TestClampUint8()
+TEST_CASE("Tex2D - Clamp Uint8")
 {
-	std::cout << "Testing Clamp with Uint8..." << std::endl;
-
 	// Create a 2x2 texture with Uint8 type
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Uint8);
 
@@ -30,18 +28,14 @@ void TestClampUint8()
 	Tex.Clamp(0.25f, 0.75f);
 
 	// Check results (0.25 = 64, 0.75 = 191)
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 64);  // 0 -> 64
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 128 stays
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 191); // 191 stays
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 191); // 255 -> 191
-
-	std::cout << "  Clamp Uint8: PASSED" << std::endl;
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 64);  // 0 -> 64
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 128 stays
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 191); // 191 stays
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 191); // 255 -> 191
 }
 
-void TestMinUint8()
+TEST_CASE("Tex2D - Min Uint8")
 {
-	std::cout << "Testing Min with Uint8..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Uint8);
 
 	// Set values: 0.0, 0.3, 0.6, 1.0
@@ -53,18 +47,14 @@ void TestMinUint8()
 	// Min to 0.5 (128)
 	Tex.Min(0.5f);
 
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 128); // 0 -> 128
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 77 -> 128
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 153); // 153 stays
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 255); // 255 stays
-
-	std::cout << "  Min Uint8: PASSED" << std::endl;
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 128); // 0 -> 128
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 77 -> 128
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 153); // 153 stays
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 255); // 255 stays
 }
 
-void TestMaxUint8()
+TEST_CASE("Tex2D - Max Uint8")
 {
-	std::cout << "Testing Max with Uint8..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Uint8);
 
 	// Set values
@@ -76,18 +66,14 @@ void TestMaxUint8()
 	// Max to 0.5 (128)
 	Tex.Max(0.5f);
 
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 0);   // 0 stays
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 128 stays
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 128); // 191 -> 128
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 128); // 255 -> 128
-
-	std::cout << "  Max Uint8: PASSED" << std::endl;
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 0);   // 0 stays
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 128); // 128 stays
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 128); // 191 -> 128
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 128); // 255 -> 128
 }
 
-void TestClampFloat()
+TEST_CASE("Tex2D - Clamp Float")
 {
-	std::cout << "Testing Clamp with Float..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Float);
 
 	// Set values
@@ -99,18 +85,14 @@ void TestClampFloat()
 	// Clamp to [0.0, 1.0]
 	Tex.Clamp(0.0f, 1.0f);
 
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.0f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.0f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.0f));
-
-	std::cout << "  Clamp Float: PASSED" << std::endl;
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.0f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.0f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.0f));
 }
 
-void TestMinFloat()
+TEST_CASE("Tex2D - Min Float")
 {
-	std::cout << "Testing Min with Float..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Float);
 
 	Tex.At<float>(FUint64Vector2(0, 0), 0) = -1.0f;
@@ -120,18 +102,14 @@ void TestMinFloat()
 
 	Tex.Min(0.0f);
 
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.0f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.5f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 2.0f));
-
-	std::cout << "  Min Float: PASSED" << std::endl;
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.0f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.5f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 2.0f));
 }
 
-void TestMaxFloat()
+TEST_CASE("Tex2D - Max Float")
 {
-	std::cout << "Testing Max with Float..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Float);
 
 	Tex.At<float>(FUint64Vector2(0, 0), 0) = -1.0f;
@@ -141,18 +119,14 @@ void TestMaxFloat()
 
 	Tex.Max(1.0f);
 
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), -1.0f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.0f));
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.0f));
-
-	std::cout << "  Max Float: PASSED" << std::endl;
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), -1.0f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.5f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 1.0f));
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.0f));
 }
 
-void TestClampHalf()
+TEST_CASE("Tex2D - Clamp Half")
 {
-	std::cout << "Testing Clamp with Half..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Half);
 
 	// Set values
@@ -164,18 +138,14 @@ void TestClampHalf()
 	// Clamp to [0.0, 1.0]
 	Tex.Clamp(0.0f, 1.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 1.0f));
-
-	std::cout << "  Clamp Half: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 1.0f));
 }
 
-void TestMinHalf()
+TEST_CASE("Tex2D - Min Half")
 {
-	std::cout << "Testing Min with Half..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Half);
 
 	Tex.At<FHalf>(FUint64Vector2(0, 0), 0) = static_cast<FHalf>(-1.0f);
@@ -185,18 +155,14 @@ void TestMinHalf()
 
 	Tex.Min(0.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 2.0f));
-
-	std::cout << "  Min Half: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 2.0f));
 }
 
-void TestMaxHalf()
+TEST_CASE("Tex2D - Max Half")
 {
-	std::cout << "Testing Max with Half..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Half);
 
 	Tex.At<FHalf>(FUint64Vector2(0, 0), 0) = static_cast<FHalf>(-1.0f);
@@ -206,18 +172,14 @@ void TestMaxHalf()
 
 	Tex.Max(1.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), -1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 1.0f));
-
-	std::cout << "  Max Half: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), -1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 1.0f));
 }
 
-void TestClampDouble()
+TEST_CASE("Tex2D - Clamp Double")
 {
-	std::cout << "Testing Clamp with Double..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Double);
 
 	// Set values
@@ -229,18 +191,14 @@ void TestClampDouble()
 	// Clamp to [0.0, 1.0]
 	Tex.Clamp(0.0f, 1.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 1.0f));
-
-	std::cout << "  Clamp Double: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 1.0f));
 }
 
-void TestMinDouble()
+TEST_CASE("Tex2D - Min Double")
 {
-	std::cout << "Testing Min with Double..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Double);
 
 	Tex.At<double>(FUint64Vector2(0, 0), 0) = -1.0;
@@ -250,18 +208,14 @@ void TestMinDouble()
 
 	Tex.Min(0.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 2.0f));
-
-	std::cout << "  Min Double: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 2.0f));
 }
 
-void TestMaxDouble()
+TEST_CASE("Tex2D - Max Double")
 {
-	std::cout << "Testing Max with Double..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Double);
 
 	Tex.At<double>(FUint64Vector2(0, 0), 0) = -1.0;
@@ -271,18 +225,14 @@ void TestMaxDouble()
 
 	Tex.Max(1.0f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), -1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.0f));
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 1.0f));
-
-	std::cout << "  Max Double: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), -1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.5f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 1.0f));
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 1.0f));
 }
 
-void TestThresholdUint8()
+TEST_CASE("Tex2D - Threshold Uint8")
 {
-	std::cout << "Testing Threshold with Uint8..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Uint8);
 
 	// Set values: 0.0, 0.3, 0.6, 1.0
@@ -294,18 +244,14 @@ void TestThresholdUint8()
 	// Threshold at 0.5
 	Tex.Threshold(0.5f);
 
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 0);   // 0 -> 0
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 0);   // 77 -> 0 (< 128)
-	assert(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 153); // 153 stays (>= 128)
-	assert(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 255); // 255 stays
-
-	std::cout << "  Threshold Uint8: PASSED" << std::endl;
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 0), 0) == 0);   // 0 -> 0
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 0), 0) == 0);   // 77 -> 0 (< 128)
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(0, 1), 0) == 153); // 153 stays (>= 128)
+	CHECK(Tex.At<uint8_t>(FUint64Vector2(1, 1), 0) == 255); // 255 stays
 }
 
-void TestThresholdFloat()
+TEST_CASE("Tex2D - Threshold Float")
 {
-	std::cout << "Testing Threshold with Float..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Float);
 
 	// Set values
@@ -317,18 +263,14 @@ void TestThresholdFloat()
 	// Threshold at 0.5
 	Tex.Threshold(0.5f);
 
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.f)); // -0.5 -> 0
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.f)); // 0.3 -> 0
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 0.7f)); // 0.7 stays
-	assert(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.5f)); // 1.5 stays
-
-	std::cout << "  Threshold Float: PASSED" << std::endl;
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 0), 0), 0.f)); // -0.5 -> 0
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 0), 0), 0.f)); // 0.3 -> 0
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(0, 1), 0), 0.7f)); // 0.7 stays
+	CHECK(FloatEqual(Tex.At<float>(FUint64Vector2(1, 1), 0), 1.5f)); // 1.5 stays
 }
 
-void TestThresholdHalf()
+TEST_CASE("Tex2D - Threshold Half")
 {
-	std::cout << "Testing Threshold with Half..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Half);
 
 	// Set values
@@ -340,18 +282,14 @@ void TestThresholdHalf()
 	// Threshold at 0.5
 	Tex.Threshold(0.5f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.f)); // 0.1 -> 0
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.f)); // 0.4 -> 0
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 0.6f)); // 0.6 stays
-	assert(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 0.9f)); // 0.9 stays
-
-	std::cout << "  Threshold Half: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 0), 0)), 0.f)); // 0.1 -> 0
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 0), 0)), 0.f)); // 0.4 -> 0
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(0, 1), 0)), 0.6f)); // 0.6 stays
+	CHECK(FloatEqual(static_cast<float>(Tex.At<FHalf>(FUint64Vector2(1, 1), 0)), 0.9f)); // 0.9 stays
 }
 
-void TestThresholdDouble()
+TEST_CASE("Tex2D - Threshold Double")
 {
-	std::cout << "Testing Threshold with Double..." << std::endl;
-
 	FTex2D Tex(FGrid2D(2, 2), 1, EElementType::Double);
 
 	// Set values
@@ -363,18 +301,14 @@ void TestThresholdDouble()
 	// Threshold at 0.5
 	Tex.Threshold(0.5f);
 
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.f)); // 0.2 -> 0
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.f)); // 0.45 -> 0
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 0.55f)); // 0.55 stays
-	assert(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 0.8f)); // 0.8 stays
-
-	std::cout << "  Threshold Double: PASSED" << std::endl;
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 0), 0)), 0.f)); // 0.2 -> 0
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 0), 0)), 0.f)); // 0.45 -> 0
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(0, 1), 0)), 0.55f)); // 0.55 stays
+	CHECK(FloatEqual(static_cast<float>(Tex.At<double>(FUint64Vector2(1, 1), 0)), 0.8f)); // 0.8 stays
 }
 
-void TestImageInpainting()
+TEST_CASE("Tex2D - ImageInpainting")
 {
-	std::cout << "Testing ImageInpainting..." << std::endl;
-
 	// Create a 16x16 texture with Float type
 	const uint64_t Size = 16;
 	FTex2D Tex(FGrid2D(Size, Size), 3, EElementType::Float);
@@ -439,7 +373,8 @@ void TestImageInpainting()
 		}
 	}
 
-	assert(bHasFilledValues && "ImageInpainting should fill uncovered regions");
+	REQUIRE(bHasFilledValues);
+
 
 	// Verify that covered regions remain unchanged (approximately)
 	for (uint64_t Y = 6; Y < 10; Y++)
@@ -457,89 +392,45 @@ void TestImageInpainting()
 			const float ActualG = Tex.GetFloat(FUint64Vector2(X, Y), 1);
 			const float ActualB = Tex.GetFloat(FUint64Vector2(X, Y), 2);
 
-			assert(FloatEqual(ActualR, ExpectedR, 0.01f) && "Original covered region R should remain unchanged");
-			assert(FloatEqual(ActualG, ExpectedG, 0.01f) && "Original covered region G should remain unchanged");
-			assert(FloatEqual(ActualB, ExpectedB, 0.01f) && "Original covered region B should remain unchanged");
+			bool RMatch = FloatEqual(ActualR, ExpectedR, 0.01f);
+			bool GMatch = FloatEqual(ActualG, ExpectedG, 0.01f);
+			bool BMatch = FloatEqual(ActualB, ExpectedB, 0.01f);
+
+			CHECK(RMatch);
+			CHECK(GMatch);
+			CHECK(BMatch);
 		}
 	}
+}
 
+TEST_CASE("Tex2D - ImageInpainting Partial Coverage")
+{
 	// Test edge case: texture with partial coverage in one channel
-	FTex2D Tex2(FGrid2D(8, 8), 2, EElementType::Float);
-	FTex2D Coverage2(FGrid2D(8, 8), 2, EElementType::Float);
+	FTex2D Tex(FGrid2D(8, 8), 2, EElementType::Float);
+	FTex2D Coverage(FGrid2D(8, 8), 2, EElementType::Float);
 
 	// Initialize
 	for (uint64_t Y = 0; Y < 8; Y++)
 	{
 		for (uint64_t X = 0; X < 8; X++)
 		{
-			Tex2.SetFloat(FUint64Vector2(X, Y), 0, 0.f);
-			Tex2.SetFloat(FUint64Vector2(X, Y), 1, 0.f);
-			Coverage2.SetFloat(FUint64Vector2(X, Y), 0, 0.f);
-			Coverage2.SetFloat(FUint64Vector2(X, Y), 1, 0.f);
+			Tex.SetFloat(FUint64Vector2(X, Y), 0, 0.f);
+			Tex.SetFloat(FUint64Vector2(X, Y), 1, 0.f);
+			Coverage.SetFloat(FUint64Vector2(X, Y), 0, 0.f);
+			Coverage.SetFloat(FUint64Vector2(X, Y), 1, 0.f);
 		}
 	}
 
 	// Set center pixel with coverage
-	Tex2.SetFloat(FUint64Vector2(4, 4), 0, 1.f);
-	Tex2.SetFloat(FUint64Vector2(4, 4), 1, 0.5f);
-	Coverage2.SetFloat(FUint64Vector2(4, 4), 0, 1.f);
-	Coverage2.SetFloat(FUint64Vector2(4, 4), 1, 1.f);
+	Tex.SetFloat(FUint64Vector2(4, 4), 0, 1.f);
+	Tex.SetFloat(FUint64Vector2(4, 4), 1, 0.5f);
+	Coverage.SetFloat(FUint64Vector2(4, 4), 0, 1.f);
+	Coverage.SetFloat(FUint64Vector2(4, 4), 1, 1.f);
 
-	Tex2.ImageInpainting(Coverage2);
+	Tex.ImageInpainting(Coverage);
 
 	// Check that neighbors got filled
-	const float Neighbor = Tex2.GetFloat(FUint64Vector2(3, 4), 0);
-	assert(Neighbor > 0.f && "Neighbor should be filled from center");
-
-	std::cout << "  ImageInpainting: PASSED" << std::endl;
+	const float Neighbor = Tex.GetFloat(FUint64Vector2(3, 4), 0);
+	bool NeighborFilled = Neighbor > 0.f;
+	CHECK_MESSAGE(NeighborFilled, "Neighbor should be filled from center");
 }
-
-int main(int argc, char** argv)
-{
-	std::cout << "=== Testing FTex2D Min/Max/Clamp Operations ===" << std::endl << std::endl;
-
-	// Test Uint8
-	TestClampUint8();
-	TestMinUint8();
-	TestMaxUint8();
-
-	std::cout << std::endl;
-
-	// Test Float
-	TestClampFloat();
-	TestMinFloat();
-	TestMaxFloat();
-
-	std::cout << std::endl;
-
-	// Test Half
-	TestClampHalf();
-	TestMinHalf();
-	TestMaxHalf();
-
-	std::cout << std::endl;
-
-	// Test Double
-	TestClampDouble();
-	TestMinDouble();
-	TestMaxDouble();
-
-	std::cout << std::endl;
-
-	// Test Threshold
-	TestThresholdUint8();
-	TestThresholdFloat();
-	TestThresholdHalf();
-	TestThresholdDouble();
-
-	std::cout << std::endl;
-
-	// Test ImageInpainting
-	TestImageInpainting();
-
-	std::cout << std::endl;
-	std::cout << "=== All tests passed! ===" << std::endl;
-
-	return 0;
-}
-

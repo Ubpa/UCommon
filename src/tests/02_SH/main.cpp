@@ -882,9 +882,790 @@ int main(int argc, char** argv)
 		}
 	}
 
+	// ============================================================================
+	// SH Rotation Tests
+	// ============================================================================
+	std::cout << "\n========================================" << std::endl;
+	std::cout << "  SH Rotation Tests" << std::endl;
+	std::cout << "========================================" << std::endl;
+
+	// Helper: Print an array of floats
+	auto printArray = [](const char* name, const float* arr, int size) {
+		std::cout << name << " = [";
+		for (int i = 0; i < size; ++i) {
+			std::cout << std::fixed << std::setprecision(6) << arr[i];
+			if (i < size - 1) std::cout << ", ";
+		}
+		std::cout << "]" << std::endl;
+	};
+
+	// Helper: Print a 3x3 matrix
+	auto printMatrix3x3 = [](const char* name, const float* m) {
+		std::cout << name << " = " << std::endl;
+		for (int i = 0; i < 3; ++i) {
+			std::cout << "  [";
+			for (int j = 0; j < 3; ++j) {
+				std::cout << std::fixed << std::setprecision(6) << m[i * 3 + j];
+				if (j < 2) std::cout << ", ";
+			}
+			std::cout << "]" << std::endl;
+		}
+	};
+
+	// Helper: Apply SH Band2 rotation in-place via ApplySHRotateMatrix
+	auto RotateSHBand2 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
+		float shRotMat[9];
+		ComputeSHBand2RotateMatrix(shRotMat, rotMatrix);
+		ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), shRotMat);
+	};
+
+	// Helper: Apply SH Band3 rotation in-place via ApplySHRotateMatrix
+	auto RotateSHBand3 = [](float* coeffs, const FMatrix3x3f& rotMatrix) {
+		float shRotMat[25];
+		ComputeSHBand3RotateMatrix(shRotMat, rotMatrix);
+		ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), shRotMat);
+	};
+
+	// Test 1: Identity rotation should preserve SH coefficients
+	{
+		std::cout << "\n=== Test 1: Identity Rotation ===" << std::endl;
+
+		FMatrix3x3f identityMatrix(
+			1, 0, 0,
+			0, 1, 0,
+			0, 0, 1
+		);
+
+		// Test Band 2 (L1)
+		float band2In[3] = { 1.0f, 2.0f, 3.0f };
+		float band2Out[3] = { band2In[0], band2In[1], band2In[2] };
+		RotateSHBand2(band2Out, identityMatrix);
+
+		printArray("Input Band 2", band2In, 3);
+		printArray("Output Band 2", band2Out, 3);
+
+		bool idBand2Pass = IsNearlyEqual(band2In[0], band2Out[0]) &&
+		                   IsNearlyEqual(band2In[1], band2Out[1]) &&
+		                   IsNearlyEqual(band2In[2], band2Out[2]);
+		std::cout << "[" << (idBand2Pass ? "PASSED" : "FAILED") << "] Identity rotation preserves Band 2" << std::endl;
+
+		// Test Band 3 (L2)
+		float band3In[5] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+		float band3Out[5] = { band3In[0], band3In[1], band3In[2], band3In[3], band3In[4] };
+		RotateSHBand3(band3Out, identityMatrix);
+
+		printArray("Input Band 3", band3In, 5);
+		printArray("Output Band 3", band3Out, 5);
+
+		bool idBand3Pass = IsNearlyEqual(band3In[0], band3Out[0]) &&
+		                   IsNearlyEqual(band3In[1], band3Out[1]) &&
+		                   IsNearlyEqual(band3In[2], band3Out[2]) &&
+		                   IsNearlyEqual(band3In[3], band3Out[3]) &&
+		                   IsNearlyEqual(band3In[4], band3Out[4]);
+		std::cout << "[" << (idBand3Pass ? "PASSED" : "FAILED") << "] Identity rotation preserves Band 3" << std::endl;
+	}
+
+	// Test 2: 90-degree rotation around Z axis
+	{
+		std::cout << "\n=== Test 2: 90-degree Rotation (Z axis) ===" << std::endl;
+
+		// 90 degree rotation around Z axis (row-major)
+		// (x,y,z) -> (-y, x, z)
+		FMatrix3x3f rotZ90Matrix(
+			0, -1, 0,
+			1,  0, 0,
+			0,  0, 1
+		);
+
+		printMatrix3x3("Rotation Matrix (Z 90°)", rotZ90Matrix.GetData());
+
+		// Test Band 2 (L1)
+		float band2In[3] = { 1.0f, 2.0f, 3.0f };
+		float band2Out[3] = { band2In[0], band2In[1], band2In[2] };
+		RotateSHBand2(band2Out, rotZ90Matrix);
+
+		printArray("Input Band 2", band2In, 3);
+		printArray("Output Band 2", band2Out, 3);
+		std::cout << "[INFO] Applied 90° Z rotation to Band 2" << std::endl;
+
+		// Verify: rotate back should get original
+		FMatrix3x3f rotZNeg90Matrix(
+			0,  1, 0,
+			-1, 0, 0,
+			0,  0, 1
+		);
+		RotateSHBand2(band2Out, rotZNeg90Matrix);
+
+		bool z90Band2Pass = IsNearlyEqual(band2In[0], band2Out[0]) &&
+		                    IsNearlyEqual(band2In[1], band2Out[1]) &&
+		                    IsNearlyEqual(band2In[2], band2Out[2]);
+		std::cout << "[" << (z90Band2Pass ? "PASSED" : "FAILED") << "] Rotate +90° then -90° restores original Band 2" << std::endl;
+
+		// Test Band 3 (L2)
+		float band3In[5] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+		float band3Out[5] = { band3In[0], band3In[1], band3In[2], band3In[3], band3In[4] };
+		RotateSHBand3(band3Out, rotZ90Matrix);
+		printArray("Input Band 3", band3In, 5);
+		printArray("Output Band 3", band3Out, 5);
+		std::cout << "[INFO] Applied 90° Z rotation to Band 3" << std::endl;
+
+		// Verify: rotate back should get original
+		for (int i = 0; i < 5; ++i) band3Out[i] = band3In[i];
+		RotateSHBand3(band3Out, rotZ90Matrix);
+		RotateSHBand3(band3Out, rotZNeg90Matrix);
+
+		bool z90Band3Pass = IsNearlyEqual(band3In[0], band3Out[0], 1e-4f) &&
+		                    IsNearlyEqual(band3In[1], band3Out[1], 1e-4f) &&
+		                    IsNearlyEqual(band3In[2], band3Out[2], 1e-4f) &&
+		                    IsNearlyEqual(band3In[3], band3Out[3], 1e-4f) &&
+		                    IsNearlyEqual(band3In[4], band3Out[4], 1e-4f);
+		std::cout << "[" << (z90Band3Pass ? "PASSED" : "FAILED") << "] Rotate +90° then -90° restores original Band 3" << std::endl;
+	}
+
+	// Test 3: Unity to UE rotation (cyclic permutation: x->y->z->x)
+	{
+		std::cout << "\n=== Test 3: Unity -> UE Rotation ===" << std::endl;
+
+		// Unity -> UE: [x,y,z] -> [y,z,x]
+		// R = [0,1,0; 0,0,1; 1,0,0]' = [0,0,1; 1,0,0; 0,1,0]
+		FMatrix3x3f unityToUEMatrix(
+			0, 0, 1,
+			1, 0, 0,
+			0, 1, 0
+		);
+
+		printMatrix3x3("Unity -> UE Rotation Matrix", unityToUEMatrix.GetData());
+
+		// Test Band 2 (L1)
+		float band2In[3] = { 1.0f, 2.0f, 3.0f };
+		float band2Out[3] = { band2In[0], band2In[1], band2In[2] };
+		RotateSHBand2(band2Out, unityToUEMatrix);
+
+		printArray("Input Band 2", band2In, 3);
+		printArray("Output Band 2 (Unity->UE)", band2Out, 3);
+
+		// Inverse rotation (UE -> Unity): apply twice to get back
+		float band2Out2[3] = { band2Out[0], band2Out[1], band2Out[2] };
+	 RotateSHBand2(band2Out2, unityToUEMatrix);
+		RotateSHBand2(band2Out2, unityToUEMatrix);
+
+		bool unityUEBand2Pass = IsNearlyEqual(band2In[0], band2Out2[0], 1e-4f) &&
+		                        IsNearlyEqual(band2In[1], band2Out2[1], 1e-4f) &&
+		                        IsNearlyEqual(band2In[2], band2Out2[2], 1e-4f);
+		std::cout << "[" << (unityUEBand2Pass ? "PASSED" : "FAILED") << "] Apply Unity->UE twice restores Band 2" << std::endl;
+
+		// Test Band 3 (L2)
+		float band3In[5] = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f };
+		float band3Out[5] = { band3In[0], band3In[1], band3In[2], band3In[3], band3In[4] };
+		RotateSHBand3(band3Out, unityToUEMatrix);
+
+		printArray("Input Band 3", band3In, 5);
+		printArray("Output Band 3 (Unity->UE)", band3Out, 5);
+
+		// Inverse rotation
+		float band3Out2[5] = { band3Out[0], band3Out[1], band3Out[2], band3Out[3], band3Out[4] };
+		RotateSHBand3(band3Out2, unityToUEMatrix);
+		RotateSHBand3(band3Out2, unityToUEMatrix);
+
+		bool unityUEBand3Pass = IsNearlyEqual(band3In[0], band3Out2[0], 1e-4f) &&
+		                        IsNearlyEqual(band3In[1], band3Out2[1], 1e-4f) &&
+		                        IsNearlyEqual(band3In[2], band3Out2[2], 1e-4f) &&
+		                        IsNearlyEqual(band3In[3], band3Out2[3], 1e-4f) &&
+		                        IsNearlyEqual(band3In[4], band3Out2[4], 1e-4f);
+		std::cout << "[" << (unityUEBand3Pass ? "PASSED" : "FAILED") << "] Apply Unity->UE twice restores Band 3" << std::endl;
+	}
+
+	// Test 4: Verify SH rotation formula: Y(R*w) = M * Y(w)
+	{
+		std::cout << "\n=== Test 4: Verify Rotation Formula ===" << std::endl;
+
+		FMatrix3x3f rotY45Matrix(
+			0.7071f, 0, 0.7071f,
+			0, 1, 0,
+			-0.7071f, 0, 0.7071f
+		);
+
+		printMatrix3x3("Rotation Matrix (Y 45°)", rotY45Matrix.GetData());
+
+		// Test directions (documented in SHRotate.md)
+		constexpr int numDirs = 5;
+		constexpr float k = 0.70710677f;
+		const FVector3f testDirs[numDirs] = {
+			FVector3f{ 1, 0, 0 },
+			FVector3f{ 0, 0, 1 },
+			FVector3f{ k, k, 0 },
+			FVector3f{ k, 0, k },
+			FVector3f{ 0, k, k }
+		};
+
+		std::cout << "Testing formula Y(R*w) = M * Y(w) for Band 3..." << std::endl;
+
+		float SHRotateMatrix[25];
+		ComputeSHBand3RotateMatrix(SHRotateMatrix, rotY45Matrix);
+
+		// Debug: Print rotation matrix
+		std::cout << "SH Rotation Matrix (5x5):\n";
+		for (int i = 0; i < 5; ++i) {
+			std::cout << "  [";
+			for (int j = 0; j < 5; ++j) {
+				std::cout << std::setw(10) << std::setprecision(6) << SHRotateMatrix[i * 5 + j]
+				          << (j < 4 ? ", " : "");
+			}
+			std::cout << "]\n";
+		}
+		std::cout << "\n";
+
+		bool formulaPass = true;
+		constexpr float eps = 1e-4f;
+
+		for (int dirIdx = 0; dirIdx < numDirs; ++dirIdx)
+		{
+			FVector3f w = testDirs[dirIdx];
+			FVector3f Rw = rotY45Matrix * w;
+
+			// Y(w) - SH basis at original direction
+			float Yw[5] = {
+				SH<2, -2>(w),
+				SH<2, -1>(w),
+				SH<2,  0>(w),
+				SH<2,  1>(w),
+				SH<2,  2>(w)
+			};
+
+			// Y(R*w) - SH basis at rotated direction
+			float YRw[5] = {
+				SH<2, -2>(Rw),
+				SH<2, -1>(Rw),
+				SH<2,  0>(Rw),
+				SH<2,  1>(Rw),
+				SH<2,  2>(Rw)
+			};
+
+			// M * Y(w)
+			float MYw[5];
+			for (int i = 0; i < 5; ++i) {
+				MYw[i] = 0;
+				for (int j = 0; j < 5; ++j) {
+					MYw[i] += SHRotateMatrix[i * 5 + j] * Yw[j];
+				}
+			}
+
+			// Compare Y(R*w) with M * Y(w)
+			bool matchThisDir = true;
+			for (int i = 0; i < 5; ++i) {
+				if (std::abs(YRw[i] - MYw[i]) > eps) {
+					matchThisDir = false;
+					break;
+				}
+			}
+
+			if (!matchThisDir) {
+				formulaPass = false;
+				std::cout << "  Dir " << dirIdx << ": [FAILED]" << std::endl;
+				std::cout << "    Y(R*w) = [" << YRw[0] << ", " << YRw[1] << ", " << YRw[2] << ", " << YRw[3] << ", " << YRw[4] << "]" << std::endl;
+				std::cout << "    M*Y(w) = [" << MYw[0] << ", " << MYw[1] << ", " << MYw[2] << ", " << MYw[3] << ", " << MYw[4] << "]" << std::endl;
+			}
+		}
+
+		std::cout << "[" << (formulaPass ? "PASSED" : "FAILED") << "] Rotation formula verified for all test directions" << std::endl;
+	}
+
+	// Test 5: ComputeSHBand2RotateMatrix verification
+	{
+		std::cout << "\n=== Test 5: ComputeSHBand2RotateMatrix ===" << std::endl;
+
+		FMatrix3x3f rotX90Matrix(
+			1,  0,  0,
+			0,  0, -1,
+			0,  1,  0
+		);
+
+		float SHRotateMatrix[9];
+		ComputeSHBand2RotateMatrix(SHRotateMatrix, rotX90Matrix);
+
+		std::cout << "SHBand2 rotation matrix:" << std::endl;
+		for (int i = 0; i < 3; ++i) {
+			std::cout << "  [";
+			for (int j = 0; j < 3; ++j) {
+				std::cout << std::fixed << std::setprecision(6) << SHRotateMatrix[i * 3 + j];
+				if (j < 2) std::cout << ", ";
+			}
+			std::cout << "]" << std::endl;
+		}
+
+		// Verify the matrix by multiplying Y(w) and comparing with Y(R*w)
+		constexpr int numDirs = 3;
+		const FVector3f testDirs[numDirs] = {
+			FVector3f{ 1, 0, 0 },
+			FVector3f{ 0, 1, 0 },
+			FVector3f{ 0, 0, 1 }
+		};
+
+		bool matrixPass = true;
+		constexpr float eps = 1e-4f;
+
+		for (int dirIdx = 0; dirIdx < numDirs; ++dirIdx) {
+			FVector3f w = testDirs[dirIdx];
+			FVector3f Rw = rotX90Matrix * w;
+
+			// Y(w)
+			float Yw[3] = { SH<1, -1>(w), SH<1, 0>(w), SH<1, 1>(w) };
+
+			// Y(R*w)
+			float YRw[3] = { SH<1, -1>(Rw), SH<1, 0>(Rw), SH<1, 1>(Rw) };
+
+			// M * Y(w)
+			float MYw[3];
+			for (int i = 0; i < 3; ++i) {
+				MYw[i] = 0;
+				for (int j = 0; j < 3; ++j) {
+					MYw[i] += SHRotateMatrix[i * 3 + j] * Yw[j];
+				}
+			}
+
+			bool matchThisDir = true;
+			for (int i = 0; i < 3; ++i) {
+				if (std::abs(YRw[i] - MYw[i]) > eps) {
+					matchThisDir = false;
+					break;
+				}
+			}
+
+			if (!matchThisDir) {
+				matrixPass = false;
+				std::cout << "  Dir " << dirIdx << ": [FAILED]" << std::endl;
+			}
+		}
+
+		std::cout << "[" << (matrixPass ? "PASSED" : "FAILED") << "] ComputeSHBand2RotateMatrix verified" << std::endl;
+	}
+
+	// Test 6: Inverse rotation
+	{
+		std::cout << "\n=== Test 6: Inverse Rotation ===" << std::endl;
+
+		// 30 degrees around X axis
+		float angle = 30.0f * UCommon::Pi / 180.0f;
+		float c = std::cos(angle);
+		float s = std::sin(angle);
+		FMatrix3x3f rotationMatrix(
+			1,  0,  0,
+			0,  c, -s,
+			0,  s,  c
+		);
+
+		printMatrix3x3("Rotation Matrix (X 30°)", rotationMatrix.GetData());
+
+		// Test Band 2
+		float band2In[3] = { 0.5f, 0.7f, 0.3f };
+		float band2Rotated[3] = { band2In[0], band2In[1], band2In[2] };
+
+		RotateSHBand2(band2Rotated, rotationMatrix);
+
+		// Now rotate by inverse (transpose for rotation matrix)
+		FMatrix3x3f invRotationMatrix(
+			1,  0,  0,
+			0,  c,  s,
+			0, -s,  c
+		);
+		RotateSHBand2(band2Rotated, invRotationMatrix);
+
+		bool inverseBand2Pass = IsNearlyEqual(band2In[0], band2Rotated[0], 1e-4f) &&
+		                        IsNearlyEqual(band2In[1], band2Rotated[1], 1e-4f) &&
+		                        IsNearlyEqual(band2In[2], band2Rotated[2], 1e-4f);
+		std::cout << "[" << (inverseBand2Pass ? "PASSED" : "FAILED") << "] Inverse rotation restores Band 2" << std::endl;
+
+		// Test Band 3
+		float band3In[5] = { 0.5f, 0.7f, 0.3f, -0.2f, 0.1f };
+		float band3Rotated[5] = { band3In[0], band3In[1], band3In[2], band3In[3], band3In[4] };
+
+		RotateSHBand3(band3Rotated, rotationMatrix);
+		RotateSHBand3(band3Rotated, invRotationMatrix);
+
+		bool inverseBand3Pass = IsNearlyEqual(band3In[0], band3Rotated[0], 1e-4f) &&
+		                        IsNearlyEqual(band3In[1], band3Rotated[1], 1e-4f) &&
+		                        IsNearlyEqual(band3In[2], band3Rotated[2], 1e-4f) &&
+		                        IsNearlyEqual(band3In[3], band3Rotated[3], 1e-4f) &&
+		                        IsNearlyEqual(band3In[4], band3Rotated[4], 1e-4f);
+		std::cout << "[" << (inverseBand3Pass ? "PASSED" : "FAILED") << "] Inverse rotation restores Band 3" << std::endl;
+	}
+
+	// Test 7: Random rotation + random direction robustness
+	// Verifies Y(R*w) = M * Y(w) for both bands across many random rotations and directions.
+	// Uses Rodrigues' rotation formula to build arbitrary rotation matrices.
+	{
+		std::cout << "\n=== Test 7: Random Rotation & Direction Robustness ===" << std::endl;
+
+		std::mt19937 rng(42);
+		std::uniform_real_distribution<float> angleDist(0.f, 2.f * UCommon::Pi);
+		std::uniform_real_distribution<float> cosDist(-1.f, 1.f);
+		std::uniform_real_distribution<float> phiDist(0.f, 1.f);
+		constexpr float eps = 1e-4f;
+		constexpr int numTests = 200;
+
+		// Rodrigues' rotation: rotate by `angle` around unit axis `axis`
+		auto makeRotMatrix = [](FVector3f axis, float angle) -> FMatrix3x3f {
+			float c = std::cos(angle), s = std::sin(angle), t = 1.f - c;
+			float x = axis.X, y = axis.Y, z = axis.Z;
+			return FMatrix3x3f(
+				t*x*x + c,   t*x*y - s*z, t*x*z + s*y,
+				t*x*y + s*z, t*y*y + c,   t*y*z - s*x,
+				t*x*z - s*y, t*y*z + s*x, t*z*z + c
+			);
+		};
+
+		// Generate a uniformly random unit direction
+		auto randDir = [&]() -> FVector3f {
+			float cosTheta = cosDist(rng);
+			float sinTheta = std::sqrt(std::max(0.f, 1.f - cosTheta * cosTheta));
+			float phi = angleDist(rng);
+			return { sinTheta * std::cos(phi), sinTheta * std::sin(phi), cosTheta };
+		};
+
+		int band2Fail = 0, band3Fail = 0;
+
+		for (int t = 0; t < numTests; ++t)
+		{
+			// Random rotation axis (uniform on sphere) and angle
+			FVector3f axis = randDir();
+			float angle = angleDist(rng);
+			FMatrix3x3f R = makeRotMatrix(axis, angle);
+
+			// Random test direction
+			FVector3f w = randDir();
+			FVector3f Rw = R * w;
+
+			// --- Band 2 (l=1): verify M * Y(w) == Y(R*w) ---
+			{
+				float shRotMat[9];
+				ComputeSHBand2RotateMatrix(shRotMat, R);
+
+				float Yw[3]  = { SH<1,-1>(w),  SH<1,0>(w),  SH<1,1>(w)  };
+				float YRw[3] = { SH<1,-1>(Rw), SH<1,0>(Rw), SH<1,1>(Rw) };
+				float MYw[3] = {};
+				for (int i = 0; i < 3; ++i)
+					for (int j = 0; j < 3; ++j)
+						MYw[i] += shRotMat[i * 3 + j] * Yw[j];
+
+				for (int i = 0; i < 3; ++i)
+					if (std::abs(YRw[i] - MYw[i]) > eps) { ++band2Fail; break; }
+			}
+
+			// --- Band 3 (l=2): verify M * Y(w) == Y(R*w) ---
+			{
+				float shRotMat[25];
+				ComputeSHBand3RotateMatrix(shRotMat, R);
+
+				float Yw[5]  = { SH<2,-2>(w),  SH<2,-1>(w),  SH<2,0>(w),  SH<2,1>(w),  SH<2,2>(w)  };
+				float YRw[5] = { SH<2,-2>(Rw), SH<2,-1>(Rw), SH<2,0>(Rw), SH<2,1>(Rw), SH<2,2>(Rw) };
+				float MYw[5] = {};
+				for (int i = 0; i < 5; ++i)
+					for (int j = 0; j < 5; ++j)
+						MYw[i] += shRotMat[i * 5 + j] * Yw[j];
+
+				for (int i = 0; i < 5; ++i)
+					if (std::abs(YRw[i] - MYw[i]) > eps) { ++band3Fail; break; }
+			}
+		}
+
+		std::cout << "[" << (band2Fail == 0 ? "PASSED" : "FAILED") << "] Band2: "
+		          << (numTests - band2Fail) << "/" << numTests << " random cases passed" << std::endl;
+		std::cout << "[" << (band3Fail == 0 ? "PASSED" : "FAILED") << "] Band3: "
+		          << (numTests - band3Fail) << "/" << numTests << " random cases passed" << std::endl;
+	}
+
 	std::cout << "\n========================================" << std::endl;
 	std::cout << "  All Tests Completed!" << std::endl;
 	std::cout << "========================================" << std::endl;
+
+	// Test 8: ApplySHRotateMatrix
+	{
+		std::cout << "\n=== Test 8: ApplySHRotateMatrix ===" << std::endl;
+		constexpr float eps = 1e-5f;
+		bool pass = true;
+
+		// --- Band2 (Order=2, 3 coefficients): identity should be a no-op ---
+		{
+			FMatrix3x3f identity = FMatrix3x3f::Identity();
+			float mat[9];
+			ComputeSHBand2RotateMatrix(mat, identity);
+
+			float coeffs[3] = { 1.f, 2.f, 3.f };
+			float expected[3] = { 1.f, 2.f, 3.f };
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - expected[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 identity: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << expected[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band3 (Order=3, 5 coefficients): identity should be a no-op ---
+		{
+			FMatrix3x3f identity = FMatrix3x3f::Identity();
+			float mat[25];
+			ComputeSHBand3RotateMatrix(mat, identity);
+
+			float coeffs[5] = { 1.f, 2.f, 3.f, 4.f, 5.f };
+			float expected[5] = { 1.f, 2.f, 3.f, 4.f, 5.f };
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), mat);
+
+			for (int i = 0; i < 5; ++i)
+			{
+				if (std::abs(coeffs[i] - expected[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band3 identity: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << expected[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band2: apply R then R^-1 (transpose) should restore original ---
+		{
+			FMatrix3x3f rotX30(
+				1.f,  0.f,            0.f,
+				0.f,  std::cos(0.3f), -std::sin(0.3f),
+				0.f,  std::sin(0.3f),  std::cos(0.3f)
+			);
+			FMatrix3x3f rotX30inv = rotX30.Transpose();
+
+			float mat[9], matInv[9];
+			ComputeSHBand2RotateMatrix(mat,    rotX30);
+			ComputeSHBand2RotateMatrix(matInv, rotX30inv);
+
+			float coeffs[3] = { 0.5f, 0.7f, 0.3f };
+			float original[3] = { 0.5f, 0.7f, 0.3f };
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), matInv);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - original[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 R*R^-1: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << original[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band3: apply R then R^-1 should restore original ---
+		{
+			FMatrix3x3f rotZ45(
+				 std::cos(0.4f), -std::sin(0.4f), 0.f,
+				 std::sin(0.4f),  std::cos(0.4f), 0.f,
+				 0.f,             0.f,             1.f
+			);
+			FMatrix3x3f rotZ45inv = rotZ45.Transpose();
+
+			float mat[25], matInv[25];
+			ComputeSHBand3RotateMatrix(mat,    rotZ45);
+			ComputeSHBand3RotateMatrix(matInv, rotZ45inv);
+
+			float coeffs[5] = { 0.5f, 0.7f, 0.3f, -0.2f, 0.1f };
+			float original[5] = { 0.5f, 0.7f, 0.3f, -0.2f, 0.1f };
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), mat);
+			ApplySHRotateMatrix<3>(TSHBandView<3>(coeffs), matInv);
+
+			for (int i = 0; i < 5; ++i)
+			{
+				if (std::abs(coeffs[i] - original[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band3 R*R^-1: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << original[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- Band2: result matches manual M*v ---
+		{
+			FMatrix3x3f rotY(
+				 0.f, 0.f, 1.f,
+				 0.f, 1.f, 0.f,
+				-1.f, 0.f, 0.f
+			);
+			float mat[9];
+			ComputeSHBand2RotateMatrix(mat, rotY);
+
+			float coeffs[3] = { 1.f, -1.f, 2.f };
+			float manual[3] = {};
+			for (int i = 0; i < 3; ++i)
+				for (int j = 0; j < 3; ++j)
+					manual[i] += mat[i * 3 + j] * coeffs[j];
+
+			ApplySHRotateMatrix<2>(TSHBandView<2>(coeffs), mat);
+
+			for (int i = 0; i < 3; ++i)
+			{
+				if (std::abs(coeffs[i] - manual[i]) > eps)
+				{
+					std::cout << "  [FAILED] Band2 manual check: coeffs[" << i << "] = "
+					          << coeffs[i] << ", expected " << manual[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] ApplySHRotateMatrix" << std::endl;
+	}
+
+	// Test 9: TSHVector / TSHVectorRGB ApplySHRotateMatrix
+	{
+		std::cout << "\n=== Test 9: TSHVector/TSHVectorRGB ApplySHRotateMatrix ===" << std::endl;
+		constexpr float eps = 1e-5f;
+		bool pass = true;
+
+		// Verify TSHRotateMatrices BandOffset formula
+		static_assert(TSHRotateMatrices<2>::BandOffset<2> == 0);   // band 2: 3x3, starts at 0
+		static_assert(TSHRotateMatrices<3>::BandOffset<3> == 9);   // band 3: 5x5, starts at 9  (after one 3x3)
+		static_assert(TSHRotateMatrices<4>::BandOffset<4> == 34);  // band 4: 7x7, starts at 34 (after 3x3 + 5x5)
+
+		FMatrix3x3f rotX(
+			1.f, 0.f,            0.f,
+			0.f, std::cos(0.5f), -std::sin(0.5f),
+			0.f, std::sin(0.5f),  std::cos(0.5f)
+		);
+		FMatrix3x3f rotXInv = rotX.Transpose();
+
+		// --- ComputeSHRotateMatrices<2> builds the same matrix as ComputeSHBand2RotateMatrix ---
+		{
+			float mat2[9];
+			ComputeSHBand2RotateMatrix(mat2, rotX);
+
+			auto mats2 = TSHRotateMatrices<2>(rotX);
+			for (int i = 0; i < 9; ++i)
+			{
+				if (std::abs(mats2.GetBand<2>()[i] - mat2[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<2> band2 mismatch at [" << i << "]" << std::endl;
+					pass = false;
+					break;
+				}
+			}
+		}
+
+		// --- ComputeSHRotateMatrices<3> band 2 and band 3 match individual functions ---
+		{
+			float mat2[9], mat3[25];
+			ComputeSHBand2RotateMatrix(mat2, rotX);
+			ComputeSHBand3RotateMatrix(mat3, rotX);
+
+			auto mats3 = TSHRotateMatrices<3>(rotX);
+			for (int i = 0; i < 9; ++i)
+			{
+				if (std::abs(mats3.GetBand<2>()[i] - mat2[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<3> band2 mismatch at [" << i << "]" << std::endl;
+					pass = false; break;
+				}
+			}
+			for (int i = 0; i < 25; ++i)
+			{
+				if (std::abs(mats3.GetBand<3>()[i] - mat3[i]) > eps)
+				{
+					std::cout << "  [FAILED] ComputeSHRotateMatrices<3> band3 mismatch at [" << i << "]" << std::endl;
+					pass = false; break;
+				}
+			}
+		}
+
+		// --- FSHVector3: identity matrices produce no change ---
+		{
+			auto mats = TSHRotateMatrices<3>(FMatrix3x3f::Identity());
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i + 1);
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - orig.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 identity: V[" << i << "] = "
+					          << result.V[i] << " expected " << orig.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVector3: apply R then R^-1 restores original ---
+		{
+			auto mats    = TSHRotateMatrices<3>(rotX);
+			auto matsInv = TSHRotateMatrices<3>(rotXInv);
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i) * 0.3f - 1.f;
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats).ApplySHRotateMatrix(matsInv);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - orig.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 R*R^-1: V[" << i << "] = "
+					          << result.V[i] << " expected " << orig.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVectorRGB3: apply R then R^-1 restores original per-channel ---
+		{
+			auto mats    = TSHRotateMatrices<3>(rotX);
+			auto matsInv = TSHRotateMatrices<3>(rotXInv);
+			FSHVectorRGB3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				orig.R.V[i] = static_cast<float>(i) * 0.1f;
+				orig.G.V[i] = static_cast<float>(i) * 0.2f + 0.5f;
+				orig.B.V[i] = static_cast<float>(i) * 0.3f - 0.5f;
+			}
+			FSHVectorRGB3 result = orig.ApplySHRotateMatrix(mats).ApplySHRotateMatrix(matsInv);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.R.V[i] - orig.R.V[i]) > eps ||
+				    std::abs(result.G.V[i] - orig.G.V[i]) > eps ||
+				    std::abs(result.B.V[i] - orig.B.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVectorRGB3 R*R^-1: channel mismatch at [" << i << "]" << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		// --- FSHVector3::ApplySHRotateMatrix result matches per-band manual application ---
+		{
+			auto mats = TSHRotateMatrices<3>(rotX);
+			FSHVector3 orig;
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i) orig.V[i] = static_cast<float>(i + 1) * 0.5f;
+
+			// reference: apply each band manually
+			FSHVector3 ref = orig;
+			{
+				float mat2[9]; ComputeSHBand2RotateMatrix(mat2, rotX);
+				ApplySHRotateMatrix<2>(ref.GetBand<2>(), mat2);
+			}
+			{
+				float mat3[25]; ComputeSHBand3RotateMatrix(mat3, rotX);
+				ApplySHRotateMatrix<3>(ref.GetBand<3>(), mat3);
+			}
+
+			FSHVector3 result = orig.ApplySHRotateMatrix(mats);
+			for (int i = 0; i < FSHVector3::MaxSHBasis; ++i)
+			{
+				if (std::abs(result.V[i] - ref.V[i]) > eps)
+				{
+					std::cout << "  [FAILED] FSHVector3 vs manual: V[" << i << "] = "
+					          << result.V[i] << " expected " << ref.V[i] << std::endl;
+					pass = false;
+				}
+			}
+		}
+
+		std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] TSHVector/TSHVectorRGB ApplySHRotateMatrix" << std::endl;
+	}
 
     return 0;
 }

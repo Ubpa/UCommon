@@ -5,5 +5,6 @@ Ubpa_AddTarget(
     "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp"
   LIB
     Ubpa::UCommon_Runtime
+    Ubpa::UCommon_ext_doctest
 )
 
