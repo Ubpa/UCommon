@@ -176,12 +176,12 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	//   m= 1: -a * x*z
 	//   m= 2: b * (x²-y²)   (b = 0.54627424)
 	//
-	// invY (5x5) expressed in terms of k0, k1, k2  (rows of invY):
-	//   invY row 0: [  0  -k0   0   k0   k1 ]
-	//   invY row 1: [ k0    0  k2   k0   k0 ]
-	//   invY row 2: [ k1    0   0    0    0 ]
-	//   invY row 3: [  0    0   0  -k1    0 ]
-	//   invY row 4: [  0  -k1   0    0    0 ]
+	// invY (5x5) expressed in terms of k0, k1, k2:
+	//   invY = [  0  -k0   0   k0   k1 ]
+	//          [ k0    0  k2   k0   k0 ]
+	//          [ k1    0   0    0    0 ]
+	//          [  0    0   0  -k1    0 ]
+	//          [  0  -k1   0    0    0 ]
 	//
 	// M = Y_R * invY, element form: M[row, col] = sum_k Yrws[k][row] * invY[k, col]
 	// Expanding by invY columns (nonzero entries per column):
@@ -194,8 +194,8 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	const FMatrix3x3f RT = RotateMatrix.Transpose();
 	const FVector3f Rws[5] =
 	{
-		RT.Rows[0],                              // R * w0 = first column of R
-		RT.Rows[2],                              // R * w1 = third column of R
+		RT.Rows[0],                             // R * w0 = first column of R
+		RT.Rows[2],                             // R * w1 = third column of R
 		(RT.Rows[0] + RT.Rows[1]) * k,          // R * w2 = k * (col0 + col1)
 		(RT.Rows[0] + RT.Rows[2]) * k,          // R * w3 = k * (col0 + col2)
 		(RT.Rows[1] + RT.Rows[2]) * k,          // R * w4 = k * (col1 + col2)
