@@ -1443,6 +1443,8 @@ namespace UCommon
 	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatrix3x3f& RotateMatrix);
 	// SHBand3RotateMatrix: row-major 5x5 (float[25], [row*5+col])
 	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatrix3x3f& RotateMatrix);
+	// SHBand4RotateMatrix: row-major 7x7 (float[49], [row*7+col])
+	UBPA_UCOMMON_API void ComputeSHBand4RotateMatrix(float* SHBand4RotateMatrix, const FMatrix3x3f& RotateMatrix);
 
 	// Apply a precomputed SH band rotation matrix to a mutable SH band view (in-place).
 	// SHBand          : mutable view of 2*Order-1 coefficients, modified in place

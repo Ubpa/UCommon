@@ -1240,6 +1240,86 @@ int main(int argc, char** argv)
 		std::cout << "[" << (matrixPass ? "PASSED" : "FAILED") << "] ComputeSHBand2RotateMatrix verified" << std::endl;
 	}
 
+	// Test 5.5: ComputeSHBand4RotateMatrix verification
+	{
+		std::cout << "\n=== Test 5.5: ComputeSHBand4RotateMatrix ===" << std::endl;
+
+		FMatrix3x3f rotX90Matrix(
+			1,  0,  0,
+			0,  0, -1,
+			0,  1,  0
+		);
+
+		float SHRotateMatrix[49];
+		ComputeSHBand4RotateMatrix(SHRotateMatrix, rotX90Matrix);
+
+		std::cout << "SHBand4 rotation matrix (7x7):" << std::endl;
+		for (int i = 0; i < 7; ++i) {
+			std::cout << "  [";
+			for (int j = 0; j < 7; ++j) {
+				std::cout << std::fixed << std::setprecision(6) << SHRotateMatrix[i * 7 + j];
+				if (j < 6) std::cout << ", ";
+			}
+			std::cout << "]" << std::endl;
+		}
+
+		// Verify the matrix by multiplying Y(w) and comparing with Y(R*w)
+		constexpr int numDirs = 7;
+		const FVector3f testDirs[numDirs] = {
+			FVector3f{ 1, 0, 0 },
+			FVector3f{ 0, 1, 0 },
+			FVector3f{ 0, 0, 1 },
+			FVector3f{ 1.f / std::sqrt(2.f), -1.f / std::sqrt(2.f), 0 },
+			FVector3f{ 1.f / std::sqrt(2.f), 0, 1.f / std::sqrt(2.f) },
+			FVector3f{ 0, 1.f / std::sqrt(2.f), 1.f / std::sqrt(2.f) },
+			FVector3f{ 1.f / std::sqrt(3.f), 1.f / std::sqrt(3.f), 1.f / std::sqrt(3.f) }
+		};
+
+		bool matrixPass = true;
+		constexpr float eps = 1e-3f;
+
+		for (int dirIdx = 0; dirIdx < numDirs; ++dirIdx) {
+			FVector3f w = testDirs[dirIdx];
+			FVector3f Rw = rotX90Matrix * w;
+
+			// Y(w)
+			float Yw[7] = {
+				SH<3, -3>(w), SH<3, -2>(w), SH<3, -1>(w), SH<3, 0>(w),
+				SH<3, 1>(w), SH<3, 2>(w), SH<3, 3>(w)
+			};
+
+			// Y(R*w)
+			float YRw[7] = {
+				SH<3, -3>(Rw), SH<3, -2>(Rw), SH<3, -1>(Rw), SH<3, 0>(Rw),
+				SH<3, 1>(Rw), SH<3, 2>(Rw), SH<3, 3>(Rw)
+			};
+
+			// M * Y(w)
+			float MYw[7];
+			for (int i = 0; i < 7; ++i) {
+				MYw[i] = 0;
+				for (int j = 0; j < 7; ++j) {
+					MYw[i] += SHRotateMatrix[i * 7 + j] * Yw[j];
+				}
+			}
+
+			bool matchThisDir = true;
+			for (int i = 0; i < 7; ++i) {
+				if (std::abs(YRw[i] - MYw[i]) > eps) {
+					matchThisDir = false;
+					break;
+				}
+			}
+
+			if (!matchThisDir) {
+				matrixPass = false;
+				std::cout << "  Dir " << dirIdx << ": [FAILED]" << std::endl;
+			}
+		}
+
+		std::cout << "[" << (matrixPass ? "PASSED" : "FAILED") << "] ComputeSHBand4RotateMatrix verified" << std::endl;
+	}
+
 	// Test 6: Inverse rotation
 	{
 		std::cout << "\n=== Test 6: Inverse Rotation ===" << std::endl;

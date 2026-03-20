@@ -99,17 +99,17 @@ void UCommon::ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatr
 	//       [  0   0   K ]    (m= 0)
 	//       [ -K   0   0 ]    (m=+1)
 	//
-	// invY = Y^{-1}, k = 1/K = 2.0466533:
-	//   invY = [  0  0 -k ]    (row 0)
-	//          [ -k  0  0 ]    (row 1)
-	//          [  0  k  0 ]    (row 2)
+	// invY = Y^{-1}, k0 = 1/K = 2.0466533:
+	//   invY = [  0   0  -k0 ]    (row 0)
+	//          [ -k0  0   0  ]    (row 1)
+	//          [  0  k0   0  ]    (row 2)
 	//
 	// Expanding M[row, col] = sum_k Yrws[k][row] * invY[k, col]
 	// using invY columns (only nonzero entries per column of invY):
-	//   invY col 0: k=1 -> -k        =>  M[row, 0] = Yrws[1][row] * (-k)
-	//   invY col 1: k=2 -> +k        =>  M[row, 1] = Yrws[2][row] * (+k)
-	//   invY col 2: k=0 -> -k        =>  M[row, 2] = Yrws[0][row] * (-k)
-	constexpr float k = 2.0466533f; // k = 1 / SHK<1,±1> = 1 / 0.48860252
+	//   invY col 0: k=1 -> -k0       =>  M[row, 0] = Yrws[1][row] * (-k0)
+	//   invY col 1: k=2 -> +k0       =>  M[row, 1] = Yrws[2][row] * (+k0)
+	//   invY col 2: k=0 -> -k0       =>  M[row, 2] = Yrws[0][row] * (-k0)
+	constexpr float k0 = 2.0466533f; // k0 = 1 / SHK<1,+/-1> = 1 / 0.48860252
 	const FMatrix3x3f RT = RotateMatrix.Transpose();
 	const FVector3f Rws[3] =
 	{
@@ -126,14 +126,14 @@ void UCommon::ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatr
 		Yrws[Index][2] = SH<1,  1>(Rws[Index]);
 	}
 	// M = Y_R * invY, iterate over output column (SH input index)
-	// col 0: invY col0 nonzero at k=1 -> -k  =>  M[row, 0] = -k * Yrws[1][row]
-	// col 1: invY col1 nonzero at k=2 -> +k  =>  M[row, 1] = +k * Yrws[2][row]
-	// col 2: invY col2 nonzero at k=0 -> -k  =>  M[row, 2] = -k * Yrws[0][row]
+	// col 0: invY col0 nonzero at k=1 -> -k0  =>  M[row, 0] = -k0 * Yrws[1][row]
+	// col 1: invY col1 nonzero at k=2 -> +k0  =>  M[row, 1] = +k0 * Yrws[2][row]
+	// col 2: invY col2 nonzero at k=0 -> -k0  =>  M[row, 2] = -k0 * Yrws[0][row]
 	for (uint64_t RowIndex = 0; RowIndex < 3; RowIndex++)
 	{
-		SHBand2RotateMatrix[RowIndex * 3 + 0] = -k * Yrws[1][RowIndex];
-		SHBand2RotateMatrix[RowIndex * 3 + 1] =  k * Yrws[2][RowIndex];
-		SHBand2RotateMatrix[RowIndex * 3 + 2] = -k * Yrws[0][RowIndex];
+		SHBand2RotateMatrix[RowIndex * 3 + 0] = -k0 * Yrws[1][RowIndex];
+		SHBand2RotateMatrix[RowIndex * 3 + 1] =  k0 * Yrws[2][RowIndex];
+		SHBand2RotateMatrix[RowIndex * 3 + 2] = -k0 * Yrws[0][RowIndex];
 	}
 }
 
@@ -146,9 +146,9 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	// 5 linearly independent sample directions are required:
 	//   w0 = (1, 0, 0)
 	//   w1 = (0, 0, 1)
-	//   w2 = (k, k, 0)  where k = 1/sqrt(2)
-	//   w3 = (k, 0, k)
-	//   w4 = (0, k, k)
+	//   w2 = c1*(1, 1, 0)  where c1 = 1/sqrt(2)
+	//   w3 = c1*(1, 0, 1)
+	//   w4 = c1*(0, 1, 1)
 	//
 	// RotateMatrix is row-major 3x3: RotateMatrix.Rows[i][j] = R_{i,j}
 	// Applying R to a column vector: (R*w)[i] = sum_j R_{i,j} * w[j]
@@ -158,23 +158,23 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	// 5 linearly independent sample directions:
 	//   w0 = (1, 0, 0)
 	//   w1 = (0, 0, 1)
-	//   w2 = (k, k, 0)  where k = 1/sqrt(2)
-	//   w3 = (k, 0, k)
-	//   w4 = (0, k, k)
+	//   w2 = c1*(1, 1, 0)  where c1 = 1/sqrt(2)
+	//   w3 = c1*(1, 0, 1)
+	//   w4 = c1*(0, 1, 1)
 	//
 	// By linearity:
 	//   Rws[0] = R * w0  = (R^T).Rows[0]
 	//   Rws[1] = R * w1  = (R^T).Rows[2]
-	//   Rws[2] = R * w2  = k * ((R^T).Rows[0] + (R^T).Rows[1])
-	//   Rws[3] = R * w3  = k * ((R^T).Rows[0] + (R^T).Rows[2])
-	//   Rws[4] = R * w4  = k * ((R^T).Rows[1] + (R^T).Rows[2])
+	//   Rws[2] = R * w2  = c1 * ((R^T).Rows[0] + (R^T).Rows[1])
+	//   Rws[3] = R * w3  = c1 * ((R^T).Rows[0] + (R^T).Rows[2])
+	//   Rws[4] = R * w4  = c1 * ((R^T).Rows[1] + (R^T).Rows[2])
 	//
 	// SH<2,m>(x,y,z):
 	//   m=-2: a * x*y    (a = 1.0925485)
 	//   m=-1: -a * y*z
-	//   m= 0: c2 * (3z²-1)  (c2 = 0.31539157)
+	//   m= 0: c2 * (3z^2-1)  (c2 = 0.31539157)
 	//   m= 1: -a * x*z
-	//   m= 2: b * (x²-y²)   (b = 0.54627424)
+	//   m= 2: b * (x^2-y^2)   (b = 0.54627424)
 	//
 	// invY (5x5) expressed in terms of k0, k1, k2:
 	//   invY = [  0  -k0   0   k0   k1 ]
@@ -190,15 +190,15 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	//   col 2: k=1 -> +k2               =>  M[row,2] = k2*Yrws[1][row]
 	//   col 3: k=0 -> +k0, k=1 -> +k0, k=3 -> -k1  =>  M[row,3] = k0*(Yrws[0][row]+Yrws[1][row]) - k1*Yrws[3][row]
 	//   col 4: k=0 -> +k1, k=1 -> +k0   =>  M[row,4] = k1*Yrws[0][row] + k0*Yrws[1][row]
-	constexpr float k = 0.70710677f; // 1/sqrt(2)
+	constexpr float c1 = 0.70710677f; // 1/sqrt(2)
 	const FMatrix3x3f RT = RotateMatrix.Transpose();
 	const FVector3f Rws[5] =
 	{
 		RT.Rows[0],                             // R * w0 = first column of R
 		RT.Rows[2],                             // R * w1 = third column of R
-		(RT.Rows[0] + RT.Rows[1]) * k,          // R * w2 = k * (col0 + col1)
-		(RT.Rows[0] + RT.Rows[2]) * k,          // R * w3 = k * (col0 + col2)
-		(RT.Rows[1] + RT.Rows[2]) * k,          // R * w4 = k * (col1 + col2)
+		(RT.Rows[0] + RT.Rows[1]) * c1,         // R * w2 = c1 * (col0 + col1)
+		(RT.Rows[0] + RT.Rows[2]) * c1,         // R * w3 = c1 * (col0 + col2)
+		(RT.Rows[1] + RT.Rows[2]) * c1,         // R * w4 = c1 * (col1 + col2)
 	};
 	// Yrws[sample][sh] = SH_sh(R * w_sample),  sh index: 0=m-2, 1=m-1, 2=m0, 3=m1, 4=m2
 	float Yrws[5][5];
@@ -222,5 +222,115 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 		SHBand3RotateMatrix[RowIndex * 5 + 2] =  k2 * Yrws[1][RowIndex];
 		SHBand3RotateMatrix[RowIndex * 5 + 3] =  k0 * (Yrws[0][RowIndex] + Yrws[1][RowIndex]) - k1 * Yrws[3][RowIndex];
 		SHBand3RotateMatrix[RowIndex * 5 + 4] =  k1 * Yrws[0][RowIndex] + k0 * Yrws[1][RowIndex];
+	}
+}
+
+void UCommon::ComputeSHBand4RotateMatrix(float* SHBand4RotateMatrix, const FMatrix3x3f& RotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(SHBand4RotateMatrix);
+	// Reference: http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
+	//
+	// Algorithm: same as Band2/Band3 (M = Y_R * invY), but for l=3 (7-dimensional).
+	// 7 linearly independent sample directions are required:
+	//   w0 = (1,  0,  0)         = e0
+	//   w1 = (0,  1,  0)         = e1
+	//   w2 = (0,  0,  1)         = e2
+	//   w3 = c1*(1, -1,  0)      = c1*(e0 - e1)   // breaks x-y symmetry
+	//   w4 = c1*(1,  0,  1)      = c1*(e0 + e2)
+	//   w5 = c1*(0,  1,  1)      = c1*(e1 + e2)
+	//   w6 = c2*(1,  1,  1)      = c2*(e0 + e1 + e2)
+	// where c1 = 1/sqrt(2), c2 = 1/sqrt(3)
+	//
+	// RotateMatrix is row-major 3x3: RotateMatrix.Rows[i][j] = R_{i,j}
+	// Applying R to a column vector: (R*w)[i] = sum_j R_{i,j} * w[j]
+	// The j-th column of R is R * e_j, which equals (R^T).Rows[j], so:
+	//   Rws[j] = R * w_j = (R^T).Rows[j]  (extract j-th column = j-th row of transpose)
+	//
+	// By linearity:
+	//   Rws[0] = R * w0  = (R^T).Rows[0]
+	//   Rws[1] = R * w1  = (R^T).Rows[1]
+	//   Rws[2] = R * w2  = (R^T).Rows[2]
+	//   Rws[3] = R * w3  = c1 * ((R^T).Rows[0] - (R^T).Rows[1])
+	//   Rws[4] = R * w4  = c1 * ((R^T).Rows[0] + (R^T).Rows[2])
+	//   Rws[5] = R * w5  = c1 * ((R^T).Rows[1] + (R^T).Rows[2])
+	//   Rws[6] = R * w6  = c2 * ((R^T).Rows[0] + (R^T).Rows[1] + (R^T).Rows[2])
+	//
+	// SH<3,m>(x,y,z):
+	//   m=-3: c * x*(5x^2-3(y^2+z^2))     (c = 0.5900435)
+	//   m=-2: a * x*y*(5z^2-1)           (a = 2.8906115)
+	//   m=-1: b * y*(5z^2-1)             (b = 0.45704579)
+	//   m= 0: c2 * (5z^3-3z)             (c2 = 0.3156899)
+	//   m=+1: b * x*(5z^2-1)
+	//   m=+2: a * (x^2-y^2)*(5z^2-1)/2
+	//   m=+3: c * z*(5z^2-3(x^2+y^2))
+	//
+	// invY (7x7) with numerical values (error < 1e-15):
+	//   col 0 (m=-3): k0*Y[0] + k8*Y[1] + k0*Y[2] + k3*Y[3] + k3*Y[4] + k3*Y[5]
+	//   col 1 (m=-2): k4*Y[0] + k4*Y[1] + k4*Y[2]                       + k10*Y[6]
+	//   col 2 (m=-1): -k1*Y[0] + k6*Y[1] - k1*Y[2] - k5*Y[3] - k5*Y[4] - k5*Y[5]
+	//   col 3 (m= 0): k9*Y[2]
+	//   col 4 (m=+1): k6*Y[0] - k1*Y[1] - k1*Y[2] + k5*Y[3] - k5*Y[4] - k5*Y[5]
+	//   col 5 (m=+2): k2*Y[0] - k2*Y[1]            + k7*Y[3] + k7*Y[4] - k7*Y[5]
+	//   col 6 (m=+3): -k8*Y[0] - k0*Y[1] - k0*Y[2]  + k3*Y[3] - k3*Y[4] - k3*Y[5]
+	constexpr float c1 = 0.70710677f;  // 1/sqrt(2)
+	constexpr float c2 = 0.57735027f;  // 1/sqrt(3)
+	const FMatrix3x3f RT = RotateMatrix.Transpose();
+	const FVector3f Rws[7] =
+	{
+		RT.Rows[0],                                        // R * w0 = e0 column
+		RT.Rows[1],                                        // R * w1 = e1 column
+		RT.Rows[2],                                        // R * w2 = e2 column
+		(RT.Rows[0] - RT.Rows[1]) * c1,                   // R * w3 = c1*(e0-e1)
+		(RT.Rows[0] + RT.Rows[2]) * c1,                   // R * w4 = c1*(e0+e2)
+		(RT.Rows[1] + RT.Rows[2]) * c1,                   // R * w5 = c1*(e1+e2)
+		(RT.Rows[0] + RT.Rows[1] + RT.Rows[2]) * c2,      // R * w6 = c2*(e0+e1+e2)
+	};
+	// Yrws[sample][sh] = SH_sh(R * w_sample), sh index: 0=m-3, 1=m-2, 2=m-1, 3=m0, 4=m+1, 5=m+2, 6=m+3
+	float Yrws[7][7];
+	for (uint64_t Index = 0; Index < 7; Index++)
+	{
+		Yrws[Index][0] = SH<3, -3>(Rws[Index]);
+		Yrws[Index][1] = SH<3, -2>(Rws[Index]);
+		Yrws[Index][2] = SH<3, -1>(Rws[Index]);
+		Yrws[Index][3] = SH<3,  0>(Rws[Index]);
+		Yrws[Index][4] = SH<3,  1>(Rws[Index]);
+		Yrws[Index][5] = SH<3,  2>(Rws[Index]);
+		Yrws[Index][6] = SH<3,  3>(Rws[Index]);
+	}
+	// invY coefficients (numerical, error < 1e-15):
+	constexpr float k0  = 0.2118488f;
+	constexpr float k1  = 0.2734956f;
+	constexpr float k2  = 0.3459476f;
+	constexpr float k3  = 0.5991988f;
+	constexpr float k4  = 0.6918951f;
+	constexpr float k5  = 0.7735623f;
+	constexpr float k6  = 0.8204867f;
+	constexpr float k7  = 0.9784875f;
+	constexpr float k8  = 1.0592438f;
+	constexpr float k9  = 1.3398491f;
+	constexpr float k10 = 1.7975963f;
+	// M = Y_R * invY, expand by invY columns
+	for (uint64_t RowIndex = 0; RowIndex < 7; RowIndex++)
+	{
+		// col 0 (m=-3)
+		SHBand4RotateMatrix[RowIndex * 7 + 0] = k0 * Yrws[0][RowIndex] + k8 * Yrws[1][RowIndex] + k0 * Yrws[2][RowIndex]
+		                                       + k3 * Yrws[3][RowIndex] + k3 * Yrws[4][RowIndex] + k3 * Yrws[5][RowIndex];
+		// col 1 (m=-2)
+		SHBand4RotateMatrix[RowIndex * 7 + 1] = k4 * Yrws[0][RowIndex] + k4 * Yrws[1][RowIndex] + k4 * Yrws[2][RowIndex]
+		                                       + k10 * Yrws[6][RowIndex];
+		// col 2 (m=-1)
+		SHBand4RotateMatrix[RowIndex * 7 + 2] = -k1 * Yrws[0][RowIndex] + k6 * Yrws[1][RowIndex] - k1 * Yrws[2][RowIndex]
+		                                        - k5 * Yrws[3][RowIndex] - k5 * Yrws[4][RowIndex] - k5 * Yrws[5][RowIndex];
+		// col 3 (m= 0)
+		SHBand4RotateMatrix[RowIndex * 7 + 3] = k9 * Yrws[2][RowIndex];
+		// col 4 (m=+1)
+		SHBand4RotateMatrix[RowIndex * 7 + 4] = k6 * Yrws[0][RowIndex] - k1 * Yrws[1][RowIndex] - k1 * Yrws[2][RowIndex]
+		                                        + k5 * Yrws[3][RowIndex] - k5 * Yrws[4][RowIndex] - k5 * Yrws[5][RowIndex];
+		// col 5 (m=+2)
+		SHBand4RotateMatrix[RowIndex * 7 + 5] = k2 * Yrws[0][RowIndex] - k2 * Yrws[1][RowIndex]
+		                                        + k7 * Yrws[3][RowIndex] + k7 * Yrws[4][RowIndex] - k7 * Yrws[5][RowIndex];
+		// col 6 (m=+3)
+		SHBand4RotateMatrix[RowIndex * 7 + 6] = -k8 * Yrws[0][RowIndex] - k0 * Yrws[1][RowIndex] - k0 * Yrws[2][RowIndex]
+		                                        + k3 * Yrws[3][RowIndex] - k3 * Yrws[4][RowIndex] - k3 * Yrws[5][RowIndex];
 	}
 }

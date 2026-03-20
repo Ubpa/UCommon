@@ -662,8 +662,8 @@ void UCommon::ApplySHRotateMatrix(TSHBandView<Order> SHBand, const float* SHBand
 namespace UCommon::Details
 {
 	// Dispatch: fill the rotation matrix for band BandOrder into Matrices.
-	// Only bands 2 and 3 are supported via ComputeSHBand2/3RotateMatrix.
-	// For higher bands (4, 5, ...) add explicit specializations here.
+	// Bands 2, 3, and 4 are supported via ComputeSHBand2/3/4RotateMatrix.
+	// For higher bands (5, 6, ...) add explicit specializations here.
 	template<int BandOrder, int Order>
 	void ComputeOneBandRotateMatrix(TSHRotateMatrices<Order>& Matrices, const FMatrix3x3f& RotateMatrix)
 	{
@@ -672,8 +672,10 @@ namespace UCommon::Details
 			ComputeSHBand2RotateMatrix(Matrices.template GetBand<2>().GetData(), RotateMatrix);
 		else if constexpr (BandOrder == 3)
 			ComputeSHBand3RotateMatrix(Matrices.template GetBand<3>().GetData(), RotateMatrix);
+		else if constexpr (BandOrder == 4)
+			ComputeSHBand4RotateMatrix(Matrices.template GetBand<4>().GetData(), RotateMatrix);
 		else
-			static_assert(BandOrder < 4, "ComputeOneBandRotateMatrix: no implementation for BandOrder >= 4");
+			static_assert(BandOrder < 5, "ComputeOneBandRotateMatrix: no implementation for BandOrder >= 5");
 	}
 
 	// Fold over bands 2..Order using integer_sequence (Is = 0, 1, ..., Order-2 => Band = 2, 3, ..., Order)
