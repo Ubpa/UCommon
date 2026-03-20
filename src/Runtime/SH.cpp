@@ -86,8 +86,8 @@ void UCommon::ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatr
 	//
 	// RotateMatrix is row-major 3x3: RotateMatrix.Rows[i][j] = R_{i,j}
 	// Applying R to a column vector: (R*w)[i] = sum_j R_{i,j} * w[j]
-	// The j-th column of R is R * e_j, so:
-	//   Rws[j] = R * w_j  (extract j-th column)
+	// The j-th column of R is R * e_j, which equals (R^T).Rows[j], so:
+	//   Rws[j] = R * w_j = (R^T).Rows[j]  (extract j-th column = j-th row of transpose)
 	//
 	// Sample points (axis-aligned):
 	//   w0 = (1,0,0),  w1 = (0,1,0),  w2 = (0,0,1)
@@ -110,14 +110,12 @@ void UCommon::ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatr
 	//   invY col 1: k=2 -> +k        =>  M[row, 1] = Yrws[2][row] * (+k)
 	//   invY col 2: k=0 -> -k        =>  M[row, 2] = Yrws[0][row] * (-k)
 	constexpr float k = 2.0466533f; // k = 1 / SHK<1,±1> = 1 / 0.48860252
+	const FMatrix3x3f RT = RotateMatrix.Transpose();
 	const FVector3f Rws[3] =
 	{
-		// R * w0 = R * (1,0,0) = first column of R
-		{ RotateMatrix.Rows[0][0], RotateMatrix.Rows[1][0], RotateMatrix.Rows[2][0] },
-		// R * w1 = R * (0,1,0) = second column of R
-		{ RotateMatrix.Rows[0][1], RotateMatrix.Rows[1][1], RotateMatrix.Rows[2][1] },
-		// R * w2 = R * (0,0,1) = third column of R
-		{ RotateMatrix.Rows[0][2], RotateMatrix.Rows[1][2], RotateMatrix.Rows[2][2] },
+		RT.Rows[0],  // R * w0 = R * (1,0,0) = first column of R
+		RT.Rows[1],  // R * w1 = R * (0,1,0) = second column of R
+		RT.Rows[2],  // R * w2 = R * (0,0,1) = third column of R
 	};
 	// Yrws[sample][sh] = SH_sh(R * w_sample)
 	float Yrws[3][3];
@@ -154,12 +152,22 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	//
 	// RotateMatrix is row-major 3x3: RotateMatrix.Rows[i][j] = R_{i,j}
 	// Applying R to a column vector: (R*w)[i] = sum_j R_{i,j} * w[j]
-	// The j-th column of R gives R * e_j, so rotated sample directions are:
-	//   Rws[0] = R * w0  (first column of R)
-	//   Rws[1] = R * w1  (third column of R)
-	//   Rws[2] = R * (k, k, 0) = k * (R[:,0] + R[:,1])
-	//   Rws[3] = R * (k, 0, k) = k * (R[:,0] + R[:,2])
-	//   Rws[4] = R * (0, k, k) = k * (R[:,1] + R[:,2])
+	// The j-th column of R is R * e_j, which equals (R^T).Rows[j], so:
+	//   Rws[j] = R * w_j = (R^T).Rows[j]  (extract j-th column = j-th row of transpose)
+	//
+	// 5 linearly independent sample directions:
+	//   w0 = (1, 0, 0)
+	//   w1 = (0, 0, 1)
+	//   w2 = (k, k, 0)  where k = 1/sqrt(2)
+	//   w3 = (k, 0, k)
+	//   w4 = (0, k, k)
+	//
+	// By linearity:
+	//   Rws[0] = R * w0  = (R^T).Rows[0]
+	//   Rws[1] = R * w1  = (R^T).Rows[2]
+	//   Rws[2] = R * w2  = k * ((R^T).Rows[0] + (R^T).Rows[1])
+	//   Rws[3] = R * w3  = k * ((R^T).Rows[0] + (R^T).Rows[2])
+	//   Rws[4] = R * w4  = k * ((R^T).Rows[1] + (R^T).Rows[2])
 	//
 	// SH<2,m>(x,y,z):
 	//   m=-2: a * x*y    (a = 1.0925485)
@@ -183,18 +191,14 @@ void UCommon::ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatr
 	//   col 3: k=0 -> +k0, k=1 -> +k0, k=3 -> -k1  =>  M[row,3] = k0*(Yrws[0][row]+Yrws[1][row]) - k1*Yrws[3][row]
 	//   col 4: k=0 -> +k1, k=1 -> +k0   =>  M[row,4] = k1*Yrws[0][row] + k0*Yrws[1][row]
 	constexpr float k = 0.70710677f; // 1/sqrt(2)
+	const FMatrix3x3f RT = RotateMatrix.Transpose();
 	const FVector3f Rws[5] =
 	{
-		// R * w0 = first column of R
-		{ RotateMatrix.Rows[0][0], RotateMatrix.Rows[1][0], RotateMatrix.Rows[2][0] },
-		// R * w1 = third column of R
-		{ RotateMatrix.Rows[0][2], RotateMatrix.Rows[1][2], RotateMatrix.Rows[2][2] },
-		// R * w2 = k * (col0 + col1)
-		FVector3f{ (RotateMatrix.Rows[0][0] + RotateMatrix.Rows[0][1]), (RotateMatrix.Rows[1][0] + RotateMatrix.Rows[1][1]), (RotateMatrix.Rows[2][0] + RotateMatrix.Rows[2][1]) } *k,
-		// R * w3 = k * (col0 + col2)
-		FVector3f{ (RotateMatrix.Rows[0][0] + RotateMatrix.Rows[0][2]), (RotateMatrix.Rows[1][0] + RotateMatrix.Rows[1][2]), (RotateMatrix.Rows[2][0] + RotateMatrix.Rows[2][2]) } *k,
-		// R * w4 = k * (col1 + col2)
-		FVector3f{ (RotateMatrix.Rows[0][1] + RotateMatrix.Rows[0][2]), (RotateMatrix.Rows[1][1] + RotateMatrix.Rows[1][2]), (RotateMatrix.Rows[2][1] + RotateMatrix.Rows[2][2]) } *k,
+		RT.Rows[0],                              // R * w0 = first column of R
+		RT.Rows[2],                              // R * w1 = third column of R
+		(RT.Rows[0] + RT.Rows[1]) * k,          // R * w2 = k * (col0 + col1)
+		(RT.Rows[0] + RT.Rows[2]) * k,          // R * w3 = k * (col0 + col2)
+		(RT.Rows[1] + RT.Rows[2]) * k,          // R * w4 = k * (col1 + col2)
 	};
 	// Yrws[sample][sh] = SH_sh(R * w_sample),  sh index: 0=m-2, 1=m-1, 2=m0, 3=m1, 4=m2
 	float Yrws[5][5];
