@@ -235,6 +235,8 @@ namespace UCommon
 			typename = std::enable_if_t<(LowerOrder >= 2 && LowerOrder < Order)>>
 		operator TSHRotateMatrices<LowerOrder>&() noexcept
 		{
+			static_assert(sizeof(TSHRotateMatrices<LowerOrder>) <= sizeof(TSHRotateMatrices<Order>),
+			"Lower-order matrices must be strictly smaller");
 			return reinterpret_cast<TSHRotateMatrices<LowerOrder>&>(*this);
 		}
 
@@ -242,6 +244,8 @@ namespace UCommon
 			typename = std::enable_if_t<(LowerOrder >= 2 && LowerOrder < Order)>>
 		operator const TSHRotateMatrices<LowerOrder>&() const noexcept
 		{
+			static_assert(sizeof(TSHRotateMatrices<LowerOrder>) <= sizeof(TSHRotateMatrices<Order>),
+			"Lower-order matrices must be strictly smaller");
 			return reinterpret_cast<const TSHRotateMatrices<LowerOrder>&>(*this);
 		}
 	};
