@@ -371,6 +371,242 @@ YRw = np.array([SH4(R @ w_test, m) for m in range(-4, 5)])
 print(f"Max error: {np.max(np.abs(M @ Yw - YRw)):.2e}")  # 应 < 1e-14
 ```
 
+## 通用递推算法（l ≥ 5）
+
+对于 l ≥ 5（Band6 及以上），手工推导 invY 系数的工作量极大（l=4 已需要 30 个系数），因此改用 **Ivanic & Ruedenberg（1996）递推算法**，直接由低阶旋转矩阵 M[l-1] 递推出 M[l]，无需采样点和矩阵求逆。
+
+### 算法来源
+
+- **论文**：*"Rotation Matrices for Real Spherical Harmonics. Direct Determination by Recursion"*，J. Ivanic & K. Ruedenberg，*J. Phys. Chem.*，1996，DOI: 10.1021/jp953350u（含 1998 勘误）
+- **开源参考实现**：[google/spherical-harmonics](https://github.com/google/spherical-harmonics)（`sh/spherical_harmonics.cc`）
+
+### 算法概述
+
+**目标**：给定 3×3 旋转矩阵 R，逐 band 计算 M[0], M[1], M[2], ..., M[l]，其中 M[l] 是 (2l+1)×(2l+1) 的实球谐旋转矩阵。
+
+**初始化**：
+- `M[0] = [1]`（标量，trivial）
+- `M[1]` 直接来自旋转矩阵 R，但需按实球谐排序 m = -1, 0, +1：
+
+```
+M[1](m, n)  =  R 在实球谐基下的矩阵元素
+```
+
+具体地，用 R 的分量 R[x,y,z] 按如下对应关系填充（`r[1]` 即 M[1]）：
+
+| (m, n) | 值 |
+|--------|----|
+| (-1,-1) | R[y,y] | (-1, 0) | R[y,z] | (-1,+1) | R[y,x] |
+| ( 0,-1) | R[z,y] | ( 0, 0) | R[z,z] | ( 0,+1) | R[z,x] |
+| (+1,-1) | R[x,y] | (+1, 0) | R[x,z] | (+1,+1) | R[x,x] |
+
+**递推步骤**：对每个 l ≥ 2，逐一计算 M[l] 的每个元素 `M[l](m, n)`（其中 -l ≤ m, n ≤ l）：
+
+```
+M[l](m, n) = u(m,n,l) * U(m,n,l) + v(m,n,l) * V(m,n,l) + w(m,n,l) * W(m,n,l)
+```
+
+---
+
+### 标量系数 u, v, w
+
+这三个系数只依赖整数 m, n, l（纯代数，无超越函数）：
+
+```
+d = KroneckerDelta(m, 0)          // d=1 当 m=0，否则 d=0
+denom = |n|==l ? 2l(2l-1) : (l+n)(l-n)
+
+u(m,n,l) = sqrt( (l+m)(l-m) / denom )
+
+v(m,n,l) = 0.5 * sqrt( (1+d)(l+|m|-1)(l+|m|) / denom ) * (1 - 2d)
+
+w(m,n,l) = -0.5 * sqrt( (l-|m|-1)(l-|m|) / denom ) * (1 - d)
+```
+
+注意：
+- 当 `|m| == l` 时，w 的根号内 `(l-l-1)(l-l) = (-1)·0 = 0`，故 `w = 0`
+- 当 `m = 0` 时，d=1，故 `w = 0`（即 m=0 行无 W 项）
+
+---
+
+### 矩阵贡献项 U, V, W
+
+这三项由辅助函数 `P(i, a, b, l)` 构成，而 `P` 读取 M[1]（即旋转矩阵 R）和已计算好的 M[l-1]：
+
+#### P 函数定义
+
+设 `r[1]` = M[1]（3×3，索引 -1,0,+1），`r[l-1]` = M[l-1]（用 "centered index"，即下标偏移 l-1 使 m 从 -(l-1) 到 l-1）：
+
+```
+P(i, a, b, l):
+  if b == l:
+    return r[1](i, +1) * r[l-1](a, l-1) - r[1](i, -1) * r[l-1](a, -(l-1))
+  elif b == -l:
+    return r[1](i, +1) * r[l-1](a, -(l-1)) + r[1](i, -1) * r[l-1](a, l-1)
+  else:
+    return r[1](i, 0) * r[l-1](a, b)
+```
+
+其中 `i ∈ {-1, 0, +1}` 对应旋转矩阵 R 的 y, z, x 列。
+
+#### U 函数
+
+```
+U(m, n, l) = P(0, m, n, l)
+```
+
+即使用 `r[1](0, ·)` = R 的 z 行。
+
+#### V 函数（依赖 m 的符号）
+
+```
+V(m, n, l):
+  if m == 0:
+    return P(+1, +1, n, l) + P(-1, -1, n, l)
+  elif m > 0:
+    d1 = KroneckerDelta(m, 1)
+    return P(+1, m-1, n, l) * sqrt(1 + d1) - P(-1, -(m-1), n, l) * (1 - d1)
+  else:  // m < 0
+    d1 = KroneckerDelta(m, -1)
+    return P(+1, m+1, n, l) * (1 - d1) + P(-1, -(m+1), n, l) * sqrt(1 + d1)
+```
+
+#### W 函数（依赖 m 的符号，m=0 时恒为 0）
+
+```
+W(m, n, l):
+  if m == 0:
+    return 0.0
+  elif m > 0:
+    return P(+1, m+1, n, l) + P(-1, -(m+1), n, l)
+  else:  // m < 0
+    return P(+1, m-1, n, l) - P(-1, -(m-1), n, l)
+```
+
+---
+
+### C++ 参考实现
+
+以下是基于 [google/spherical-harmonics](https://github.com/google/spherical-harmonics) 的精简实现框架（去除 Eigen 依赖，改为裸数组）：
+
+```cpp
+// 带中心索引的矩阵访问：M 是 (2*l+1) x (2*l+1)，m/n 范围 [-l, l]
+static float GetElem(const float* M, int l, int m, int n) {
+    return M[(m + l) * (2 * l + 1) + (n + l)];
+}
+
+// P(i, a, b, l, r1, prev) —— r1: M[1] (3x3), prev: M[l-1]
+static float P(int i, int a, int b, int l, const float* r1, const float* prev) {
+    // r1 是 3x3，用 GetElem(r1, 1, i, j) 访问
+    if (b == l) {
+        return GetElem(r1, 1, i, 1) * GetElem(prev, l-1, a, l-1)
+             - GetElem(r1, 1, i,-1) * GetElem(prev, l-1, a,-(l-1));
+    } else if (b == -l) {
+        return GetElem(r1, 1, i, 1) * GetElem(prev, l-1, a,-(l-1))
+             + GetElem(r1, 1, i,-1) * GetElem(prev, l-1, a, l-1);
+    } else {
+        return GetElem(r1, 1, i, 0) * GetElem(prev, l-1, a, b);
+    }
+}
+
+static float U(int m, int n, int l, const float* r1, const float* prev) {
+    return P(0, m, n, l, r1, prev);
+}
+
+static float V(int m, int n, int l, const float* r1, const float* prev) {
+    if (m == 0) {
+        return P(1, 1, n, l, r1, prev) + P(-1, -1, n, l, r1, prev);
+    } else if (m > 0) {
+        float d1 = (m == 1) ? 1.0f : 0.0f;
+        return P(1, m-1, n, l, r1, prev) * std::sqrt(1.0f + d1)
+             - P(-1,-(m-1), n, l, r1, prev) * (1.0f - d1);
+    } else {
+        float d1 = (m == -1) ? 1.0f : 0.0f;
+        return P(1, m+1, n, l, r1, prev) * (1.0f - d1)
+             + P(-1,-(m+1), n, l, r1, prev) * std::sqrt(1.0f + d1);
+    }
+}
+
+static float W(int m, int n, int l, const float* r1, const float* prev) {
+    if (m == 0) return 0.0f;
+    else if (m > 0)
+        return P(1, m+1, n, l, r1, prev) + P(-1,-(m+1), n, l, r1, prev);
+    else
+        return P(1, m-1, n, l, r1, prev) - P(-1,-(m-1), n, l, r1, prev);
+}
+
+// 计算标量系数 u, v, w
+static void ComputeUVWCoeff(int m, int n, int l, float& u, float& v, float& w) {
+    float d = (m == 0) ? 1.0f : 0.0f;
+    float denom = (std::abs(n) == l)
+                  ? float(2 * l * (2 * l - 1))
+                  : float((l + n) * (l - n));
+    u = std::sqrt(float((l + m) * (l - m)) / denom);
+    v = 0.5f * std::sqrt((1.0f + d) * float((l + std::abs(m) - 1) * (l + std::abs(m))) / denom)
+            * (1.0f - 2.0f * d);
+    w = -0.5f * std::sqrt(float((l - std::abs(m) - 1) * (l - std::abs(m))) / denom)
+             * (1.0f - d);
+}
+
+// 计算第 l 阶旋转矩阵（写入 out，大小 (2l+1)^2）
+// r1: M[1]（3x3），prev: M[l-1]（(2l-1)^2）
+void ComputeBandRotation(int l, const float* r1, const float* prev, float* out) {
+    int sz = 2 * l + 1;
+    for (int m = -l; m <= l; m++) {
+        for (int n = -l; n <= l; n++) {
+            float u, v, w;
+            ComputeUVWCoeff(m, n, l, u, v, w);
+            float val = 0.0f;
+            if (u != 0.0f) val += u * U(m, n, l, r1, prev);
+            if (v != 0.0f) val += v * V(m, n, l, r1, prev);
+            if (w != 0.0f) val += w * W(m, n, l, r1, prev);
+            out[(m + l) * sz + (n + l)] = val;
+        }
+    }
+}
+```
+
+**使用方式**：
+
+```cpp
+// 1. 构建 M[1]（3x3）：直接用旋转矩阵 R
+float r1[9];  // M[1]，按 (m+1)*3+(n+1)，m,n ∈ {-1,0,+1}
+// 对应关系：r1(-1,-1)=R[y,y], r1(-1,0)=R[y,z], r1(-1,+1)=R[y,x]
+//           r1( 0,-1)=R[z,y], r1( 0, 0)=R[z,z], r1( 0,+1)=R[z,x]
+//           r1(+1,-1)=R[x,y], r1(+1, 0)=R[x,z], r1(+1,+1)=R[x,x]
+
+// 2. 逐阶递推
+float prev[25];  // M[l-1]，按需分配
+float curr[49];  // M[l]
+// ComputeBandRotation(2, r1, prev, curr) -> M[2] (5x5)
+// ComputeBandRotation(3, r1, curr, next) -> M[3] (7x7)
+// ... 以此类推
+```
+
+---
+
+### 复杂度分析
+
+| 操作 | 复杂度 |
+|------|--------|
+| 计算单个 M[l] | O(l²) 个元素，每个元素 O(1) |
+| 计算所有 M[0..L] | O(L³) 总体 |
+| 存储所有 M[0..L] | O(L³) 字节 |
+
+---
+
+### 与 invY 方法的对比
+
+| 特性 | invY 方法（Band2~5） | 递推方法（Band6+） |
+|------|---------------------|-------------------|
+| 实现复杂度 | 需手工推导/数值求逆 | 统一代码，无需预计算 |
+| 运行时开销 | 极低（固定系数，稀疏） | 略高（O(l²) per band，但仍快速） |
+| 数值精度 | 精确（float 系数） | 递推，误差随 l 略微累积 |
+| 适用范围 | l ≤ 4（Band5 以内） | l ≥ 2（任意阶，向后兼容） |
+| 代码可维护性 | 每阶需单独函数 | 一套代码覆盖所有阶 |
+
+推荐策略：**l ≤ 4 使用 invY 方法（性能最优），l ≥ 5 使用递推方法（通用性）**。
+
 ## 研究方法总结
 
 ### 一般框架（适用所有阶）

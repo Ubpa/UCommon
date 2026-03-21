@@ -1403,7 +1403,90 @@ int main(int argc, char** argv)
 		std::cout << "[" << (matrixPass ? "PASSED" : "FAILED") << "] ComputeSHBand5RotateMatrix verified" << std::endl;
 	}
 
-	// Test 6: Inverse rotation
+	// Test 5.7: ComputeSHBandNRotateMatrix (generic recursive) verification
+	// Uses the Ivanic & Ruedenberg (1996) recursion in the standard unsigned
+	// Condon-Shortley basis.  Verified via mathematical properties:
+	//   1) Orthogonality (M^T * M = I)
+	//   2) Composition (M(R1) * M(R2) = M(R1*R2))
+	//   3) Identity (M(I) = I)
+	// for l=2 through l=6.
+	{
+		std::cout << "\n=== Test 5.7: ComputeSHBandNRotateMatrix (generic recursive) ===" << std::endl;
+		bool allPass = true;
+		constexpr float eps5 = 1e-3f;
+
+		FMatrix3x3f rotX90Matrix(
+			1,  0,  0,
+			0,  0, -1,
+			0,  1,  0
+		);
+		float angle45 = UCommon::Pi / 4.0f;
+		float c45 = std::cos(angle45), s45 = std::sin(angle45);
+		FMatrix3x3f rotZ45( c45, -s45, 0,  s45,  c45, 0,  0, 0, 1 );
+
+		for (int testL = 2; testL <= 6; ++testL)
+		{
+			const int dim = 2 * testL + 1;
+			const int sz2 = dim * dim;
+
+			// 1) Identity test
+			{
+				std::vector<float> matI(sz2);
+				ComputeSHBandNRotateMatrix(matI.data(), testL, FMatrix3x3f::Identity());
+				bool pass = true;
+				for (int i = 0; i < dim && pass; ++i)
+					for (int j = 0; j < dim && pass; ++j)
+					{
+						float expected = (i == j) ? 1.0f : 0.0f;
+						if (std::abs(matI[i * dim + j] - expected) > eps5) pass = false;
+					}
+				std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] l=" << testL << ": M(Identity) = I" << std::endl;
+				allPass &= pass;
+			}
+
+			// 2) Orthogonality: M^T * M = I
+			{
+				std::vector<float> mat(sz2);
+				ComputeSHBandNRotateMatrix(mat.data(), testL, rotX90Matrix);
+				bool pass = true;
+				for (int i = 0; i < dim && pass; ++i)
+					for (int j = 0; j < dim && pass; ++j)
+					{
+						float dot = 0.0f;
+						for (int k = 0; k < dim; ++k)
+							dot += mat[k * dim + i] * mat[k * dim + j];
+						float expected = (i == j) ? 1.0f : 0.0f;
+						if (std::abs(dot - expected) > eps5) pass = false;
+					}
+				std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] l=" << testL << ": M is orthogonal" << std::endl;
+				allPass &= pass;
+			}
+
+			// 3) Composition: M(R1) * M(R2) = M(R1 * R2)
+			{
+				std::vector<float> matX(sz2), matZ(sz2), matC(sz2);
+				FMatrix3x3f rotComposed = rotX90Matrix * rotZ45;
+				ComputeSHBandNRotateMatrix(matX.data(), testL, rotX90Matrix);
+				ComputeSHBandNRotateMatrix(matZ.data(), testL, rotZ45);
+				ComputeSHBandNRotateMatrix(matC.data(), testL, rotComposed);
+
+				std::vector<float> matXZ(sz2, 0.0f);
+				for (int i = 0; i < dim; ++i)
+					for (int j = 0; j < dim; ++j)
+						for (int k = 0; k < dim; ++k)
+							matXZ[i * dim + j] += matX[i * dim + k] * matZ[k * dim + j];
+
+				bool pass = true;
+				for (int i = 0; i < sz2; ++i)
+					if (std::abs(matXZ[i] - matC[i]) > eps5) { pass = false; break; }
+				std::cout << "[" << (pass ? "PASSED" : "FAILED") << "] l=" << testL << ": M(R1)*M(R2)=M(R1*R2)" << std::endl;
+				allPass &= pass;
+			}
+		}
+
+		std::cout << "[" << (allPass ? "PASSED" : "FAILED") << "] ComputeSHBandNRotateMatrix verified" << std::endl;
+	}
+
 	{
 		std::cout << "\n=== Test 6: Inverse Rotation ===" << std::endl;
 

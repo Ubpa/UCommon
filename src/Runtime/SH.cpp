@@ -24,6 +24,9 @@ SOFTWARE.
 
 #include <UCommon/SH.h>
 
+#include <cmath>
+#include <vector>
+
 float UCommon::HallucinateZH(const FSHVector2& SHVector2, float t, FVector4f& Buffer, float Delta)
 {
 	UBPA_UCOMMON_ASSERT(t >= 0.f && t <= 1.f);
@@ -469,5 +472,189 @@ void UCommon::ComputeSHBand5RotateMatrix(float* SHBand5RotateMatrix, const FMatr
 		                                       + k0  * Yrws[4][RowIndex] + k19 * Yrws[8][RowIndex];
 		// col 8 (m=+4)
 		SHBand5RotateMatrix[RowIndex * 9 + 8] = k20 * Yrws[0][RowIndex] + k20 * Yrws[1][RowIndex] + k9  * Yrws[2][RowIndex];
+	}
+}
+
+// ============================================================================
+// Generic recursive SH rotation (Ivanic & Ruedenberg 1996)
+// Reference: "Rotation Matrices for Real Spherical Harmonics. Direct
+//             Determination by Recursion", J. Phys. Chem. 1996, 100, 6342-6347
+//             (with 1998 erratum) and google/spherical-harmonics implementation.
+//
+// Algorithm: given the 3x3 SH rotation matrix r1 (= M[1]) and the (2l-1)x(2l-1)
+// matrix for band l-1 (prev), compute all entries of the (2l+1)x(2l+1) matrix
+// for band l via the recurrence:
+//
+//   M[l](m,n) = u(m,n,l)*U(m,n,l) + v(m,n,l)*V(m,n,l) + w(m,n,l)*W(m,n,l)
+//
+// where U/V/W are built from an auxiliary function P(i,a,b,l) that reads r1
+// and prev.  The scalar coefficients u/v/w are pure functions of integers m,n,l.
+// ============================================================================
+
+namespace
+{
+// Centered-index accessor: M is (2*l+1)*(2*l+1), m/n in [-l, l]
+inline float SHRotGetElem(const float* M, int l, int m, int n)
+{
+	return M[(m + l) * (2 * l + 1) + (n + l)];
+}
+
+// P(i, a, b, l) -- i in {-1,0,+1} selects the r1 row (y,z,x resp.)
+// r1: M[1] stored as 3x3, accessed via SHRotGetElem(r1, 1, ...)
+// prev: M[l-1] stored as (2(l-1)+1)^2 array
+static float SHRotP(int i, int a, int b, int l, const float* r1, const float* prev)
+{
+	if (b == l)
+	{
+		return SHRotGetElem(r1, 1, i, +1) * SHRotGetElem(prev, l - 1, a,  (l - 1))
+		     - SHRotGetElem(r1, 1, i, -1) * SHRotGetElem(prev, l - 1, a, -(l - 1));
+	}
+	else if (b == -l)
+	{
+		return SHRotGetElem(r1, 1, i, +1) * SHRotGetElem(prev, l - 1, a, -(l - 1))
+		     + SHRotGetElem(r1, 1, i, -1) * SHRotGetElem(prev, l - 1, a,  (l - 1));
+	}
+	else
+	{
+		return SHRotGetElem(r1, 1, i, 0) * SHRotGetElem(prev, l - 1, a, b);
+	}
+}
+
+static float SHRotU(int m, int n, int l, const float* r1, const float* prev)
+{
+	return SHRotP(0, m, n, l, r1, prev);
+}
+
+static float SHRotV(int m, int n, int l, const float* r1, const float* prev)
+{
+	if (m == 0)
+	{
+		return SHRotP(+1, +1, n, l, r1, prev) + SHRotP(-1, -1, n, l, r1, prev);
+	}
+	else if (m > 0)
+	{
+		float d1 = (m == 1) ? 1.0f : 0.0f;
+		return SHRotP(+1, m - 1, n, l, r1, prev) * std::sqrt(1.0f + d1)
+		     - SHRotP(-1, -(m - 1), n, l, r1, prev) * (1.0f - d1);
+	}
+	else // m < 0
+	{
+		float d1 = (m == -1) ? 1.0f : 0.0f;
+		return SHRotP(+1,  m + 1, n, l, r1, prev) * (1.0f - d1)
+		     + SHRotP(-1, -(m + 1), n, l, r1, prev) * std::sqrt(1.0f + d1);
+	}
+}
+
+static float SHRotW(int m, int n, int l, const float* r1, const float* prev)
+{
+	if (m == 0) return 0.0f;
+	else if (m > 0)
+		return SHRotP(+1, m + 1, n, l, r1, prev) + SHRotP(-1, -(m + 1), n, l, r1, prev);
+	else
+		return SHRotP(+1, m - 1, n, l, r1, prev) - SHRotP(-1, -(m - 1), n, l, r1, prev);
+}
+
+// Scalar coefficients u, v, w for the recurrence (pure integer arithmetic + sqrt)
+static void SHRotUVWCoeff(int m, int n, int l, float& u, float& v, float& w)
+{
+	const float d    = (m == 0) ? 1.0f : 0.0f;
+	const float absm = static_cast<float>(std::abs(m));
+	const float denom = (std::abs(n) == l)
+	                  ? static_cast<float>(2 * l * (2 * l - 1))
+	                  : static_cast<float>((l + n) * (l - n));
+	u = std::sqrt(static_cast<float>((l + m) * (l - m)) / denom);
+	v = 0.5f * std::sqrt((1.0f + d) * static_cast<float>((l + absm - 1) * (l + absm)) / denom)
+	        * (1.0f - 2.0f * d);
+	w = -0.5f * std::sqrt(static_cast<float>((l - absm - 1) * (l - absm)) / denom)
+	         * (1.0f - d);
+}
+
+// Compute one band's rotation matrix.
+// r1   : M[1], stored as float[9] with centered index (row i: i in {-1,0,+1})
+// prev : M[l-1], stored as float[(2*(l-1)+1)^2]
+// out  : output M[l], stored as float[(2*l+1)^2]
+static void SHRotComputeBand(int l, const float* r1, const float* prev, float* out)
+{
+	const int sz = 2 * l + 1;
+	for (int m = -l; m <= l; ++m)
+	{
+		for (int n = -l; n <= l; ++n)
+		{
+			float u, v, w;
+			SHRotUVWCoeff(m, n, l, u, v, w);
+			float val = 0.0f;
+			if (u != 0.0f) val += u * SHRotU(m, n, l, r1, prev);
+			if (v != 0.0f) val += v * SHRotV(m, n, l, r1, prev);
+			if (w != 0.0f) val += w * SHRotW(m, n, l, r1, prev);
+			out[(m + l) * sz + (n + l)] = val;
+		}
+	}
+}
+} // anonymous namespace
+
+void UCommon::ComputeSHBandNRotateMatrix(float* OutMatrix, int l, const FMatrix3x3f& RotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(OutMatrix && l >= 2);
+
+	// -----------------------------------------------------------------------
+	// Build r1 = M[1] in the unsigned Condon-Shortley basis (standard real SH
+	// convention used by the I&R 1996 paper and google/spherical-harmonics).
+	// In this basis, Y_{1,-1} ~ y, Y_{1,0} ~ z, Y_{1,+1} ~ x (all positive).
+	// The SH rotation matrix for l=1 is R expressed in the {y,z,x} ordering:
+	//
+	//   r1(m, n)  m\n | -1(y)  0(z) +1(x)
+	//             ----|--------------------
+	//             -1(y)| Ryy   Ryz   Ryx
+	//              0(z)| Rzy   Rzz   Rzx
+	//             +1(x)| Rxy   Rxz   Rxx
+	//
+	// Storage: r1[(m+1)*3 + (n+1)] for m,n in {-1,0,+1}  (centered index)
+	float r1[9];
+	const auto& R = RotateMatrix;
+	r1[0*3 + 0] = R.Rows[1][1]; // r1(-1,-1) = Ryy
+	r1[0*3 + 1] = R.Rows[1][2]; // r1(-1, 0) = Ryz
+	r1[0*3 + 2] = R.Rows[1][0]; // r1(-1,+1) = Ryx
+	r1[1*3 + 0] = R.Rows[2][1]; // r1( 0,-1) = Rzy
+	r1[1*3 + 1] = R.Rows[2][2]; // r1( 0, 0) = Rzz
+	r1[1*3 + 2] = R.Rows[2][0]; // r1( 0,+1) = Rzx
+	r1[2*3 + 0] = R.Rows[0][1]; // r1(+1,-1) = Rxy
+	r1[2*3 + 1] = R.Rows[0][2]; // r1(+1, 0) = Rxz
+	r1[2*3 + 2] = R.Rows[0][0]; // r1(+1,+1) = Rxx
+
+	// -----------------------------------------------------------------------
+	// Recurse from band 2 up to band l using two ping-pong buffers.
+	// All matrices are in the standard unsigned Condon-Shortley convention.
+	// This convention differs from the SH<l,m> convention in SH.h for some (l,m)
+	// pairs (e.g. SH<4,-1>), but since ComputeSHBandNRotateMatrix is intended
+	// for l >= 5 where no specialized SH template exists yet, the output is
+	// self-consistent: M[l] correctly rotates SH band-l coefficients stored in
+	// the unsigned Condon-Shortley basis.
+	// -----------------------------------------------------------------------
+	std::vector<float> bufA, bufB;
+
+	// band 2: prev = M[1] = r1
+	if (l == 2)
+	{
+		SHRotComputeBand(2, r1, r1, OutMatrix);
+		return;
+	}
+
+	// band 2 -> bufA
+	bufA.resize(5 * 5); // (2*2+1)^2 = 25
+	SHRotComputeBand(2, r1, r1, bufA.data());
+
+	for (int band = 3; band <= l; ++band)
+	{
+		if (band == l)
+		{
+			SHRotComputeBand(band, r1, bufA.data(), OutMatrix);
+		}
+		else
+		{
+			const int bsz = (2 * band + 1) * (2 * band + 1);
+			bufB.resize(bsz);
+			SHRotComputeBand(band, r1, bufA.data(), bufB.data());
+			std::swap(bufA, bufB);
+		}
 	}
 }
