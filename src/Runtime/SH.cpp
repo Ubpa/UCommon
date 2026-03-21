@@ -334,3 +334,140 @@ void UCommon::ComputeSHBand4RotateMatrix(float* SHBand4RotateMatrix, const FMatr
 		                                        + k3 * Yrws[3][RowIndex] - k3 * Yrws[4][RowIndex] - k3 * Yrws[5][RowIndex];
 	}
 }
+
+void UCommon::ComputeSHBand5RotateMatrix(float* SHBand5RotateMatrix, const FMatrix3x3f& RotateMatrix)
+{
+	UBPA_UCOMMON_ASSERT(SHBand5RotateMatrix);
+	// Reference: http://filmicworlds.com/blog/simple-and-fast-spherical-harmonic-rotation/
+	//
+	// Algorithm: same as Band2/Band3/Band4 (M = Y_R * invY), but for l=4 (9-dimensional).
+	// 9 linearly independent sample directions are required.
+	//
+	// Key challenge for l=4: all SH<4,m> are EVEN functions (SH4(-v) = SH4(v)), so:
+	//   - Axis-aligned points (e0, e1, e2) only excite m=0, ±2, ±4 (5 of 9 basis functions).
+	//   - Face diagonals with equal components (e.g. (1,1,0)/√2) keep x²=y², so m=-4 = xy(x²-y²) = 0.
+	//   - To excite m=-4 = 2.5033429·xy(x²-y²), we need x≠y, x≠0, y≠0.
+	//   => Use (2,1,0)/√5 type directions to break the x-y symmetry.
+	//
+	// 9 sampling directions:
+	//   w0 = (1, 0, 0)              = e0
+	//   w1 = (0, 1, 0)              = e1
+	//   w2 = (0, 0, 1)              = e2
+	//   w3 = (1, 1, 0)/√2           = c1*(e0+e1)
+	//   w4 = (1, 0, 1)/√2           = c1*(e0+e2)
+	//   w5 = (0, 1, 1)/√2           = c1*(e1+e2)
+	//   w6 = (2, 1, 0)/√5           = c2*(2*e0+e1)   // breaks x-y symmetry for m=-4
+	//   w7 = (0, 1, 2)/√5           = c2*(e1+2*e2)
+	//   w8 = (1, 0, 2)/√5           = c2*(e0+2*e2)
+	// where c1 = 1/sqrt(2), c2 = 1/sqrt(5)
+	//
+	// RotateMatrix is row-major 3x3. By linearity:
+	//   Rws[0] = R * w0  = (R^T).Rows[0]
+	//   Rws[1] = R * w1  = (R^T).Rows[1]
+	//   Rws[2] = R * w2  = (R^T).Rows[2]
+	//   Rws[3] = R * w3  = c1*((R^T).Rows[0] + (R^T).Rows[1])
+	//   Rws[4] = R * w4  = c1*((R^T).Rows[0] + (R^T).Rows[2])
+	//   Rws[5] = R * w5  = c1*((R^T).Rows[1] + (R^T).Rows[2])
+	//   Rws[6] = R * w6  = c2*(2*(R^T).Rows[0] + (R^T).Rows[1])
+	//   Rws[7] = R * w7  = c2*((R^T).Rows[1] + 2*(R^T).Rows[2])
+	//   Rws[8] = R * w8  = c2*((R^T).Rows[0] + 2*(R^T).Rows[2])
+	//
+	// invY column formulas (error < 1e-15):
+	//   col 0 (m=-4): k8*Y[0] + k14*Y[1] + k15*Y[2] + k4*Y[3] + k28*Y[6]
+	//   col 1 (m=-3): k3*Y[0] + k21*Y[1] + k24*Y[2] + k29*Y[5] + k10*Y[7]
+	//   col 2 (m=-2): k6*Y[0] + k6*Y[1] + k27*Y[2] + k1*Y[3]
+	//   col 3 (m=-1): k13*Y[0] + k17*Y[1] + k11*Y[2] + k11*Y[5] + k26*Y[7]
+	//   col 4 (m= 0): k23*Y[2]
+	//   col 5 (m=+1): k12*Y[0] + k16*Y[1] + k18*Y[2] + k18*Y[4] + k2*Y[8]
+	//   col 6 (m=+2): k6*Y[0] + k22*Y[1]
+	//   col 7 (m=+3): k7*Y[0] + k25*Y[1] + k5*Y[2] + k0*Y[4] + k19*Y[8]
+	//   col 8 (m=+4): k20*Y[0] + k20*Y[1] + k9*Y[2]
+	constexpr float c1 = 0.70710678f;  // 1/sqrt(2)
+	constexpr float c2 = 0.44721360f;  // 1/sqrt(5)
+	const FMatrix3x3f RT = RotateMatrix.Transpose();
+	const FVector3f Rws[9] =
+	{
+		RT.Rows[0],                                                     // R * w0 = e0 column
+		RT.Rows[1],                                                     // R * w1 = e1 column
+		RT.Rows[2],                                                     // R * w2 = e2 column
+		(RT.Rows[0] + RT.Rows[1]) * c1,                                // R * w3 = c1*(e0+e1)
+		(RT.Rows[0] + RT.Rows[2]) * c1,                                // R * w4 = c1*(e0+e2)
+		(RT.Rows[1] + RT.Rows[2]) * c1,                                // R * w5 = c1*(e1+e2)
+		(RT.Rows[0] * 2.0f + RT.Rows[1]) * c2,                        // R * w6 = c2*(2e0+e1)
+		(RT.Rows[1] + RT.Rows[2] * 2.0f) * c2,                        // R * w7 = c2*(e1+2e2)
+		(RT.Rows[0] + RT.Rows[2] * 2.0f) * c2,                        // R * w8 = c2*(e0+2e2)
+	};
+	// Yrws[sample][sh] = SH_sh(R * w_sample), sh index: 0=m-4, 1=m-3, 2=m-2, 3=m-1, 4=m0, 5=m+1, 6=m+2, 7=m+3, 8=m+4
+	float Yrws[9][9];
+	for (uint64_t Index = 0; Index < 9; Index++)
+	{
+		Yrws[Index][0] = SH<4, -4>(Rws[Index]);
+		Yrws[Index][1] = SH<4, -3>(Rws[Index]);
+		Yrws[Index][2] = SH<4, -2>(Rws[Index]);
+		Yrws[Index][3] = SH<4, -1>(Rws[Index]);
+		Yrws[Index][4] = SH<4,  0>(Rws[Index]);
+		Yrws[Index][5] = SH<4,  1>(Rws[Index]);
+		Yrws[Index][6] = SH<4,  2>(Rws[Index]);
+		Yrws[Index][7] = SH<4,  3>(Rws[Index]);
+		Yrws[Index][8] = SH<4,  4>(Rws[Index]);
+	}
+	// invY coefficients (numerical, error < 1e-15):
+	constexpr float k0  = -2.4480300175f;
+	constexpr float k1  = -2.1137745492f;
+	constexpr float k2  = -1.5569421059f;
+	constexpr float k3  = -1.5535575111f;
+	constexpr float k4  = -1.3315528341f;
+	constexpr float k5  = -1.3181700094f;
+	constexpr float k6  = -1.0568872970f;
+	constexpr float k7  = -0.9650887569f;
+	constexpr float k8  = -0.9320869839f;
+	constexpr float k9  = -0.5991987802f;
+	constexpr float k10 = -0.5884687542f;
+	constexpr float k11 = -0.4982214739f;
+	constexpr float k12 = -0.4359437897f;
+	constexpr float k13 = -0.3736661054f;
+	constexpr float k14 =  0.0665776417f;
+	constexpr float k15 =  0.1997329251f;
+	constexpr float k16 =  0.3736661054f;
+	constexpr float k17 =  0.4359437897f;
+	constexpr float k18 =  0.4982214739f;
+	constexpr float k19 =  0.5884687542f;
+	constexpr float k20 =  0.7989317069f;
+	constexpr float k21 =  0.9650887569f;
+	constexpr float k22 =  1.0568872970f;
+	constexpr float k23 =  1.1816358661f;
+	constexpr float k24 =  1.3181700094f;
+	constexpr float k25 =  1.5535575111f;
+	constexpr float k26 =  1.5569421059f;
+	constexpr float k27 =  1.5853309119f;
+	constexpr float k28 =  1.6644410427f;
+	constexpr float k29 =  2.4480300175f;
+	// M = Y_R * invY, expand by invY columns
+	for (uint64_t RowIndex = 0; RowIndex < 9; RowIndex++)
+	{
+		// col 0 (m=-4)
+		SHBand5RotateMatrix[RowIndex * 9 + 0] = k8  * Yrws[0][RowIndex] + k14 * Yrws[1][RowIndex] + k15 * Yrws[2][RowIndex]
+		                                       + k4  * Yrws[3][RowIndex] + k28 * Yrws[6][RowIndex];
+		// col 1 (m=-3)
+		SHBand5RotateMatrix[RowIndex * 9 + 1] = k3  * Yrws[0][RowIndex] + k21 * Yrws[1][RowIndex] + k24 * Yrws[2][RowIndex]
+		                                       + k29 * Yrws[5][RowIndex] + k10 * Yrws[7][RowIndex];
+		// col 2 (m=-2)
+		SHBand5RotateMatrix[RowIndex * 9 + 2] = k6  * Yrws[0][RowIndex] + k6  * Yrws[1][RowIndex] + k27 * Yrws[2][RowIndex]
+		                                       + k1  * Yrws[3][RowIndex];
+		// col 3 (m=-1)
+		SHBand5RotateMatrix[RowIndex * 9 + 3] = k13 * Yrws[0][RowIndex] + k17 * Yrws[1][RowIndex] + k11 * Yrws[2][RowIndex]
+		                                       + k11 * Yrws[5][RowIndex] + k26 * Yrws[7][RowIndex];
+		// col 4 (m= 0)
+		SHBand5RotateMatrix[RowIndex * 9 + 4] = k23 * Yrws[2][RowIndex];
+		// col 5 (m=+1)
+		SHBand5RotateMatrix[RowIndex * 9 + 5] = k12 * Yrws[0][RowIndex] + k16 * Yrws[1][RowIndex] + k18 * Yrws[2][RowIndex]
+		                                       + k18 * Yrws[4][RowIndex] + k2  * Yrws[8][RowIndex];
+		// col 6 (m=+2)
+		SHBand5RotateMatrix[RowIndex * 9 + 6] = k6  * Yrws[0][RowIndex] + k22 * Yrws[1][RowIndex];
+		// col 7 (m=+3)
+		SHBand5RotateMatrix[RowIndex * 9 + 7] = k7  * Yrws[0][RowIndex] + k25 * Yrws[1][RowIndex] + k5  * Yrws[2][RowIndex]
+		                                       + k0  * Yrws[4][RowIndex] + k19 * Yrws[8][RowIndex];
+		// col 8 (m=+4)
+		SHBand5RotateMatrix[RowIndex * 9 + 8] = k20 * Yrws[0][RowIndex] + k20 * Yrws[1][RowIndex] + k9  * Yrws[2][RowIndex];
+	}
+}

@@ -674,8 +674,10 @@ namespace UCommon::Details
 			ComputeSHBand3RotateMatrix(Matrices.template GetBand<3>().GetData(), RotateMatrix);
 		else if constexpr (BandOrder == 4)
 			ComputeSHBand4RotateMatrix(Matrices.template GetBand<4>().GetData(), RotateMatrix);
+		else if constexpr (BandOrder == 5)
+			ComputeSHBand5RotateMatrix(Matrices.template GetBand<5>().GetData(), RotateMatrix);
 		else
-			static_assert(BandOrder < 5, "ComputeOneBandRotateMatrix: no implementation for BandOrder >= 5");
+			static_assert(BandOrder < 6, "ComputeOneBandRotateMatrix: no implementation for BandOrder >= 6");
 	}
 
 	// Fold over bands 2..Order using integer_sequence (Is = 0, 1, ..., Order-2 => Band = 2, 3, ..., Order)
