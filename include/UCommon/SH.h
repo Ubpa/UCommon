@@ -1443,6 +1443,18 @@ namespace UCommon
 	UBPA_UCOMMON_API void ComputeSHBand2RotateMatrix(float* SHBand2RotateMatrix, const FMatrix3x3f& RotateMatrix);
 	// SHBand3RotateMatrix: row-major 5x5 (float[25], [row*5+col])
 	UBPA_UCOMMON_API void ComputeSHBand3RotateMatrix(float* SHBand3RotateMatrix, const FMatrix3x3f& RotateMatrix);
+	// SHBand4RotateMatrix: row-major 7x7 (float[49], [row*7+col])
+	UBPA_UCOMMON_API void ComputeSHBand4RotateMatrix(float* SHBand4RotateMatrix, const FMatrix3x3f& RotateMatrix);
+	// SHBand5RotateMatrix: row-major 9x9 (float[81], [row*9+col])
+	UBPA_UCOMMON_API void ComputeSHBand5RotateMatrix(float* SHBand5RotateMatrix, const FMatrix3x3f& RotateMatrix);
+
+	// Generic SH band rotation matrix using Ivanic & Ruedenberg (1996) recursion.
+	// Computes the (2*l+1)*(2*l+1) rotation matrix for band l (l >= 2).
+	// OutMatrix must point to (2*l+1)*(2*l+1) floats, row-major, [row*(2*l+1)+col].
+	// Output is in the standard unsigned Condon-Shortley real-SH convention used by
+	// the I&R paper; this matches the basis expected by TSHRotateMatrices for l >= 6.
+	// For l <= 5, prefer the specialized ComputeSHBand{2..5}RotateMatrix for better performance.
+	UBPA_UCOMMON_API void ComputeSHBandNRotateMatrix(float* OutMatrix, int l, const FMatrix3x3f& RotateMatrix);
 
 	// Apply a precomputed SH band rotation matrix to a mutable SH band view (in-place).
 	// SHBand          : mutable view of 2*Order-1 coefficients, modified in place
