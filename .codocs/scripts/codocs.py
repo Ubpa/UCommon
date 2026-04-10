@@ -269,10 +269,13 @@ def init(project_root: Path):
 # ---------------------------------------------------------------------------
 
 def lint(project_root: Path) -> int:
-    """Check codocs health: MISSING source→MD mappings and ORPHAN MDs.
+    """Check codocs health: MISSING source→MD mappings, ORPHAN MDs, and BLOAT.
 
     [MISSING] — source file/dir exists but corresponding MD does not.
     [ORPHAN]  — MD exists but the corresponding source file/dir does not.
+    [BLOAT]   — MD size exceeds 20% of the corresponding source size.
+                For file MDs: MD size vs source file size.
+                For dir MDs: MD size vs sum of all child file MDs under that dir.
 
     Returns the number of issues found (0 = clean).
     """
@@ -311,6 +314,66 @@ def lint(project_root: Path) -> int:
         source_path = project_root / rel_source_str
         if not source_path.exists():
             issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
+
+    # Phase 3: check for BLOAT (MD > 20% of source)
+    BLOAT_RATIO = 0.20
+    BLOAT_MIN_SRC = 200   # skip file MD check if source is below this threshold
+    BLOAT_MIN_DIR = 1500  # skip dir MD check if child-MD total is below this threshold
+    #   (dir MDs need mandatory index tables; small dirs always exceed ratio)
+    for _, is_dir, source_path, md_path, _ in entries:
+        if not md_path.exists():
+            continue  # MISSING already reported
+
+        md_size = md_path.stat().st_size
+        if md_size == 0:
+            continue
+
+        if not is_dir:
+            # File MD: compare against source file size
+            if not source_path.exists():
+                continue
+            src_size = source_path.stat().st_size
+            if src_size < BLOAT_MIN_SRC:
+                continue  # too small to enforce ratio
+            if md_size > src_size * BLOAT_RATIO:
+                try:
+                    rel = md_path.relative_to(project_root)
+                    issues.append((
+                        "BLOAT",
+                        str(rel).replace("\\", "/"),
+                        f"MD {md_size}B > {BLOAT_RATIO*100:.0f}% of source {src_size}B "
+                        f"({md_size/src_size*100:.0f}%)",
+                    ))
+                except ValueError:
+                    pass
+        else:
+            # Dir MD: compare against sum of all child file MDs under this dir
+            try:
+                rel_dir = source_path.relative_to(project_root)
+            except ValueError:
+                continue
+            child_md_dir = codocs_dir / str(rel_dir).replace("\\", "/")
+            child_md_total = sum(
+                p.stat().st_size
+                for p in child_md_dir.rglob("*.md")
+                if p.is_file() and p.resolve() != md_path.resolve()
+                and p.relative_to(codocs_dir).parts[0] not in ("_notes", "scripts")
+            )
+            if child_md_total == 0:
+                continue
+            if child_md_total < BLOAT_MIN_DIR:
+                continue  # too small; index table alone will exceed ratio
+            if md_size > child_md_total * BLOAT_RATIO:
+                try:
+                    rel = md_path.relative_to(project_root)
+                    issues.append((
+                        "BLOAT",
+                        str(rel).replace("\\", "/"),
+                        f"dir MD {md_size}B > {BLOAT_RATIO*100:.0f}% of child MDs total "
+                        f"{child_md_total}B ({md_size/child_md_total*100:.0f}%)",
+                    ))
+                except ValueError:
+                    pass
 
     if not issues:
         print("[codocs lint] OK no issues found")
