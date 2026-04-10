@@ -1,0 +1,5 @@
+{
+  "roots": ["include", "src"],
+  "exclude": ["*.backup", "_deps", "CMakeLists.txt"],
+  "exclude_paths": ["src/tests", "src/examples", "include/UCommon_ext/doctest", "include/UCommon_ext/stb"]
+}

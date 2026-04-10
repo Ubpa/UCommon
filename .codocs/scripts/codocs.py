@@ -1,0 +1,404 @@
+#!/usr/bin/env python3
+"""
+codocs — code documentation mirror tool
+
+Usage:
+    python codocs.py [project_root]          # list missing MDs (for AI to create)
+    python codocs.py [project_root] --lint   # check ORPHAN + MISSING
+
+If project_root is omitted, walks up from cwd to find .codocs/config.json.
+
+Init behavior:
+  1. Reads .codocs/config.json for tracked roots and exclude patterns
+  2. Scans each root recursively
+  3. Prints missing MD paths to stdout in bottom-up order
+     (deepest files first, then dirs) — ready for AI to create in sequence
+  4. Installs git hooks + copies self to .codocs/scripts/
+
+Lint behavior:
+  1. Scans source tree → reports [MISSING] if MD does not exist
+  2. Scans .codocs/ MDs → reports [ORPHAN] if source no longer exists
+"""
+
+import os
+import sys
+import json
+import stat
+import shutil
+import fnmatch
+from pathlib import Path
+
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+
+def find_project_root(start: Path) -> Path:
+    """Walk up directory tree to find the project root containing .codocs/config.json."""
+    current = start.resolve()
+    while True:
+        if (current / ".codocs" / "config.json").exists():
+            return current
+        parent = current.parent
+        if parent == current:
+            raise FileNotFoundError(
+                ".codocs/config.json not found in any parent directory. "
+                "Run 'python codocs.py <project_root>' or create .codocs/config.json first."
+            )
+        current = parent
+
+
+def load_config(project_root: Path) -> dict:
+    config_path = project_root / ".codocs" / "config.json"
+    with open(config_path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+# ---------------------------------------------------------------------------
+# Exclude logic
+# ---------------------------------------------------------------------------
+
+def is_excluded(path: Path, exclude_patterns: list[str]) -> bool:
+    for pattern in exclude_patterns:
+        if fnmatch.fnmatch(path.name, pattern):
+            return True
+    return False
+
+
+def is_excluded_path(path: Path, project_root: Path, exclude_paths: list[str]) -> bool:
+    """Check if path matches any excluded path prefix (relative to project root)."""
+    try:
+        rel = path.relative_to(project_root)
+    except ValueError:
+        return False
+    rel_str = str(rel).replace("\\", "/")
+    for excl in exclude_paths:
+        excl = excl.strip("/")
+        if rel_str == excl or rel_str.startswith(excl + "/"):
+            return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+
+SCRIPT_DIR = Path(__file__).parent
+SKILL_DIR = SCRIPT_DIR.parent  # codocs/scripts/ -> codocs/
+
+
+# ---------------------------------------------------------------------------
+# Main scan
+# ---------------------------------------------------------------------------
+
+def scan(project_root: Path, config: dict) -> list[tuple[int, bool, Path, Path, str]]:
+    """
+    Scan tracked roots and return entries as:
+        (depth, is_dir, source_path, md_path, name)
+    """
+    roots = config.get("roots", [])
+    exclude = config.get("exclude", [])
+    exclude_paths = config.get("exclude_paths", [])
+    codocs_dir = project_root / ".codocs"
+
+    entries: list[tuple[int, bool, Path, Path, str]] = []
+
+    for root_rel in roots:
+        # Support glob patterns in roots (e.g. "*.py" to track root-level py files only)
+        if any(c in root_rel for c in ("*", "?", "[")):
+            matched = sorted(project_root.glob(root_rel))
+            if not matched:
+                print(f"[WARN] glob '{root_rel}' matched no files, skipping", file=sys.stderr)
+            for root_path in matched:
+                if root_path.is_file():
+                    if not is_excluded(root_path, exclude) and not is_excluded_path(root_path, project_root, exclude_paths):
+                        rel_file = root_path.relative_to(project_root)
+                        depth = len(rel_file.parts)
+                        md_path = codocs_dir / (str(rel_file).replace("\\", "/") + ".md")
+                        entries.append((depth, False, root_path, md_path, root_path.name))
+            continue
+
+        root_path = (project_root / root_rel).resolve()
+        if not root_path.exists():
+            print(f"[WARN] root '{root_rel}' does not exist, skipping", file=sys.stderr)
+            continue
+
+        # Support single-file roots (e.g. "opt.py" in the project root)
+        if root_path.is_file():
+            if not is_excluded(root_path, exclude) and not is_excluded_path(root_path, project_root, exclude_paths):
+                rel_file = root_path.relative_to(project_root)
+                depth = len(rel_file.parts)
+                md_path = codocs_dir / (str(rel_file).replace("\\", "/") + ".md")
+                entries.append((depth, False, root_path, md_path, root_path.name))
+            continue
+
+        for dirpath_str, dirnames, filenames in os.walk(root_path):
+            dirpath = Path(dirpath_str)
+
+            # Prune excluded dirs in-place so os.walk won't descend into them
+            dirnames[:] = sorted(
+                d for d in dirnames
+                if not is_excluded(Path(d), exclude)
+                and not is_excluded_path(dirpath / d, project_root, exclude_paths)
+            )
+            filenames = sorted(filenames)
+
+            # Skip this directory itself if it's excluded by path
+            if is_excluded_path(dirpath, project_root, exclude_paths):
+                continue
+
+            rel_dir = dirpath.relative_to(project_root)
+            depth = len(rel_dir.parts)
+
+            # Files
+            for filename in filenames:
+                filepath = dirpath / filename
+                if is_excluded(filepath, exclude):
+                    continue
+                if is_excluded_path(filepath, project_root, exclude_paths):
+                    continue
+                rel_file = filepath.relative_to(project_root)
+                md_path = codocs_dir / (str(rel_file).replace("\\", "/") + ".md")
+                entries.append((depth + 1, False, filepath, md_path, filename))
+
+            # Directory itself
+            md_path = codocs_dir / (str(rel_dir).replace("\\", "/") + ".md")
+            entries.append((depth, True, dirpath, md_path, dirpath.name))
+
+    return entries
+
+
+def bottom_up_order(entries: list) -> list:
+    """
+    Sort entries deepest-first.
+    Within the same depth: files before directories
+    (so when we fill a dir's MD, its children's MDs are already done).
+    """
+    return sorted(entries, key=lambda e: (-e[0], e[1]))  # is_dir False(0) < True(1)
+
+
+# ---------------------------------------------------------------------------
+# Hook / script install
+# ---------------------------------------------------------------------------
+
+def install_hooks(project_root: Path):
+    """Install codocs git hooks and supporting scripts into the project.
+
+    Copies:
+    - hooks/pre-commit, hooks/commit-msg → .git/hooks/
+    - scripts/codocs.py → .codocs/scripts/codocs.py  (so hooks can reference it locally)
+
+    Non-destructive: skips files that already exist.
+    Returns (installed, skipped) lists of item names.
+    """
+    hooks_src = SKILL_DIR / "hooks"
+    git_hooks_dir = project_root / ".git" / "hooks"
+    codocs_scripts_dir = project_root / ".codocs" / "scripts"
+
+    installed, skipped = [], []
+
+    # Copy codocs.py to .codocs/scripts/
+    local_script = codocs_scripts_dir / "codocs.py"
+    self_path = Path(__file__).resolve()
+    if local_script.resolve() != self_path:  # avoid copying onto self
+        if local_script.exists():
+            skipped.append(".codocs/scripts/codocs.py")
+        else:
+            codocs_scripts_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(self_path, local_script)
+            installed.append(".codocs/scripts/codocs.py")
+
+    # Copy hooks
+    if not hooks_src.exists():
+        return installed, skipped
+    if not git_hooks_dir.exists():
+        print("[codocs hooks] .git/hooks/ not found, skipping hook install", file=sys.stderr)
+        return installed, skipped
+
+    for hook_file in sorted(hooks_src.iterdir()):
+        if hook_file.is_file():
+            dest = git_hooks_dir / hook_file.name
+            if dest.exists():
+                skipped.append(hook_file.name)
+            else:
+                shutil.copy2(hook_file, dest)
+                dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+                installed.append(hook_file.name)
+
+    return installed, skipped
+
+
+# ---------------------------------------------------------------------------
+# Init
+# ---------------------------------------------------------------------------
+
+def init(project_root: Path):
+    config = load_config(project_root)
+    entries = scan(project_root, config)
+    ordered = bottom_up_order(entries)
+
+    missing = [e for e in ordered if not e[3].exists()]
+    existing = [e for e in ordered if e[3].exists()]
+
+    # Install git hooks
+    hooks_installed, hooks_skipped = install_hooks(project_root)
+    if hooks_installed:
+        print(f"[codocs hooks] installed: {', '.join(hooks_installed)}", file=sys.stderr)
+    if hooks_skipped:
+        print(f"[codocs hooks] skipped (already exist): {', '.join(hooks_skipped)}", file=sys.stderr)
+
+    # Summary
+    print(f"[codocs init] missing={len(missing)}  existing={len(existing)}", file=sys.stderr)
+
+    if not missing:
+        print("[codocs init] all MDs exist — nothing to do", file=sys.stderr)
+        return
+
+    print("=== codocs paths (bottom-up) — create in this order ===")
+    for _, is_dir, _, md_path, _ in missing:
+        try:
+            rel = md_path.relative_to(project_root)
+            tag = " [dir]" if is_dir else ""
+            print(f"{str(rel).replace(chr(92), '/')}{tag}")
+        except ValueError:
+            print(str(md_path))
+
+
+# ---------------------------------------------------------------------------
+# Lint
+# ---------------------------------------------------------------------------
+
+def lint(project_root: Path) -> int:
+    """Check codocs health: MISSING source→MD mappings and ORPHAN MDs.
+
+    [MISSING] — source file/dir exists but corresponding MD does not.
+    [ORPHAN]  — MD exists but the corresponding source file/dir does not.
+
+    Returns the number of issues found (0 = clean).
+    """
+    codocs_dir = project_root / ".codocs"
+
+    if not codocs_dir.exists():
+        print("[codocs lint] .codocs/ directory not found", file=sys.stderr)
+        return 0
+
+    issues: list[tuple[str, str, str]] = []
+
+    # Phase 1: check for MISSING (source exists, MD does not)
+    config = load_config(project_root)
+    entries = scan(project_root, config)
+    for _, _, _, md_path, _ in entries:
+        if not md_path.exists():
+            try:
+                rel = md_path.relative_to(project_root)
+                issues.append(("MISSING", str(rel).replace("\\", "/"), "MD not found"))
+            except ValueError:
+                issues.append(("MISSING", str(md_path), "MD not found"))
+
+    # Phase 2: check for ORPHAN (MD exists, source does not)
+    for md_path in sorted(codocs_dir.rglob("*.md")):
+        rel_md = md_path.relative_to(codocs_dir)
+
+        # Skip _notes/ and scripts/
+        if rel_md.parts[0] in ("_notes", "scripts"):
+            continue
+
+        rel_str = str(rel_md).replace("\\", "/")
+        if not rel_str.endswith(".md"):
+            continue
+        rel_source_str = rel_str[:-3]
+
+        source_path = project_root / rel_source_str
+        if not source_path.exists():
+            issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
+
+    if not issues:
+        print("[codocs lint] OK no issues found")
+        return 0
+
+    print(f"=== codocs lint: {len(issues)} issue(s) ===")
+    for kind, path, reason in issues:
+        print(f"[{kind}]  {path}  ({reason})")
+
+    return len(issues)
+
+
+# ---------------------------------------------------------------------------
+# Parent sync
+# ---------------------------------------------------------------------------
+
+def parent_sync(project_root: Path, changed_md_paths: list[str]) -> int:
+    """
+    Given a list of changed .codocs/ MD paths (relative to project root,
+    e.g. '.codocs/src/Entity.cpp.md'), output the parent directory MDs that
+    also need updating but are NOT in the changed set.
+
+    Returns the count of missing parent MDs (0 = all covered).
+    """
+    codocs_dir = project_root / ".codocs"
+
+    # Resolve changed paths to absolute
+    changed_abs: set[Path] = set()
+    for p in changed_md_paths:
+        abs_p = (project_root / p.replace("\\", "/")).resolve()
+        changed_abs.add(abs_p)
+
+    # Walk up from each changed MD to find required parent directory MDs
+    required: set[Path] = set()
+    for md_abs in changed_abs:
+        try:
+            rel = md_abs.relative_to(codocs_dir)  # e.g. src/Entity.cpp.md
+        except ValueError:
+            continue
+        current = rel.parent  # e.g. src
+        while str(current) not in (".", ""):
+            parent_md = codocs_dir / (str(current).replace("\\", "/") + ".md")
+            if parent_md.exists():
+                required.add(parent_md)
+            current = current.parent
+
+    missing = sorted(required - changed_abs)
+
+    for p in missing:
+        try:
+            print(str(p.relative_to(project_root)).replace("\\", "/"))
+        except ValueError:
+            print(str(p))
+
+    return len(missing)
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    args = sys.argv[1:]
+    do_lint = "--lint" in args
+    do_parent_sync = "--parent-sync" in args
+    args = [a for a in args if a not in ("--lint", "--parent-sync")]
+
+    if args:
+        root = Path(args[0]).resolve()
+        if not root.is_dir():
+            print(f"Error: '{args[0]}' is not a directory", file=sys.stderr)
+            sys.exit(1)
+    else:
+        try:
+            root = find_project_root(Path.cwd())
+        except FileNotFoundError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    print(f"[codocs] project root: {root}", file=sys.stderr)
+
+    if do_parent_sync:
+        # Remaining args (after root) are the changed MD paths
+        md_paths = args[1:]
+        count = parent_sync(root, md_paths)
+        sys.exit(min(count, 125))
+    elif do_lint:
+        issue_count = lint(root)
+        sys.exit(min(issue_count, 125))
+    else:
+        init(root)
