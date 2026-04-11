@@ -309,8 +309,9 @@ def lint(project_root: Path) -> int:
                 except ValueError:
                     issues.append(("MISSING", str(md_path), "MD not found"))
 
-    # Phase 2: check for ORPHAN (MD exists, source does not)
+    # Phase 2: check for ORPHAN (MD exists, source does not or is excluded)
     if get_lint_enabled(config, "orphan"):
+        exclude_paths = config.get("exclude_paths", [])
         for md_path in sorted(codocs_dir.rglob("*.md")):
             rel_md = md_path.relative_to(codocs_dir)
 
@@ -326,6 +327,8 @@ def lint(project_root: Path) -> int:
             source_path = project_root / rel_source_str
             if not source_path.exists():
                 issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
+            elif is_excluded_path(source_path, project_root, exclude_paths):
+                issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} is excluded by exclude_paths"))
 
     # Phase 3: check for BLOAT / THIN (MD size should be 16%–24% of source)
     if get_lint_enabled(config, "bloat"):
