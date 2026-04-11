@@ -54,6 +54,16 @@ def load_config(project_root: Path) -> dict:
         return json.load(f)
 
 
+def get_hook_enabled(config: dict, name: str) -> bool:
+    """Return whether a hook phase is enabled (default: True)."""
+    return bool(config.get("hooks", {}).get(name, True))
+
+
+def get_lint_enabled(config: dict, name: str) -> bool:
+    """Return whether a lint check is enabled (default: True)."""
+    return bool(config.get("lint", {}).get(name, True))
+
+
 # ---------------------------------------------------------------------------
 # Exclude logic
 # ---------------------------------------------------------------------------
@@ -290,98 +300,206 @@ def lint(project_root: Path) -> int:
     # Phase 1: check for MISSING (source exists, MD does not)
     config = load_config(project_root)
     entries = scan(project_root, config)
-    for _, _, _, md_path, _ in entries:
-        if not md_path.exists():
-            try:
-                rel = md_path.relative_to(project_root)
-                issues.append(("MISSING", str(rel).replace("\\", "/"), "MD not found"))
-            except ValueError:
-                issues.append(("MISSING", str(md_path), "MD not found"))
+    if get_lint_enabled(config, "missing"):
+        for _, _, _, md_path, _ in entries:
+            if not md_path.exists():
+                try:
+                    rel = md_path.relative_to(project_root)
+                    issues.append(("MISSING", str(rel).replace("\\", "/"), "MD not found"))
+                except ValueError:
+                    issues.append(("MISSING", str(md_path), "MD not found"))
 
     # Phase 2: check for ORPHAN (MD exists, source does not)
-    for md_path in sorted(codocs_dir.rglob("*.md")):
-        rel_md = md_path.relative_to(codocs_dir)
+    if get_lint_enabled(config, "orphan"):
+        for md_path in sorted(codocs_dir.rglob("*.md")):
+            rel_md = md_path.relative_to(codocs_dir)
 
-        # Skip _notes/ and scripts/
-        if rel_md.parts[0] in ("_notes", "scripts"):
-            continue
+            # Skip _notes/ and scripts/
+            if rel_md.parts[0] in ("_notes", "scripts"):
+                continue
 
-        rel_str = str(rel_md).replace("\\", "/")
-        if not rel_str.endswith(".md"):
-            continue
-        rel_source_str = rel_str[:-3]
+            rel_str = str(rel_md).replace("\\", "/")
+            if not rel_str.endswith(".md"):
+                continue
+            rel_source_str = rel_str[:-3]
 
-        source_path = project_root / rel_source_str
-        if not source_path.exists():
-            issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
-
-    # Phase 3: check for BLOAT (MD > 20% of source)
-    BLOAT_RATIO = 0.20
-    BLOAT_MIN_SRC = 256   # skip file MD check if source is below this threshold
-    BLOAT_MIN_DIR = 2048  # skip dir MD check if child-MD total is below this threshold
-    #   (dir MDs need mandatory index tables; small dirs always exceed ratio)
-    for _, is_dir, source_path, md_path, _ in entries:
-        if not md_path.exists():
-            continue  # MISSING already reported
-
-        md_size = md_path.stat().st_size
-        if md_size == 0:
-            continue
-
-        if not is_dir:
-            # File MD: compare against source file size
+            source_path = project_root / rel_source_str
             if not source_path.exists():
+                issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
+
+    # Phase 3: check for BLOAT / THIN (MD size should be 16%–24% of source)
+    if get_lint_enabled(config, "bloat"):
+        BLOAT_RATIO_LO = 0.10  # below this → [THIN]
+        BLOAT_RATIO_HI = 0.24  # above this → [BLOAT]
+        BLOAT_MIN_SRC = 256   # skip file MD check if source is below this threshold
+        BLOAT_MIN_DIR = 2048  # skip dir MD check if child-MD total is below this threshold
+        #   (dir MDs need mandatory index tables; small dirs always exceed ratio)
+        for _, is_dir, source_path, md_path, _ in entries:
+            if not md_path.exists():
+                continue  # MISSING already reported
+
+            md_size = md_path.stat().st_size
+            if md_size == 0:
                 continue
-            src_size = source_path.stat().st_size
-            if src_size < BLOAT_MIN_SRC:
-                continue  # too small to enforce ratio
-            if md_size > src_size * BLOAT_RATIO:
+
+            if not is_dir:
+                # File MD: compare against source file size
+                if not source_path.exists():
+                    continue
+                src_size = source_path.stat().st_size
+                if src_size < BLOAT_MIN_SRC:
+                    continue  # too small to enforce ratio
+                ratio = md_size / src_size
                 try:
                     rel = md_path.relative_to(project_root)
+                    rel_str_md = str(rel).replace("\\", "/")
+                except ValueError:
+                    continue
+                if ratio > BLOAT_RATIO_HI:
                     issues.append((
                         "BLOAT",
-                        str(rel).replace("\\", "/"),
-                        f"MD {md_size}B > {BLOAT_RATIO*100:.0f}% of source {src_size}B "
-                        f"({md_size/src_size*100:.0f}%)",
+                        rel_str_md,
+                        f"MD {md_size}B > {BLOAT_RATIO_HI*100:.0f}% of source {src_size}B "
+                        f"({ratio*100:.0f}%)",
                     ))
+                elif ratio < BLOAT_RATIO_LO:
+                    issues.append((
+                        "THIN",
+                        rel_str_md,
+                        f"MD {md_size}B < {BLOAT_RATIO_LO*100:.0f}% of source {src_size}B "
+                        f"({ratio*100:.0f}%)",
+                    ))
+            else:
+                # Dir MD: compare against sum of all child file MDs under this dir
+                try:
+                    rel_dir = source_path.relative_to(project_root)
                 except ValueError:
-                    pass
-        else:
-            # Dir MD: compare against sum of all child file MDs under this dir
-            try:
-                rel_dir = source_path.relative_to(project_root)
-            except ValueError:
-                continue
-            child_md_dir = codocs_dir / str(rel_dir).replace("\\", "/")
-            child_md_total = sum(
-                p.stat().st_size
-                for p in child_md_dir.rglob("*.md")
-                if p.is_file() and p.resolve() != md_path.resolve()
-                and p.relative_to(codocs_dir).parts[0] not in ("_notes", "scripts")
-            )
-            if child_md_total == 0:
-                continue
-            if child_md_total < BLOAT_MIN_DIR:
-                continue  # too small; index table alone will exceed ratio
-            if md_size > child_md_total * BLOAT_RATIO:
+                    continue
+                child_md_dir = codocs_dir / str(rel_dir).replace("\\", "/")
+                child_md_total = sum(
+                    p.stat().st_size
+                    for p in child_md_dir.rglob("*.md")
+                    if p.is_file() and p.resolve() != md_path.resolve()
+                    and p.relative_to(codocs_dir).parts[0] not in ("_notes", "scripts")
+                )
+                if child_md_total == 0:
+                    continue
+                if child_md_total < BLOAT_MIN_DIR:
+                    continue  # too small; index table alone will exceed ratio
+                ratio = md_size / child_md_total
                 try:
                     rel = md_path.relative_to(project_root)
+                    rel_str_md = str(rel).replace("\\", "/")
+                except ValueError:
+                    continue
+                if ratio > BLOAT_RATIO_HI:
                     issues.append((
                         "BLOAT",
-                        str(rel).replace("\\", "/"),
-                        f"dir MD {md_size}B > {BLOAT_RATIO*100:.0f}% of child MDs total "
-                        f"{child_md_total}B ({md_size/child_md_total*100:.0f}%)",
+                        rel_str_md,
+                        f"dir MD {md_size}B > {BLOAT_RATIO_HI*100:.0f}% of child MDs total "
+                        f"{child_md_total}B ({ratio*100:.0f}%)",
                     ))
-                except ValueError:
-                    pass
+                elif ratio < BLOAT_RATIO_LO:
+                    issues.append((
+                        "THIN",
+                        rel_str_md,
+                        f"dir MD {md_size}B < {BLOAT_RATIO_LO*100:.0f}% of child MDs total "
+                        f"{child_md_total}B ({ratio*100:.0f}%)",
+                    ))
+
+    # Phase 4: validate codocs.json structure
+    if get_lint_enabled(config, "config"):
+        KNOWN_HOOKS = {"lint", "doc_change", "parent_sync", "dependencies"}
+        KNOWN_LINT  = {"missing", "orphan", "bloat", "config"}
+
+        hooks_val = config.get("hooks")
+        if hooks_val is not None:
+            if not isinstance(hooks_val, dict):
+                issues.append(("CONFIG", "codocs.json", "hooks must be an object"))
+            else:
+                for k, v in hooks_val.items():
+                    if k not in KNOWN_HOOKS:
+                        issues.append(("CONFIG", "codocs.json", f"hooks.{k}: unknown key"))
+                    elif not isinstance(v, bool):
+                        issues.append(("CONFIG", "codocs.json", f"hooks.{k}: must be a bool"))
+
+        lint_val = config.get("lint")
+        if lint_val is not None:
+            if not isinstance(lint_val, dict):
+                issues.append(("CONFIG", "codocs.json", "lint must be an object"))
+            else:
+                for k, v in lint_val.items():
+                    if k not in KNOWN_LINT:
+                        issues.append(("CONFIG", "codocs.json", f"lint.{k}: unknown key"))
+                    elif not isinstance(v, bool):
+                        issues.append(("CONFIG", "codocs.json", f"lint.{k}: must be a bool"))
+
+        deps_val = config.get("dependencies")
+        if deps_val is not None:
+            if not isinstance(deps_val, list):
+                issues.append(("CONFIG", "codocs.json", "dependencies must be an array"))
+            else:
+                for i, entry in enumerate(deps_val):
+                    if not isinstance(entry, dict):
+                        issues.append(("CONFIG", "codocs.json", f"dependencies[{i}]: must be an object"))
+                        continue
+                    when = entry.get("when")
+                    update = entry.get("update")
+                    # validate when
+                    if not isinstance(when, list) or len(when) == 0:
+                        issues.append(("CONFIG", "codocs.json",
+                                        f"dependencies[{i}].when: must be a non-empty array"))
+                    elif not all(isinstance(w, str) for w in when):
+                        issues.append(("CONFIG", "codocs.json",
+                                        f"dependencies[{i}].when: all items must be strings"))
+                    else:
+                        for w in when:
+                            if w.startswith(".codocs/"):
+                                issues.append(("CONFIG", "codocs.json",
+                                               f"dependencies[{i}].when: .codocs/ paths are unusual; "
+                                               f"consider using update instead ({w})"))
+                            wp = project_root / w
+                            if not wp.exists():
+                                issues.append(("CONFIG", "codocs.json",
+                                               f"dependencies[{i}].when: path not found: {w}"))
+                    # validate update
+                    if not isinstance(update, list) or len(update) == 0:
+                        issues.append(("CONFIG", "codocs.json",
+                                        f"dependencies[{i}].update: must be a non-empty array"))
+                    elif not all(isinstance(u, str) for u in update):
+                        issues.append(("CONFIG", "codocs.json",
+                                        f"dependencies[{i}].update: all items must be strings"))
+                    else:
+                        for u in update:
+                            if not (u.startswith(".codocs/") and u.endswith(".md")):
+                                issues.append(("CONFIG", "codocs.json",
+                                               f"dependencies[{i}].update: must start with .codocs/ "
+                                               f"and end with .md ({u})"))
+                            else:
+                                up = project_root / u
+                                if not up.exists():
+                                    issues.append(("CONFIG", "codocs.json",
+                                                   f"dependencies[{i}].update: path not found: {u}"))
 
     if not issues:
         print("[codocs lint] OK no issues found")
         return 0
 
+    THIN_HINT = (
+        "→ 检查源文件是否有遗漏内容（隐性约定、算法选择、坑、跨文件关联等）；"
+        "确认无遗漏后在 commit message 中加 ## codocs-skip 跳过"
+    )
+    BLOAT_HINT = (
+        "→ 精简 MD，删除冗余描述或直接照搬源码的内容"
+    )
+
     print(f"=== codocs lint: {len(issues)} issue(s) ===")
     for kind, path, reason in issues:
         print(f"[{kind}]  {path}  ({reason})")
+        if kind == "THIN":
+            print(f"         {THIN_HINT}")
+        elif kind == "BLOAT":
+            print(f"         {BLOAT_HINT}")
 
     return len(issues)
 
@@ -432,6 +550,51 @@ def parent_sync(project_root: Path, changed_md_paths: list[str]) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Check deps
+# ---------------------------------------------------------------------------
+
+def check_deps(project_root: Path, staged_files: list[str]) -> int:
+    """
+    Given a list of staged file paths (relative to project root),
+    print the .codocs/ MD paths that are required by dependency rules
+    but not yet staged.
+
+    Returns the count of missing paths (capped at 125), 0 if none.
+    """
+    if not staged_files:
+        return 0
+
+    config = load_config(project_root)
+    deps = config.get("dependencies", [])
+    if not deps:
+        return 0
+
+    def normalize(p: str) -> str:
+        return p.lstrip("./").replace("\\", "/")
+
+    staged_set = {normalize(f) for f in staged_files}
+
+    missing: set[str] = set()
+    for rule in deps:
+        if not isinstance(rule, dict):
+            continue
+        when = rule.get("when")
+        update = rule.get("update")
+        if not isinstance(when, list) or not isinstance(update, list):
+            continue
+        triggered = any(normalize(w) in staged_set for w in when if isinstance(w, str))
+        if triggered:
+            for u in update:
+                if isinstance(u, str) and normalize(u) not in staged_set:
+                    missing.add(u)
+
+    for path in sorted(missing):
+        print(path)
+
+    return min(len(missing), 125)
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -439,7 +602,8 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     do_lint = "--lint" in args
     do_parent_sync = "--parent-sync" in args
-    args = [a for a in args if a not in ("--lint", "--parent-sync")]
+    do_check_deps = "--check-deps" in args
+    args = [a for a in args if a not in ("--lint", "--parent-sync", "--check-deps")]
 
     if args:
         root = Path(args[0]).resolve()
@@ -463,5 +627,9 @@ if __name__ == "__main__":
     elif do_lint:
         issue_count = lint(root)
         sys.exit(min(issue_count, 125))
+    elif do_check_deps:
+        staged = args[1:]
+        count = check_deps(root, staged)
+        sys.exit(min(count, 125))
     else:
         init(root)

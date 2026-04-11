@@ -2,31 +2,31 @@
 
 ## 职责
 
-HDR 颜色编码器，实现 RGBM、RGBD、RGBV 三种 HDR→LDR 编码方案。
+HDR 颜色编码器，实现 RGBM、RGBD、RGBV 三种 HDR→LDR 编码方案，全部存入 RGBA 四通道（RGB 存归一化颜色，A 存亮度参数）。
 
-## 关键抽象
+## 共同约定
 
-### RGBM
+- `InLowClamp`：防止 A 通道被纹理压缩器截断到零，所有编码的 A 通道都 `max(computed, InLowClamp)`
+- 量化优化：对 RGB 每通道分别在 floor/ceil 量化值中选重建误差更小的（而非统一 round），减少 8-bit 量化损失
+- `Encode*WithX` 变体：外部预计算亮度参数后传入，用于同一纹理块共享参数的场景
+- `MapToValidColor*` 变体：将颜色投影到编码可表示的最近有效值，用于有损压缩前的预处理（无 8-bit 约束，只做值域裁剪）
 
-- `EncodeRGBM(Color, Multiplier, LowClamp)` — 编码 RGB 到 RGBM 四通道，A 通道存 sqrt(M)
-- 解码：`RGB * M^2 * Multiplier`
-- 量化优化：对每个通道分别选择 floor/ceil（8-bit 量化后误差更小的那个）
+## RGBM
 
-### RGBD
+- A 通道存 `sqrt(M_scale)`（而非 M 本身），使 LDR 精度分布更均匀
+- 解码：`RGB_decoded = RGB * M_scale^2 * Multiplier`，其中 `M_scale = A^2`
+- `EncodeRGBM(Color, Multiplier, LowClamp)` — 自动计算最优 M_scale，ceil 到下一个 1/255 步进保证不溢出
+- `EncodeRGBM(float M, Multiplier, LowClamp)` — 单值版本，仅计算 A 通道（M 为亮度峰值）
 
-- `EncodeRGBD(Color, MaxValue, LowClamp)` — 编码 RGB 到 RGBD，A 通道存 D 参数
-- 解码：`RGB * (D / (k*D + 1))^2`，其中 `k = 1/sqrt(MaxValue) - 1`
-- 通过 k 参数实现非线性映射，改善高动态范围的精度分布
+## RGBD
 
-### RGBV
+- A 通道存 D，解码：`L = (D / (k*D + 1))^2`，其中 `k = 1/sqrt(MaxValue) - 1`
+- `RGBD_GetK(MaxValue)` / `RGBD_GetMaxValue(K)` — K 与 MaxValue 互转工具函数
+- D 计算：`D = sqrt(L) / (1 - sqrt(L)*k)`，ceil 到下一个 1/255 步进；非线性映射在高亮度区域提供更细的精度分布
 
-- `EncodeRGBV(Color, MaxValue, S, LowClamp)` — 编码 RGB 到 RGBV，A 通道存 V（亮度编码）
-- 解码：`RGB * V^2 / (k*V^2 + b)`，其中 `k = -S, b = S + 1/MaxValue`
-- `RGBV_ComputeIntegral` — 计算给定 S 参数下的积分值（用于参数优化）
-- `RGBV_SolveS` — 二分法求解使积分等于目标值的 S 参数
+## RGBV
 
-## 实现要点
-
-- 三种编码都包含量化优化：对 floor/ceil 量化值选择重建误差更小的
-- `MapToValidColor*` 变体：将颜色映射到编码可表示的最近有效值（无 8-bit 量化约束）
-- `Encode*With*` 变体：使用预计算的 M/D/V 值编码（用于整块共享参数的场景）
+- A 通道存 V，解码：`L = V^2 / (k*V^2 + b)`，其中 `k = -S, b = S + 1/MaxValue`
+- V 公式：`V = sqrt((S*M+1)/(S*L+1) * L/M)`；S<0 时高亮度区精度更密，S>0 时低亮度区精度更密，S=0 退化为 RGBM 类线性分布
+- `RGBV_ComputeIntegral(MaxValue, S)` — 三段公式：S=0 时 `M/3`，S>0 用 artanh，S<0 用 arctan；用于度量给定 S 的编码效率
+- `RGBV_SolveS(MaxValue, IntegralValue, Tolerance, MaxIter)` — 二分法求使积分等于目标值的 S；I(s) 单调递减（s→-1/M 时 I→∞，s→+∞ 时 I→0），S>0 侧先指数搜索上界再二分

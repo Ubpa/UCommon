@@ -2,6 +2,14 @@
 
 UCommon 核心运行时库，提供纹理、序列化、数学、线程池等基础设施。所有其他模块依赖此库。
 
+## 架构要点
+
+- **构建**：CMakeLists.txt 通过 `Ubpa_UCommon_UsingSharedLibrary` 控制静态/动态；源文件通过 SOURCE 参数自动收集 include 目录下的头文件
+- **无相互依赖**：各 .cpp 之间互不依赖，均只依赖 `include/UCommon/`；可按需单独编译
+- **SH 的 `l≤5` 特化**：SH.cpp 对 Band 2~5 有手写旋转矩阵特化（比通用递推快约 3~10×），`l≥6` 才走 `ComputeSHBandNRotateMatrix` 通用路径
+- **Tex2D 与 FGrid2D 的分工**：FGrid2D 是无类型网格（原始字节+元素数），FTex2D 在其上加 mipmap 链、采样逻辑和序列化
+- **Utils.cpp 地址模式**：`ApplyAddressMode` 接受 `int64_t` 坐标（含负数），Wrap 用 `((x%n)+n)%n` 保证非负
+
 ## 内容
 
 | 名称 | 类型 | 职责 |
