@@ -80,6 +80,7 @@ if [ -f "$PENDING_FLAG" ]; then
     # skip_paths contains .codocs/ paths (e.g. .codocs/src/Runtime/Codec.cpp.md)
     uncovered_phase2=()
     while IFS= read -r pending_file; do
+      pending_file="${pending_file%$'\r'}"  # strip trailing \r (Windows CRLF)
       covered=false
       codocs_path=".codocs/$pending_file.md"
       for sp in "${skip_paths[@]}"; do
@@ -126,6 +127,7 @@ if [ -f "$PARENT_SYNC_FLAG" ]; then
   if [ -f "$MISSING_PARENTS" ]; then
     uncovered=()
     while IFS= read -r parent_path; do
+      parent_path="${parent_path%$'\r'}"  # strip trailing \r (Windows CRLF)
       covered=false
       for sp in "${skip_paths[@]}"; do
         if [ "$sp" = "$parent_path" ]; then
@@ -163,6 +165,7 @@ fi
 if [ -f "$DEPS_FLAG" ] && [ -f "$DEPS_FILE" ]; then
   uncovered_deps=()
   while IFS= read -r dep_path; do
+    dep_path="${dep_path%$'\r'}"  # strip trailing \r (Windows CRLF)
     covered=false
     for sp in "${skip_paths[@]}"; do
       if [ "$sp" = "$dep_path" ]; then covered=true; break; fi
