@@ -95,16 +95,23 @@ if [ -f "$PENDING_FLAG" ]; then
     if [ ${#uncovered_phase2[@]} -gt 0 ]; then
       block=true
       local_count=${#uncovered_phase2[@]}
-      echo "[codocs] 以下受管控文件缺少对应文档更新"
       echo ""
-      echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
+      echo "[codocs] ❌ 以下受管控文件缺少文档更新或有效的跳过声明"
       echo ""
-      echo "  ## codocs-skip"
+      echo "  未覆盖："
       for p in "${uncovered_phase2[@]}"; do
-        echo "  - .codocs/$p.md: <理由>"
+        echo "    $p  →  .codocs/$p.md"
+      done
+      echo ""
+      echo "  请 Read 对应 md 确认是否需要更新，然后："
+      echo "  - 需要更新 → 修改 md 后 git add，重新提交"
+      echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
+      echo "    ## codocs-skip"
+      for p in "${uncovered_phase2[@]}"; do
+        echo "    - .codocs/$p.md: <具体理由>"
       done
       if [ "$local_count" -gt 3 ]; then
-        echo "  # 文件较多时也可用: - [all]: <理由>"
+        echo "    # 文件较多时也可用: - [all]: <理由>"
       fi
       echo ""
     else
@@ -112,12 +119,14 @@ if [ -f "$PENDING_FLAG" ]; then
     fi
   else
     block=true
-    echo "[codocs] 以下受管控文件缺少对应文档更新"
     echo ""
-    echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
+    echo "[codocs] ❌ 以下受管控文件缺少文档更新或有效的跳过声明"
     echo ""
-    echo "  ## codocs-skip"
-    echo "  - .codocs/<文件路径>.md: <理由>"
+    echo "  请 Read 对应 md 确认是否需要更新，然后："
+    echo "  - 需要更新 → 修改 md 后 git add，重新提交"
+    echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
+    echo "    ## codocs-skip"
+    echo "    - .codocs/<文件路径>.md: <具体理由>"
     echo ""
   fi
 fi
@@ -141,16 +150,23 @@ if [ -f "$PARENT_SYNC_FLAG" ]; then
     if [ ${#uncovered[@]} -gt 0 ]; then
       block=true
       parent_count=${#uncovered[@]}
-      echo "[codocs] 以下父目录 MD 未随子文档同步更新"
       echo ""
-      echo "请将以下父目录 MD git add 至本次提交，或在 commit message 末尾声明跳过："
+      echo "[codocs] ❌ 以下父目录 MD 未随子文档同步更新"
       echo ""
-      echo "  ## codocs-skip"
+      echo "  未覆盖："
       for p in "${uncovered[@]}"; do
-        echo "  - $p: <理由>"
+        echo "    $p"
+      done
+      echo ""
+      echo "  请 Read 上列 md 确认索引表是否需要更新，然后："
+      echo "  - 需要更新 → 修改 md 后 git add，重新提交"
+      echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
+      echo "    ## codocs-skip"
+      for p in "${uncovered[@]}"; do
+        echo "    - $p: <具体理由>"
       done
       if [ "$parent_count" -gt 3 ]; then
-        echo "  # 文件较多时也可用: - [all]: <理由>"
+        echo "    # 文件较多时也可用: - [all]: <理由>"
       fi
       echo ""
     else
@@ -176,14 +192,19 @@ if [ -f "$DEPS_FLAG" ] && [ -f "$DEPS_FILE" ]; then
   if [ ${#uncovered_deps[@]} -gt 0 ]; then
     block=true
     dep_count=${#uncovered_deps[@]}
-    echo "[codocs] 以下依赖文档未随被依赖文件同步更新"
     echo ""
-    echo "请将以下依赖文档 git add 至本次提交，或在 commit message 末尾声明跳过："
+    echo "[codocs] ❌ 以下依赖文档未随被依赖文件同步更新"
     echo ""
-    echo "  ## codocs-skip"
-    for p in "${uncovered_deps[@]}"; do echo "  - $p: <理由>"; done
+    echo "  未覆盖："
+    for p in "${uncovered_deps[@]}"; do echo "    $p"; done
+    echo ""
+    echo "  请 Read 上列 md 确认是否需要更新，然后："
+    echo "  - 需要更新 → 修改 md 后 git add，重新提交"
+    echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
+    echo "    ## codocs-skip"
+    for p in "${uncovered_deps[@]}"; do echo "    - $p: <具体理由>"; done
     if [ "$dep_count" -gt 3 ]; then
-      echo "  # 文件较多时也可用: - [all]: <理由>"
+      echo "    # 文件较多时也可用: - [all]: <理由>"
     fi
     echo ""
   fi
