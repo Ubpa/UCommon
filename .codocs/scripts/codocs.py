@@ -109,7 +109,7 @@ def scan(project_root: Path, config: dict) -> list[tuple[int, bool, Path, Path, 
     roots = config.get("roots", [])
     exclude = config.get("exclude", [])
     exclude_paths = config.get("exclude_paths", [])
-    codocs_dir = project_root / ".codocs"
+    codocs_dir = project_root / ".codocs" / "docs"
 
     entries: list[tuple[int, bool, Path, Path, str]] = []
 
@@ -289,7 +289,7 @@ def lint(project_root: Path) -> int:
 
     Returns the number of issues found (0 = clean).
     """
-    codocs_dir = project_root / ".codocs"
+    codocs_dir = project_root / ".codocs" / "docs"
 
     if not codocs_dir.exists():
         print("[codocs lint] .codocs/ directory not found", file=sys.stderr)
@@ -326,9 +326,9 @@ def lint(project_root: Path) -> int:
 
             source_path = project_root / rel_source_str
             if not source_path.exists():
-                issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} not found"))
+                issues.append(("ORPHAN", f".codocs/docs/{rel_str}", f"{rel_source_str} not found"))
             elif is_excluded_path(source_path, project_root, exclude_paths):
-                issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} is excluded by exclude_paths"))
+                issues.append(("ORPHAN", f".codocs/docs/{rel_str}", f"{rel_source_str} is excluded by exclude_paths"))
 
     # Phase 3: check for BLOAT / THIN (MD size should be 10%–24% of source)
     # Uses a smooth threshold that accounts for fixed overhead in small files:
@@ -478,9 +478,9 @@ def lint(project_root: Path) -> int:
                                         f"dependencies[{i}].when: all items must be strings"))
                     else:
                         for w in when:
-                            if w.startswith(".codocs/"):
+                            if w.startswith(".codocs/docs/"):
                                 issues.append(("CONFIG", "codocs.json",
-                                               f"dependencies[{i}].when: .codocs/ paths are unusual; "
+                                               f"dependencies[{i}].when: .codocs/docs/ paths are unusual; "
                                                f"consider using update instead ({w})"))
                             wp = project_root / w
                             if not wp.exists():
@@ -495,9 +495,9 @@ def lint(project_root: Path) -> int:
                                         f"dependencies[{i}].update: all items must be strings"))
                     else:
                         for u in update:
-                            if not (u.startswith(".codocs/") and u.endswith(".md")):
+                            if not (u.startswith(".codocs/docs/") and u.endswith(".md")):
                                 issues.append(("CONFIG", "codocs.json",
-                                               f"dependencies[{i}].update: must start with .codocs/ "
+                                               f"dependencies[{i}].update: must start with .codocs/docs/ "
                                                f"and end with .md ({u})"))
                             else:
                                 up = project_root / u
@@ -540,7 +540,7 @@ def parent_sync(project_root: Path, changed_md_paths: list[str]) -> int:
 
     Returns the count of missing parent MDs (0 = all covered).
     """
-    codocs_dir = project_root / ".codocs"
+    codocs_dir = project_root / ".codocs" / "docs"
 
     # Resolve changed paths to absolute
     changed_abs: set[Path] = set()
