@@ -521,6 +521,30 @@ namespace UCommon
 
 		uint8_t U, V; // Rotated hemispherical octahedral coordinates: u = (x+y)/2+0.5, v = (x-y)/2+0.5
 	};
+
+	//===========================================
+	// Quantize Dither Noise
+	//===========================================
+
+	/**
+	 * Map a uniform noise in [0, 1] to a triangular dither offset in [-1, 1].
+	 * The output probability density is triangular (peaks at 0), which matches
+	 * the quantization error distribution and minimizes perceptual banding.
+	 *
+	 * Mapping:
+	 *   x = 2 * Noise - 1                          (remap [0,1] to [-1,1])
+	 *   out = sign(x) * (1 - sqrt(1 - |x|))        (triangular transform)
+	 *
+	 * @param Noise Uniform random value in [0, 1]
+	 * @return Dither offset in [-1, 1]
+	 */
+	[[nodiscard]] inline float QuantizeDitherNoise(float Noise) noexcept
+	{
+		UBPA_UCOMMON_ASSERT(0.f <= Noise && Noise <= 1.f);
+		float x = 2.f * Noise - 1.f;
+		return std::copysign(1.f - std::sqrt(1.f - std::abs(x)), x);
+	}
+
 } // namespace UCommon
 
 UBPA_UCOMMON_CODEC_TO_NAMESPACE(UCommonTest)
