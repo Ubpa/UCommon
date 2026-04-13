@@ -123,10 +123,15 @@ if [ ${#managed_code_files[@]} -gt 0 ] && [ "$has_doc_change" = false ]; then
   done
   echo ""
   echo "选项 A（推荐）：同时 git add 对应的 .codocs/ 文档改动"
-  echo "选项 B：在 commit message 末尾加跳过标记："
-  echo "         ## codocs-skip"
+  echo "选项 B（跳过）：须先检查对应 md 内容是否因本次改动而过时，确认无需更新后再跳过"
+  echo "  步骤 1：逐一打开下列 md，确认其描述仍与代码一致"
   for f in "${managed_code_files[@]}"; do
-    echo "         - .codocs/$f.md: <理由>"
+    echo "           .codocs/$f.md"
+  done
+  echo "  步骤 2：若确认无需更新，在 commit message 末尾加："
+  echo "           ## codocs-skip"
+  for f in "${managed_code_files[@]}"; do
+    echo "           - .codocs/$f.md: <理由>"
   done
   echo "选项 C：git commit --no-verify（不推荐）"
   echo ""
