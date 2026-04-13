@@ -259,13 +259,13 @@ void UCommon::ComputeSHBand4RotateMatrix(float* SHBand4RotateMatrix, const FMatr
 	//   Rws[6] = R * w6  = c2 * ((R^T).Rows[0] + (R^T).Rows[1] + (R^T).Rows[2])
 	//
 	// SH<3,m>(x,y,z):
-	//   m=-3: c * x*(5x^2-3(y^2+z^2))     (c = 0.5900435)
-	//   m=-2: a * x*y*(5z^2-1)           (a = 2.8906115)
-	//   m=-1: b * y*(5z^2-1)             (b = 0.45704579)
-	//   m= 0: c2 * (5z^3-3z)             (c2 = 0.3156899)
-	//   m=+1: b * x*(5z^2-1)
-	//   m=+2: a * (x^2-y^2)*(5z^2-1)/2
-	//   m=+3: c * z*(5z^2-3(x^2+y^2))
+	//   m=-3: -c * y*(3x^2-y^2)        (c = 0.5900436)
+	//   m=-2:  a * x*y*z               (a = 2.8906114)
+	//   m=-1: -b * y*(5z^2-1)          (b = 0.4570458)
+	//   m= 0:  d * z*(5z^2-3)          (d = 0.3731763)
+	//   m=+1: -b * x*(5z^2-1)
+	//   m=+2:  e * (x^2-y^2)*z         (e = 1.4453057)
+	//   m=+3: -c * x*(x^2-3y^2)
 	//
 	// invY (7x7) with numerical values (error < 1e-15):
 	//   col 0 (m=-3): k0*Y[0] + k8*Y[1] + k0*Y[2] + k3*Y[3] + k3*Y[4] + k3*Y[5]

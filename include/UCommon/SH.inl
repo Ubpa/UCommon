@@ -315,10 +315,11 @@ template<typename DerivedType, int Order>
 UCommon::TSHBandVector<Order> UCommon::TSHBandCommon<DerivedType, Order>::operator/(float Scalar) const noexcept
 {
 	UBPA_UCOMMON_ASSERT(AsDerived().GetData() != nullptr);
+	const float InvScalar = 1.0f / Scalar;
 	TSHBandVector<Order> Result;
 	for (uint64_t i = 0; i < MaxSHBasis; ++i)
 	{
-		Result[i] = AsDerived()[i] / Scalar;
+		Result[i] = AsDerived()[i] * InvScalar;
 	}
 	return Result;
 }
@@ -424,9 +425,10 @@ UCommon::TSHBandVector<Order>& UCommon::TSHBandVector<Order>::operator*=(float S
 template<int Order>
 UCommon::TSHBandVector<Order>& UCommon::TSHBandVector<Order>::operator/=(float Scalar) noexcept
 {
+	const float InvScalar = 1.0f / Scalar;
 	for (uint64_t i = 0; i < TSHBandCommon<TSHBandVector<Order>, Order>::MaxSHBasis; ++i)
 	{
-		Data[i] /= Scalar;
+		Data[i] *= InvScalar;
 	}
 	return *this;
 }

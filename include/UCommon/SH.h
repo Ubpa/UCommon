@@ -497,9 +497,9 @@ namespace UCommon
 		{
 			TElement<MaxSHOrder> Desaturated = GetLuminance() * DesaturateFraction;
 
-			R = R * (1 - DesaturateFraction) + Desaturated;
-			G = G * (1 - DesaturateFraction) + Desaturated;
-			B = B * (1 - DesaturateFraction) + Desaturated;
+			R = R * (1.f - DesaturateFraction) + Desaturated;
+			G = G * (1.f - DesaturateFraction) + Desaturated;
+			B = B * (1.f - DesaturateFraction) + Desaturated;
 		}
 
 		/** Scalar multiplication operator. */
@@ -968,13 +968,6 @@ namespace UCommon
 			: Super(Other.R, Other.G, Other.B) {}
 	};
 
-	// Forward declarations for owning containers
-	template<int Order>
-	class TSHBandVector;
-
-	template<int Order>
-	class TSHBandVectorRGB;
-
 	/** Owning container for spherical harmonic band coefficients. */
 	template<int Order>
 	class TSHBandVector : public TSHBandCommon<TSHBandVector<Order>, Order>
@@ -1329,9 +1322,9 @@ namespace UCommon
 		template<bool bConst>
 		TSHVectorACRGB(const TSHVectorACRGB<Order - 1>& Other, const TSHBandViewRGB<Order, bConst>& Band)
 		{
-			Super::R = TSHVector<Order>(Other.R, Band.R);
-			Super::G = TSHVector<Order>(Other.G, Band.G);
-			Super::B = TSHVector<Order>(Other.B, Band.B);
+			Super::R = TSHVectorAC<Order>(Other.R, Band.R);
+			Super::G = TSHVectorAC<Order>(Other.G, Band.G);
+			Super::B = TSHVectorAC<Order>(Other.B, Band.B);
 		}
 
 		template<int BandOrder>
