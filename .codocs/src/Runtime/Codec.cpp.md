@@ -7,7 +7,6 @@ HDR 颜色编码器，实现 RGBM、RGBD、RGBV 三种 HDR→LDR 编码方案，
 ## 共同约定
 
 - `InLowClamp`：防止 A 通道被纹理压缩器截断到零，所有编码的 A 通道都 `max(computed, InLowClamp)`
-- 量化优化：对 RGB 每通道分别在 floor/ceil 量化值中选重建误差更小的（而非统一 round），减少 8-bit 量化损失
 - `Encode*WithX` 变体：外部预计算亮度参数后传入，用于同一纹理块共享参数的场景
 - `MapToValidColor*` 变体：将颜色投影到编码可表示的最近有效值，用于有损压缩前的预处理（无 8-bit 约束，只做值域裁剪）
 
