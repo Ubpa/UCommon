@@ -1,90 +1,251 @@
-# codocs
+#!/usr/bin/env bash
+# codocs pre-commit hook (auto-installed by codocs init)
+# Phase 1: codocs lint — ORPHAN/MISSING 检查，有问题直接拦截
+# Phase 2: 检测受管控的代码文件改动时，若无对应 .codocs/ 文档改动，设标记（不拦截）
+# Phase 3: 检测已暂存的 .codocs/ MD 改动，若其父目录 MD 未同步更新，设标记（不拦截）
 
-代码语义文档系统。每个源文件/目录都有对应的 `.codocs/docs/*.md`，记录**语义**（接口约定、设计决策、算法要点、陷阱），而非语法。信息密度远高于直接读源码，是 AI 理解代码的首选入口。
+set -euo pipefail
 
-## 目录结构
+ROOT="$(git rev-parse --show-toplevel)"
+CODOCS_CONFIG="$ROOT/.codocs/config.json"
 
-```
-.codocs/
-├── README.md           ← 本文件（由 codocs init 安装）
-├── config.json         ← roots、excludes、hook 开关
-├── scripts/
-│   └── codocs.py       ← lint / missing-check / parent-sync
-├── hooks/              ← hook 源文件（通过 more-hooks 注册到 .git）
-│   ├── pre-commit
-│   └── commit-msg
-└── docs/               ← 源码树的语义镜像
-    ├── src.md          ← src/ 目录的索引和概述
-    └── src/
-        └── Foo.cpp.md  ← src/Foo.cpp 的语义文档
-```
+# 没有 .codocs/config.json 则跳过
+if [ ! -f "$CODOCS_CONFIG" ]; then
+  exit 0
+fi
 
-路径映射：`src/Foo.cpp` → `.codocs/docs/src/Foo.cpp.md`
+PYTHON=$(command -v python 2>/dev/null || command -v python3 2>/dev/null)
+if [ -z "$PYTHON" ]; then
+  echo "[codocs] ERROR: python not found, cannot check doc coverage" >&2
+  echo "         Install Python or run with --no-verify to bypass." >&2
+  exit 1
+fi
+# Verify the python binary actually works (Windows Store stub may be a no-op)
+if ! "$PYTHON" -c "import sys" 2>/dev/null; then
+  echo "[codocs] ERROR: python found at $PYTHON but cannot execute" >&2
+  exit 1
+fi
 
-## 重新安装 hooks
+# ── Phase enable helper ───────────────────────────────────────────────────
+hook_enabled() {
+  local name="$1"
+  "$PYTHON" - "$CODOCS_CONFIG" "$name" << 'PYEOF'
+import json, sys
+cfg_path, name = sys.argv[1], sys.argv[2]
+try:
+    d = json.load(open(cfg_path, encoding="utf-8"))
+    print("1" if d.get("hooks", {}).get(name, True) else "0")
+except Exception:
+    print("1")
+PYEOF
+}
 
-克隆后执行：
+DEPS_FLAG="${TMPDIR:-/tmp}/codocs_needs_dep_check"
+DEPS_FILE="${TMPDIR:-/tmp}/codocs_missing_deps"
 
-```bash
-python .codocs/scripts/codocs.py .
-```
+# ── Shared variables (needed by multiple phases) ──────────────────────────
+INIT_PY="$ROOT/.codocs/scripts/codocs.py"
 
-## Lint
+# 获取暂存文件列表（Phase 2/3/4 均需要）
+staged_files=$(git diff --cached --name-only --diff-filter=ACMRT)
 
-```bash
-python .codocs/scripts/codocs.py . --lint
-```
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
 
-报告 `[MISSING]`（文档缺失）、`[ORPHAN]`（源文件已删）、`[BLOAT]`（文档过长）、`[THIN]`（文档过短）。
+# ── Phase 1: codocs lint（ORPHAN / MISSING 检查） ──────────────────────────
+if [ "$(hook_enabled lint)" = "1" ]; then
 
-## 文档维护规范（AI 必读）
+if [ -f "$INIT_PY" ]; then
+  set +e  # lint 非零退出时不要触发 errexit
+  lint_output=$("$PYTHON" "$INIT_PY" "$ROOT" --lint 2>/dev/null)
+  lint_rc=$?
+  set -e
 
-### 默认行为：更新文档
+  if [ $lint_rc -ne 0 ]; then
+    echo ""
+    echo "[codocs] lint: 发现文档质量问题，提交已拦截"
+    echo ""
+    echo "$lint_output"
+    echo ""
+    echo "请修复以上问题后重新提交，或使用 git commit --no-verify 跳过"
+    exit 1
+  fi
+fi
+fi
 
-提交涉及 `config.json` 中 `roots` 范围内的文件时，**默认应该更新对应文档**。
+# ── Phase 2: doc-change 检查 ─────────────────────────────────────────────
+if [ "$(hook_enabled doc_change)" = "1" ]; then
+# 从 .codocs/config.json 读取 roots（tr -d '\r' 处理 Windows CRLF）
+mapfile -t roots < <("$PYTHON" -c "
+import json
+d = json.load(open('$CODOCS_CONFIG'))
+for r in d.get('roots', []):
+    print(r)
+" 2>/dev/null | tr -d '\r')
 
-**codocs-skip 是最后手段，不是可以随意选择的捷径。** 遇到 hook 提示时，第一反应应该是"这段文档需要更新什么"，而不是"怎么跳过"。
+if [ ${#roots[@]} -eq 0 ]; then
+  exit 0
+fi
 
-### 什么时候才能用 codocs-skip
+# staged_files already defined above
 
-仅当文档描述**仍然完全准确、无需任何修改**时才可以跳过。跳过前必须 Read 对应 md 逐字确认。
+# 找出受管控的代码文件（在任意 root 下，排除 .css）
+managed_code_files=()
+while IFS= read -r f; do
+  for root in "${roots[@]}"; do
+    if [[ "$f" == ${root}/* ]] && [[ "$f" != *.css ]]; then
+      managed_code_files+=("$f")
+      break
+    fi
+  done
+done <<< "$staged_files"
 
-可以跳过的情况（文档完全不受影响）：
-- ✅ 修改了函数内部实现，但接口语义、参数、返回值、注意事项一字未变
-- ✅ 修复了 bug，且文档中没有提到被修复的行为
-- ✅ 改了注释格式或变量名，文档中没有涉及这些细节
-- ✅ 父目录 MD 的索引表：无新增/删除/改名文件，职责摘要未变
+# 检查是否有 .codocs/docs/ 文档改动
+has_doc_change=false
+while IFS= read -r f; do
+  if [[ "$f" == .codocs/docs/* ]]; then
+    has_doc_change=true
+    break
+  fi
+done <<< "$staged_files"
 
-**必须更新文档的情况（不可跳过）**：
-- ❌ 新增了公共函数/类型 — 文档里本来就没有，必须补写
-- ❌ 删除或修改了文档中描述的功能/接口
-- ❌ 修改了接口语义、参数含义、返回值约定
-- ❌ 添加了重要注意事项或已知陷阱
+if [ ${#managed_code_files[@]} -gt 0 ] && [ "$has_doc_change" = false ]; then
+  # 写入受管控文件列表，供 commit-msg hook 读取
+  printf "%s\n" "${managed_code_files[@]}" > "${TMPDIR:-/tmp}/codocs_pending_files"
+  touch "${TMPDIR:-/tmp}/codocs_needs_doc_check"
 
-### 跳过声明格式
+  echo ""
+  echo "[codocs] ⚠️  受管控代码已改动，但未更新对应文档"
+  echo ""
+  echo "  改动文件："
+  for f in "${managed_code_files[@]}"; do
+    echo "    $f  →  .codocs/docs/$f.md"
+  done
+  echo ""
+  echo "  ✅ 选项 A（推荐）：更新文档后 git add 对应的 .codocs/docs/ 文件"
+  echo ""
+  echo "  🔍 选项 B（审查后跳过）："
+  echo "     ❓ 不熟悉 codocs 文档规范？先读 .codocs/README.md"
+  echo "     1. 逐一 Read 下列 md，确认描述仍与改动后的代码一致："
+  for f in "${managed_code_files[@]}"; do
+    echo "        .codocs/docs/$f.md"
+  done
+  echo "     2. 确认无需更新后，在 commit message 末尾写："
+  echo "        ## codocs-skip"
+  for f in "${managed_code_files[@]}"; do
+    echo "        - .codocs/docs/$f.md: <具体理由>"
+  done
+  echo "     ⚠️  理由必须说明为何本次改动不影响文档（如\"仅修改注释格式\"）"
+  echo "        禁止使用\"无需更新\"等笼统理由"
+  echo ""
+elif [ "$has_doc_change" = true ]; then
+  # 有文档改动，清除 Phase 2 标记
+  rm -f "${TMPDIR:-/tmp}/codocs_pending_files" "${TMPDIR:-/tmp}/codocs_needs_doc_check"
+fi
+fi
 
-在 commit message **末尾**添加，理由必须具体说明为何文档不受影响：
+# ── Phase 3: 父目录 MD 同步检查 ─────────────────────────────────────────
+if [ "$(hook_enabled parent_sync)" = "1" ]; then
+# 找出已暂存的 .codocs/docs/*.md 文件（排除 _notes/ 和 scripts/）
+staged_doc_files=()
+while IFS= read -r f; do
+  if [[ "$f" =~ ^\.codocs/docs/.*\.md$ ]] && \
+     [[ "$f" != .codocs/docs/_notes/* ]] && \
+     [[ "$f" != .codocs/docs/scripts/* ]]; then
+    staged_doc_files+=("$f")
+  fi
+done <<< "$staged_files"
 
-```
-## codocs-skip
-- .codocs/docs/src/Runtime/Foo.cpp.md: 仅修改内部实现，接口描述未变
-- .codocs/docs/include/UCommon.md: 索引表无新增/删除/改名，不受影响
-```
+if [ ${#staged_doc_files[@]} -gt 0 ] && [ -f "$INIT_PY" ]; then
+  set +e
+  missing_parents=$("$PYTHON" "$INIT_PY" "$ROOT" --parent-sync "${staged_doc_files[@]}" 2>/dev/null)
+  parent_rc=$?
+  set -e
 
-**禁止使用笼统理由**：`"无需更新"`、`"内容未变"`、`"文档无需同步"` 等描述说明没有真正审查过文档，属于无效跳过声明。
+  if [ $parent_rc -ne 0 ] && [ -n "$missing_parents" ]; then
+    echo "$missing_parents" > "${TMPDIR:-/tmp}/codocs_missing_parents"
+    touch "${TMPDIR:-/tmp}/codocs_needs_parent_sync"
 
-全局跳过（慎用，仅在文件较多且已逐一确认后）：
+    echo ""
+    echo "[codocs] ⚠️  子文档已更新，但父目录 MD 未同步"
+    echo ""
+    echo "  未同步的父目录 MD："
+    while IFS= read -r p; do echo "    $p"; done <<< "$missing_parents"
+    echo ""
+    echo "  ✅ 选项 A（推荐）：git add 上列父目录 MD"
+    echo ""
+    echo "  🔍 选项 B（审查后跳过）："
+    echo "     ❓ 不熟悉 codocs 文档规范？先读 .codocs/README.md"
+    echo "     1. 逐一 Read 上列 md，确认其索引表仍与实际内容一致"
+    echo "     2. 确认无需更新后，在 commit message 末尾写："
+    echo "        ## codocs-skip"
+    while IFS= read -r p; do echo "        - $p: <具体理由>"; done <<< "$missing_parents"
+    echo "     ⚠️  理由必须说明为何索引表不受影响（如\"未新增/删除/改名文件\"）"
+    echo "        禁止使用\"无需更新\"等笼统理由"
+    echo ""
+  else
+    # 父目录全部已同步，清除旧标记
+    rm -f "${TMPDIR:-/tmp}/codocs_missing_parents" "${TMPDIR:-/tmp}/codocs_needs_parent_sync"
+  fi
+fi
+fi
 
-```
-## codocs-skip
-- [all]: <具体理由>
-```
+# ── Phase 4: dependency check ─────────────────────────────────────────────
+if [ "$(hook_enabled dependencies)" = "1" ] && [ -f "$INIT_PY" ]; then
+  # Remove stale files from any previous interrupted commit
+  rm -f "$DEPS_FLAG" "$DEPS_FILE"
 
-## Commit hooks 行为
+  # Build staged files array for --check-deps (reuse staged_files from above)
+  mapfile -t staged_all < <(echo "$staged_files")
 
-| Phase | 时机 | 检查内容 | 拦截方式 |
-|-------|------|----------|----------|
-| 1 | pre-commit | ORPHAN / MISSING lint | 硬拦截，必须修复 |
-| 2 | pre-commit + commit-msg | 受管控代码有改动但无文档更新 | 软警告，需 skip 声明 |
-| 3 | pre-commit + commit-msg | 子文档改动但父目录 MD 未同步 | 软警告，需 skip 声明 |
-| 4 | pre-commit + commit-msg | 依赖规则触发的关联文档未更新 | 软警告，需 skip 声明 |
+  set +e
+  missing_deps=$("$PYTHON" "$INIT_PY" "$ROOT" --check-deps "${staged_all[@]}" 2>/dev/null)
+  deps_rc=$?
+  set -e
+
+  if [ $deps_rc -ne 0 ] && [ -n "$missing_deps" ]; then
+    echo "$missing_deps" > "$DEPS_FILE"
+    touch "$DEPS_FLAG"
+
+    echo ""
+    echo "[codocs] ⚠️  依赖规则触发，但关联文档未更新"
+    echo ""
+
+    "$PYTHON" - "$CODOCS_CONFIG" "${staged_all[@]}" << 'PYEOF'
+import json, sys
+cfg, *staged = sys.argv[1], sys.argv[2:]
+staged_set = {p.lstrip("./").replace("\\", "/") for p in staged}
+try:
+    deps = json.load(open(cfg, encoding="utf-8")).get("dependencies", [])
+except Exception:
+    deps = []
+for rule in deps:
+    if not isinstance(rule, dict): continue
+    when = rule.get("when", [])
+    update = rule.get("update", [])
+    if not isinstance(when, list) or not isinstance(update, list): continue
+    triggers = [w for w in when if isinstance(w, str) and w.lstrip("./").replace("\\","/") in staged_set]
+    if triggers:
+        for t in triggers:
+            print(f"    触发文件: {t}")
+        for u in update:
+            if isinstance(u, str) and u.lstrip("./").replace("\\","/") not in staged_set:
+                print(f"      → 需更新: {u}")
+PYEOF
+
+    echo ""
+    echo "  ✅ 选项 A（推荐）：更新文档后 git add 对应的 .codocs/ 文件"
+    echo ""
+    echo "  🔍 选项 B（审查后跳过）："
+    echo "     1. Read 上列需更新的 md，确认其描述仍与改动后的代码一致"
+    echo "     2. 确认无需更新后，在 commit message 末尾写："
+    echo "        ## codocs-skip"
+    echo "        - .codocs/docs/<path>.md: <具体理由>"
+    echo "     ⚠️  理由必须说明为何本次改动不影响文档"
+    echo "        禁止使用\"无需更新\"等笼统理由"
+    echo ""
+  fi
+fi
+
+exit 0
