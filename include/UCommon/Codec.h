@@ -44,7 +44,7 @@ namespace UCommon
 	/**
 	 * Unity use 34.49(5^2.2).
 	 * Because M is in sqrt space instead of gamma 2.2 space,
-	 * So we use 36(6^2) which colse to Untiy's value.
+	 * So we use 36(6^2) which close to Unity's value.
 	 * But 36 is not enough, 100 is.
 	 */
 	constexpr float RGBM_DefaultMaxValue = 10.f;

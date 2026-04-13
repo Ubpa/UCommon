@@ -37,7 +37,7 @@ UCommon::FTex2D::FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, const Element*
 template<typename T>
 T& UCommon::FTex2D::At(uint64_t Index) noexcept
 {
-	static_assert(IsSupported<T>, "T is not support");
+	static_assert(IsSupported<T>, "T is not supported");
 	UBPA_UCOMMON_ASSERT(ElementType == ElementTypeOf<T>);
 	constexpr size_t NumElementsPerTexel = sizeof(T) / sizeof(typename UCommon::TRemoveVector<T>::value_type);
 	UBPA_UCOMMON_ASSERT(Index * NumElementsPerTexel < GetNumElements());

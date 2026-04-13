@@ -68,12 +68,12 @@ UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(const FVector2f& Texcoord) co
 
 UCommon::FUint64Vector2 UCommon::FGrid2D::GetPoint(uint64_t Index) const noexcept
 {
-	UBPA_UCOMMON_ASSERT(Index <= GetArea());
+	UBPA_UCOMMON_ASSERT(Index < GetArea());
 
 	const uint64_t X = Index % Width;
 	const uint64_t Y = Index / Width;
 
-	return FUint64Vector2{ X,Y };
+	return FUint64Vector2{ X, Y };
 }
 
 UCommon::FUint64Vector2 UCommon::FGrid2D::GetExtent() const noexcept
@@ -108,7 +108,7 @@ UCommon::FGrid2DIterator UCommon::FGrid2D::GetIterator(const FUint64Vector2& Poi
 UCommon::FGrid2DIterator UCommon::FGrid2D::GetIterator(uint64_t Index) const noexcept { return GetIterator(GetPoint(Index)); }
 
 UCommon::FGrid2DIterator UCommon::FGrid2D::begin() const noexcept { return GetIterator(FUint64Vector2(0)); }
-UCommon::FGrid2DIterator UCommon::FGrid2D::end() const noexcept { return GetIterator({ 0,Height }); }
+UCommon::FGrid2DIterator UCommon::FGrid2D::end() const noexcept { return GetIterator({ 0, Height }); }
 
 namespace UCommon
 {
@@ -844,7 +844,9 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 {
 	UBPA_UCOMMON_ASSERT(Grid2D == CoverageData.Grid2D);
 	UBPA_UCOMMON_ASSERT(NumChannels == CoverageData.NumChannels);
-	UBPA_UCOMMON_ASSERT(CoverageData.ElementType != EElementType::Uint8);
+	// CoverageData stores coverage values as floats (including -1 as a "filled" marker in
+	// ImageInpainting Step 2). It must not be Uint8, which cannot represent negative values.
+	UBPA_UCOMMON_ASSERT(CoverageData.ElementType == EElementType::Float);
 
 	const uint64_t MaxSize = std::max(Grid2D.Width, Grid2D.Height);
 
@@ -894,12 +896,12 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 				float AccumulatedColor = 0.f;
 				float Coverage = 0.f;
 
-				const uint64_t MinSourceY = (Point.Y + 0) * 2;
+				const uint64_t MinSourceY = Point.Y * 2;
 				const uint64_t MaxSourceY = (Point.Y + 1) * 2;
 				for (uint64_t SourceY = MinSourceY; SourceY < MaxSourceY; SourceY++)
 				{
 					const uint64_t ClampedSourceY = std::min(SourceY, LastMipData->Grid2D.Height - 1);
-					const uint64_t MinSourceX = (Point.X + 0) * 2;
+					const uint64_t MinSourceX = Point.X * 2;
 					const uint64_t MaxSourceX = (Point.X + 1) * 2;
 					for (uint64_t SourceX = MinSourceX; SourceX < MaxSourceX; SourceX++)
 					{
@@ -949,19 +951,21 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 					float AccumulatedColor = 0.f;
 					float Coverage = 0.f;
 
-					const uint64_t MinSourceY = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.Y) - 1, static_cast<int64_t>(0)));
-					const uint64_t MaxSourceY = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.Y) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Height - 1)));
+					const uint64_t MinSourceY = Point.Y > 0 ? Point.Y - 1 : 0;
+					const uint64_t MaxSourceY = std::min(Point.Y + 1, MipLevelData->Grid2D.Height - 1);
 					for (uint64_t SourceY = MinSourceY; SourceY <= MaxSourceY; SourceY++)
 					{
-						const uint64_t MinSourceX = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.X) - 1, static_cast<int64_t>(0)));
-						const uint64_t MaxSourceX = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.X) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Width - 1)));
+						const uint64_t MinSourceX = Point.X > 0 ? Point.X - 1 : 0;
+						const uint64_t MaxSourceX = std::min(Point.X + 1, MipLevelData->Grid2D.Width - 1);
 						for (uint64_t SourceX = MinSourceX; SourceX <= MaxSourceX; SourceX++)
 						{
 							const float SourceColor = MipLevelData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
 							const float SourceCoverage = MipLevelCoverageData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
 							if (SourceCoverage > 0.f)
 							{
-								// Weight matrix for 2D (3x3)
+								// Weight matrix: cardinal neighbors (up/down/left/right) are strongly preferred
+								// over diagonal neighbors, so the expansion prioritizes axis-aligned spreading.
+								// Center is 0 (we only fill uncovered pixels, not overwrite the current pixel).
 								static const float Weights[3][3] =
 								{
 									{ 1.f, 255.f, 1.f },

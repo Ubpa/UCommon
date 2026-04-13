@@ -137,7 +137,7 @@ namespace UCommon
 		FTex2D(FGrid2D InGrid2D, uint64_t InNumChannels, const Element* InStorage);
 
 		/**
-		 * Allocate a storage internally by `malloc` (no initalization).
+		 * Allocate a storage internally by `malloc` (no initialization).
 		 *
 		 * @param InGrid2D the Grid2D of the texture.
 		 * @param InNumChannels the channel number of the texture.
@@ -156,7 +156,7 @@ namespace UCommon
 		FTex2D(const FTex2D& Other, EOwnership InOwnership, void* InEmptyStorage);
 
 		/**
-		 * Copy with propogated ownership.
+		 * Copy with propagated ownership.
 		 * When the Ownership of Other is TakeOwnership, it causes the internal use of `malloc`.
 		 */
 		FTex2D(const FTex2D& Other);
@@ -299,7 +299,7 @@ namespace UCommon
 
 		/**
 		 * If layout is same with Rhs's, just copy the storage,
-		 * else copy with propogated ownership.
+		 * else copy with propagated ownership.
 		 * When the Ownership of Other is TakeOwnership, it causes the internal use of `malloc`.
 		 */
 		FTex2D& operator=(const FTex2D& Rhs);
