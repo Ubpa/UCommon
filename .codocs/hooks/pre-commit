@@ -64,9 +64,7 @@ if [ -f "$INIT_PY" ]; then
 
   if [ $lint_rc -ne 0 ]; then
     echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs lint: 发现文档质量问题，提交已拦截                   ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "[codocs] lint: 发现文档质量问题，提交已拦截"
     echo ""
     echo "$lint_output"
     echo ""
@@ -117,10 +115,7 @@ if [ ${#managed_code_files[@]} -gt 0 ] && [ "$has_doc_change" = false ]; then
   printf "%s\n" "${managed_code_files[@]}" > "${TMPDIR:-/tmp}/codocs_pending_files"
   touch "${TMPDIR:-/tmp}/codocs_needs_doc_check"
 
-  echo ""
-  echo "╔══════════════════════════════════════════════════════════════╗"
-  echo "║  codocs: 检测到受管控文件改动，但未找到文档更新              ║"
-  echo "╚══════════════════════════════════════════════════════════════╝"
+  echo "[codocs] 检测到受管控文件改动，但未找到文档更新"
   echo ""
   echo "以下文件在 codocs 管控范围内："
   for f in "${managed_code_files[@]}"; do
@@ -130,7 +125,9 @@ if [ ${#managed_code_files[@]} -gt 0 ] && [ "$has_doc_change" = false ]; then
   echo "选项 A（推荐）：同时 git add 对应的 .codocs/ 文档改动"
   echo "选项 B：在 commit message 末尾加跳过标记："
   echo "         ## codocs-skip"
-  echo "         - 仅内部实现，接口无变化"
+  for f in "${managed_code_files[@]}"; do
+    echo "         - $f: <理由>"
+  done
   echo "选项 C：git commit --no-verify（不推荐）"
   echo ""
 elif [ "$has_doc_change" = true ]; then
@@ -162,9 +159,7 @@ if [ ${#staged_doc_files[@]} -gt 0 ] && [ -f "$INIT_PY" ]; then
     touch "${TMPDIR:-/tmp}/codocs_needs_parent_sync"
 
     echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 部分父目录 MD 未同步更新                            ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "[codocs] 部分父目录 MD 未同步更新"
     echo ""
     echo "以下父目录 MD 未包含在本次提交中："
     while IFS= read -r p; do echo "  • $p"; done <<< "$missing_parents"
@@ -202,9 +197,7 @@ if [ "$(hook_enabled dependencies)" = "1" ] && [ -f "$INIT_PY" ]; then
     touch "$DEPS_FLAG"
 
     echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 依赖规则触发，但关联文档未更新                       ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "[codocs] 依赖规则触发，但关联文档未更新"
     echo ""
 
     "$PYTHON" - "$CODOCS_CONFIG" "${staged_all[@]}" << 'PYEOF'

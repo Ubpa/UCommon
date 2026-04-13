@@ -55,11 +55,14 @@ while IFS= read -r line; do
         # Explicit global skip
         global_skip=true
       elif echo "$item" | grep -qE "^\.codocs/"; then
-        # path-specific: extract path before the ":"
+        # path-specific .codocs/ skip (Phase 3/4)
+        path=$(echo "$item" | sed 's/:.*//')
+        skip_paths+=("$path")
+      else
+        # source file path skip (Phase 2), e.g. "- src/Runtime/Foo.cpp: <reason>"
         path=$(echo "$item" | sed 's/:.*//')
         skip_paths+=("$path")
       fi
-      # Other entries (typos, non-.codocs/ paths) are silently ignored
     fi
   fi
 done <<< "$commit_msg"
