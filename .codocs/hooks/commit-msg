@@ -104,6 +104,7 @@ if [ -f "$PENDING_FLAG" ]; then
       done
       echo ""
       echo "  请 Read 对应 md 确认是否需要更新，然后："
+      echo "  ❓ 不熟悉 codocs 规范？先读 .codocs/README.md"
       echo "  - 需要更新 → 修改 md 后 git add，重新提交"
       echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
       echo "    ## codocs-skip"
@@ -159,6 +160,7 @@ if [ -f "$PARENT_SYNC_FLAG" ]; then
       done
       echo ""
       echo "  请 Read 上列 md 确认索引表是否需要更新，然后："
+      echo "  ❓ 不熟悉 codocs 规范？先读 .codocs/README.md"
       echo "  - 需要更新 → 修改 md 后 git add，重新提交"
       echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
       echo "    ## codocs-skip"
@@ -199,6 +201,7 @@ if [ -f "$DEPS_FLAG" ] && [ -f "$DEPS_FILE" ]; then
     for p in "${uncovered_deps[@]}"; do echo "    $p"; done
     echo ""
     echo "  请 Read 上列 md 确认是否需要更新，然后："
+    echo "  ❓ 不熟悉 codocs 规范？先读 .codocs/README.md"
     echo "  - 需要更新 → 修改 md 后 git add，重新提交"
     echo "  - 确认不需要 → 在 commit message 加 codocs-skip（须写具体理由）："
     echo "    ## codocs-skip"
