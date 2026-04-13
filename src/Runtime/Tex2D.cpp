@@ -896,12 +896,12 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 				float AccumulatedColor = 0.f;
 				float Coverage = 0.f;
 
-				const uint64_t MinSourceY = Point.Y * 2;
+				const uint64_t MinSourceY = (Point.Y + 0) * 2;
 				const uint64_t MaxSourceY = (Point.Y + 1) * 2;
 				for (uint64_t SourceY = MinSourceY; SourceY < MaxSourceY; SourceY++)
 				{
 					const uint64_t ClampedSourceY = std::min(SourceY, LastMipData->Grid2D.Height - 1);
-					const uint64_t MinSourceX = Point.X * 2;
+					const uint64_t MinSourceX = (Point.X + 0) * 2;
 					const uint64_t MaxSourceX = (Point.X + 1) * 2;
 					for (uint64_t SourceX = MinSourceX; SourceX < MaxSourceX; SourceX++)
 					{
@@ -951,12 +951,12 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 					float AccumulatedColor = 0.f;
 					float Coverage = 0.f;
 
-					const uint64_t MinSourceY = Point.Y > 0 ? Point.Y - 1 : 0;
-					const uint64_t MaxSourceY = std::min(Point.Y + 1, MipLevelData->Grid2D.Height - 1);
+					const uint64_t MinSourceY = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.Y) - 1, static_cast<int64_t>(0)));
+					const uint64_t MaxSourceY = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.Y) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Height - 1)));
 					for (uint64_t SourceY = MinSourceY; SourceY <= MaxSourceY; SourceY++)
 					{
-						const uint64_t MinSourceX = Point.X > 0 ? Point.X - 1 : 0;
-						const uint64_t MaxSourceX = std::min(Point.X + 1, MipLevelData->Grid2D.Width - 1);
+						const uint64_t MinSourceX = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.X) - 1, static_cast<int64_t>(0)));
+						const uint64_t MaxSourceX = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.X) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Width - 1)));
 						for (uint64_t SourceX = MinSourceX; SourceX <= MaxSourceX; SourceX++)
 						{
 							const float SourceColor = MipLevelData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
