@@ -119,14 +119,14 @@ if [ ${#managed_code_files[@]} -gt 0 ] && [ "$has_doc_change" = false ]; then
   echo ""
   echo "以下文件在 codocs 管控范围内："
   for f in "${managed_code_files[@]}"; do
-    echo "  • $f"
+    echo "  • $f  →  .codocs/$f.md"
   done
   echo ""
   echo "选项 A（推荐）：同时 git add 对应的 .codocs/ 文档改动"
   echo "选项 B：在 commit message 末尾加跳过标记："
   echo "         ## codocs-skip"
   for f in "${managed_code_files[@]}"; do
-    echo "         - $f: <理由>"
+    echo "         - .codocs/$f.md: <理由>"
   done
   echo "选项 C：git commit --no-verify（不推荐）"
   echo ""
