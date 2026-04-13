@@ -183,7 +183,7 @@ TEST_CASE("Matrix3x3 - Rotation")
 		CHECK(result.Z == doctest::Approx(0.0f).epsilon(1e-4f));
 	}
 
-	// Axis-angle rotation (rotate (1,0,0) around (0,1,0) by 90°)
+	// Axis-angle rotation (rotate (1,0,0) around (0,1,0) by 90 degrees)
 	{
 		float angle = 3.14159265f / 2.0f;
 		FVector3f axis(0, 1, 0);
@@ -488,7 +488,7 @@ TEST_CASE("Matrix4x4 - TRS")
 	{
 		FVector3f translation(0, 0, 0);
 		FVector3f rotationAxis(0, 1, 0);
-		float rotationAngle = 3.14159265f / 2.0f; // 90° around Y
+		float rotationAngle = 3.14159265f / 2.0f; // 90 degrees around Y
 		FVector3f scale(1, 1, 1);
 
 		FMatrix4x4f M = FMatrix4x4f::TRS(translation, rotationAxis, rotationAngle, scale);

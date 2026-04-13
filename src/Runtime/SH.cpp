@@ -347,21 +347,21 @@ void UCommon::ComputeSHBand5RotateMatrix(float* SHBand5RotateMatrix, const FMatr
 	// 9 linearly independent sample directions are required.
 	//
 	// Key challenge for l=4: all SH<4,m> are EVEN functions (SH4(-v) = SH4(v)), so:
-	//   - Axis-aligned points (e0, e1, e2) only excite m=0, ±2, ±4 (5 of 9 basis functions).
-	//   - Face diagonals with equal components (e.g. (1,1,0)/√2) keep x²=y², so m=-4 = xy(x²-y²) = 0.
-	//   - To excite m=-4 = 2.5033429·xy(x²-y²), we need x≠y, x≠0, y≠0.
-	//   => Use (2,1,0)/√5 type directions to break the x-y symmetry.
+	//   - Axis-aligned points (e0, e1, e2) only excite m=0, +-2, +-4 (5 of 9 basis functions).
+	//   - Face diagonals with equal components (e.g. (1,1,0)/sqrt(2)) keep x^2=y^2, so m=-4 = xy(x^2-y^2) = 0.
+	//   - To excite m=-4 = 2.5033429*xy(x^2-y^2), we need x!=y, x!=0, y!=0.
+	//   => Use (2,1,0)/sqrt(5) type directions to break the x-y symmetry.
 	//
 	// 9 sampling directions:
 	//   w0 = (1, 0, 0)              = e0
 	//   w1 = (0, 1, 0)              = e1
 	//   w2 = (0, 0, 1)              = e2
-	//   w3 = (1, 1, 0)/√2           = c1*(e0+e1)
-	//   w4 = (1, 0, 1)/√2           = c1*(e0+e2)
-	//   w5 = (0, 1, 1)/√2           = c1*(e1+e2)
-	//   w6 = (2, 1, 0)/√5           = c2*(2*e0+e1)   // breaks x-y symmetry for m=-4
-	//   w7 = (0, 1, 2)/√5           = c2*(e1+2*e2)
-	//   w8 = (1, 0, 2)/√5           = c2*(e0+2*e2)
+	//   w3 = (1, 1, 0)/sqrt(2)      = c1*(e0+e1)
+	//   w4 = (1, 0, 1)/sqrt(2)      = c1*(e0+e2)
+	//   w5 = (0, 1, 1)/sqrt(2)      = c1*(e1+e2)
+	//   w6 = (2, 1, 0)/sqrt(5)      = c2*(2*e0+e1)   // breaks x-y symmetry for m=-4
+	//   w7 = (0, 1, 2)/sqrt(5)      = c2*(e1+2*e2)
+	//   w8 = (1, 0, 2)/sqrt(5)      = c2*(e0+2*e2)
 	// where c1 = 1/sqrt(2), c2 = 1/sqrt(5)
 	//
 	// RotateMatrix is row-major 3x3. By linearity:
