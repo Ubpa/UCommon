@@ -91,10 +91,7 @@ if [ -f "$PENDING_FLAG" ]; then
     if [ ${#uncovered_phase2[@]} -gt 0 ]; then
       block=true
       local_count=${#uncovered_phase2[@]}
-      echo ""
-      echo "╔══════════════════════════════════════════════════════════════╗"
-      echo "║  codocs: 以下受管控文件缺少对应文档更新                      ║"
-      echo "╚══════════════════════════════════════════════════════════════╝"
+      echo "[codocs] 以下受管控文件缺少对应文档更新"
       echo ""
       echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
       echo ""
@@ -111,10 +108,7 @@ if [ -f "$PENDING_FLAG" ]; then
     fi
   else
     block=true
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 以下受管控文件缺少对应文档更新                      ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "[codocs] 以下受管控文件缺少对应文档更新"
     echo ""
     echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
     echo ""
@@ -142,10 +136,7 @@ if [ -f "$PARENT_SYNC_FLAG" ]; then
     if [ ${#uncovered[@]} -gt 0 ]; then
       block=true
       parent_count=${#uncovered[@]}
-      echo ""
-      echo "╔══════════════════════════════════════════════════════════════╗"
-      echo "║  codocs: 以下父目录 MD 未随子文档同步更新                    ║"
-      echo "╚══════════════════════════════════════════════════════════════╝"
+      echo "[codocs] 以下父目录 MD 未随子文档同步更新"
       echo ""
       echo "请将以下父目录 MD git add 至本次提交，或在 commit message 末尾声明跳过："
       echo ""
@@ -179,10 +170,7 @@ if [ -f "$DEPS_FLAG" ] && [ -f "$DEPS_FILE" ]; then
   if [ ${#uncovered_deps[@]} -gt 0 ]; then
     block=true
     dep_count=${#uncovered_deps[@]}
-    echo ""
-    echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 以下依赖文档未随被依赖文件同步更新                  ║"
-    echo "╚══════════════════════════════════════════════════════════════╝"
+    echo "[codocs] 以下依赖文档未随被依赖文件同步更新"
     echo ""
     echo "请将以下依赖文档 git add 至本次提交，或在 commit message 末尾声明跳过："
     echo ""
