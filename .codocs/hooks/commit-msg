@@ -15,10 +15,6 @@
 #
 # Only "[all]" triggers a global skip. Entries not starting with ".codocs/"
 # and not matching "[all]" are IGNORED (prevents accidental global skip from typos).
-#
-# Legacy syntax still supported:
-#   doc: updated   — satisfies doc-change check (Phase 2) only
-#   doc: skip(...) — global skip (legacy, still accepted)
 
 COMMIT_MSG_FILE="$1"
 PENDING_FLAG="${TMPDIR:-/tmp}/codocs_needs_doc_check"
@@ -68,14 +64,6 @@ while IFS= read -r line; do
   fi
 done <<< "$commit_msg"
 
-# ── Legacy global skip: doc: skip(...) ───────────────────────────────────
-while IFS= read -r line; do
-  if echo "$line" | grep -qE "^doc: skip\(.+\)"; then
-    global_skip=true
-    break
-  fi
-done <<< "$commit_msg"
-
 # Global skip → clear all flags and pass
 if [ "$global_skip" = true ]; then
   rm -f "$PENDING_FLAG" "$PENDING_FILES" "$PARENT_SYNC_FLAG" "$MISSING_PARENTS"
@@ -86,12 +74,7 @@ block=false
 
 # ── Check 1: codocs_needs_doc_check (Phase 2) ────────────────────────────
 if [ -f "$PENDING_FLAG" ]; then
-  has_phase2_skip=false
-  if echo "$commit_msg" | grep -qE "^doc: (skip|updated)"; then has_phase2_skip=true; fi
-
-  if [ "$has_phase2_skip" = true ]; then
-    rm -f "$PENDING_FLAG" "$PENDING_FILES"
-  elif [ -f "$PENDING_FILES" ]; then
+  if [ -f "$PENDING_FILES" ]; then
     # Check if all pending files are covered by path-specific skips
     uncovered_phase2=()
     while IFS= read -r pending_file; do
@@ -107,23 +90,21 @@ if [ -f "$PENDING_FLAG" ]; then
 
     if [ ${#uncovered_phase2[@]} -gt 0 ]; then
       block=true
+      local_count=${#uncovered_phase2[@]}
       echo ""
       echo "╔══════════════════════════════════════════════════════════════╗"
-      echo "║  codocs: 受管控文件改动，缺少文档更新或跳过标记              ║"
+      echo "║  codocs: 以下受管控文件缺少对应文档更新                      ║"
       echo "╚══════════════════════════════════════════════════════════════╝"
       echo ""
-      echo "以下文档需要更新或 skip 标记："
-      for p in "${uncovered_phase2[@]}"; do echo "  • $p"; done
-      echo ""
-      echo "在 commit message 末尾加跳过标记，例如："
+      echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
       echo ""
       echo "  ## codocs-skip"
       for p in "${uncovered_phase2[@]}"; do
         echo "  - $p: <理由>"
       done
-      echo ""
-      echo "或声明文档已更新：doc: updated"
-      echo "或全局跳过：- [all]: <理由>"
+      if [ "$local_count" -gt 3 ]; then
+        echo "  # 文件较多时也可用: - [all]: <理由>"
+      fi
       echo ""
     else
       rm -f "$PENDING_FLAG" "$PENDING_FILES"
@@ -132,10 +113,13 @@ if [ -f "$PENDING_FLAG" ]; then
     block=true
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 受管控文件改动，缺少文档更新或跳过标记              ║"
+    echo "║  codocs: 以下受管控文件缺少对应文档更新                      ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
-    echo "请在 commit message 末尾加跳过标记或声明 doc: updated"
+    echo "请更新对应的 .codocs/ 文档并 git add，或在 commit message 末尾声明跳过："
+    echo ""
+    echo "  ## codocs-skip"
+    echo "  - <文件路径>: <理由>"
     echo ""
   fi
 fi
@@ -157,22 +141,21 @@ if [ -f "$PARENT_SYNC_FLAG" ]; then
 
     if [ ${#uncovered[@]} -gt 0 ]; then
       block=true
+      parent_count=${#uncovered[@]}
       echo ""
       echo "╔══════════════════════════════════════════════════════════════╗"
-      echo "║  codocs: 父目录 MD 未同步，缺少 skip 标记                    ║"
+      echo "║  codocs: 以下父目录 MD 未随子文档同步更新                    ║"
       echo "╚══════════════════════════════════════════════════════════════╝"
       echo ""
-      echo "以下父目录 MD 需要 skip 标记（或在 commit 中一并 git add）："
-      for p in "${uncovered[@]}"; do echo "  • $p"; done
-      echo ""
-      echo "在 commit message 末尾为每个未同步的父 MD 加标记，例如："
+      echo "请将以下父目录 MD git add 至本次提交，或在 commit message 末尾声明跳过："
       echo ""
       echo "  ## codocs-skip"
       for p in "${uncovered[@]}"; do
         echo "  - $p: <理由>"
       done
-      echo ""
-      echo "或全局跳过：- [all]: <理由>"
+      if [ "$parent_count" -gt 3 ]; then
+        echo "  # 文件较多时也可用: - [all]: <理由>"
+      fi
       echo ""
     else
       rm -f "$PARENT_SYNC_FLAG" "$MISSING_PARENTS"
@@ -195,19 +178,19 @@ if [ -f "$DEPS_FLAG" ] && [ -f "$DEPS_FILE" ]; then
 
   if [ ${#uncovered_deps[@]} -gt 0 ]; then
     block=true
+    dep_count=${#uncovered_deps[@]}
     echo ""
     echo "╔══════════════════════════════════════════════════════════════╗"
-    echo "║  codocs: 依赖文档未更新，缺少 skip 标记                      ║"
+    echo "║  codocs: 以下依赖文档未随被依赖文件同步更新                  ║"
     echo "╚══════════════════════════════════════════════════════════════╝"
     echo ""
-    echo "以下文档需要 skip 标记（或 git add）："
-    for p in "${uncovered_deps[@]}"; do echo "  • $p"; done
+    echo "请将以下依赖文档 git add 至本次提交，或在 commit message 末尾声明跳过："
     echo ""
-    echo "示例："
     echo "  ## codocs-skip"
     for p in "${uncovered_deps[@]}"; do echo "  - $p: <理由>"; done
-    echo ""
-    echo "或全局跳过：- [all]: <理由>"
+    if [ "$dep_count" -gt 3 ]; then
+      echo "  # 文件较多时也可用: - [all]: <理由>"
+    fi
     echo ""
   fi
 fi
