@@ -541,8 +541,8 @@ namespace UCommon
 	[[nodiscard]] inline float QuantizeDitherNoise(float Noise) noexcept
 	{
 		UBPA_UCOMMON_ASSERT(0.f <= Noise && Noise <= 1.f);
-		float x = 2.f * Noise - 1.f;
-		return std::copysign(1.f - std::sqrt(1.f - std::abs(x)), x);
+		float X = 2.f * Noise - 1.f;
+		return std::copysign(1.f - std::sqrt(1.f - std::abs(X)), X);
 	}
 
 } // namespace UCommon

@@ -44,6 +44,12 @@ HDR 颜色编解码与色彩空间转换工具集，包含 RGBM/RGBD/RGBV 编码
 - `VectorToHemiOctL` — 向量 → (HemiOctX, HemiOctY, L1 范数)
 - `HemiOctToDir` / `HemiOctLToVector` — 反向重建
 
+### 量化 Dither
+
+- `QuantizeDitherNoise(Noise)` — 将均匀噪声 [0,1] 映射为三角分布 dither 偏移 [-1,1]：
+  `X = 2*Noise - 1`，`out = sign(X) * (1 - sqrt(1 - |X|))`
+  在 Encode 前加到亮度值上，可软化量化误差带来的色带感
+
 ## 注意事项
 
 - 所有 Encode 函数都有 `MapToValidColor*` 对应版本，确保颜色在编码范围内
