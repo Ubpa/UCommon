@@ -738,3 +738,194 @@ DerivedType UCommon::TSHVectorRGBCommon<DerivedType, TElement, InMaxSHOrder, InM
 	Result.B = static_cast<const DerivedType&>(*this).B.ApplySHRotateMatrix(Matrices);
 	return Result;
 }
+
+// ============================================================================
+// TSHVectorCommon constructors
+// ============================================================================
+
+template<typename DerivedType, int InMaxSHOrder, int InMaxSHBasis>
+UCommon::TSHVectorCommon<DerivedType, InMaxSHOrder, InMaxSHBasis>::TSHVectorCommon(std::initializer_list<float> InitList)
+{
+	UBPA_UCOMMON_ASSERT(InitList.size() == MaxSHBasis);
+	int i = 0;
+	for (float Value : InitList)
+	{
+		V[i++] = Value;
+	}
+}
+
+// ============================================================================
+// TSHVector constructors
+// ============================================================================
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVector<Order>::TSHVector(const TSHVector<OtherOrder>& Other)
+{
+	if (Super::MaxSHBasis <= TSHVector<OtherOrder>::Super::MaxSHBasis)
+	{
+		for (int i = 0; i < Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = Other.V[i];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < TSHVector<OtherOrder>::Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = Other.V[i];
+		}
+		for (int i = TSHVector<OtherOrder>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = 0.f;
+		}
+	}
+}
+
+template<int Order>
+UCommon::TSHVector<Order>::TSHVector(const TSHVector<Order - 1>& Other, TSHBandConstView<Order> Band)
+{
+	for (int i = 0; i < TSHVector<Order - 1>::Super::MaxSHBasis; i++)
+	{
+		Super::V[i] = Other.V[i];
+	}
+	for (int i = TSHVector<Order - 1>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+	{
+		Super::V[i] = Band[i - TSHVector<Order - 1>::Super::MaxSHBasis];
+	}
+}
+
+// ============================================================================
+// TSHVectorAC constructors
+// ============================================================================
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVectorAC<Order>::TSHVectorAC(const TSHVectorAC<OtherOrder>& Other)
+{
+	if (Super::MaxSHBasis <= TSHVectorAC<OtherOrder>::Super::MaxSHBasis)
+	{
+		for (int i = 0; i < Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = Other.V[i];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < TSHVectorAC<OtherOrder>::Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = Other.V[i];
+		}
+		for (int i = TSHVectorAC<OtherOrder>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+		{
+			Super::V[i] = 0.f;
+		}
+	}
+}
+
+template<int Order>
+template<bool bConst>
+UCommon::TSHVectorAC<Order>::TSHVectorAC(const TSHVectorAC<Order - 1>& Other, const TSHBandView<Order, bConst>& Band)
+{
+	for (int i = 0; i < TSHVectorAC<Order - 1>::Super::MaxSHBasis; i++)
+	{
+		Super::V[i] = Other.V[i];
+	}
+	for (int i = TSHVectorAC<Order - 1>::Super::MaxSHBasis; i < Super::MaxSHBasis; i++)
+	{
+		Super::V[i] = Band[i - TSHVectorAC<Order - 1>::Super::MaxSHBasis];
+	}
+}
+
+// ============================================================================
+// TSHVectorRGB constructors and SetBand
+// ============================================================================
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVectorRGB<Order>::TSHVectorRGB(const TSHVectorRGB<OtherOrder>& Other)
+{
+	Super::R = (TSHVector<Order>)Other.R;
+	Super::G = (TSHVector<Order>)Other.G;
+	Super::B = (TSHVector<Order>)Other.B;
+}
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVectorRGB<Order>::TSHVectorRGB(const TSHVector<OtherOrder>& Other)
+{
+	Super::R = (TSHVector<Order>)Other;
+	Super::G = (TSHVector<Order>)Other;
+	Super::B = (TSHVector<Order>)Other;
+}
+
+template<int Order>
+UCommon::TSHVectorRGB<Order>::TSHVectorRGB(const TSHVectorRGB<Order - 1>& Other, TSHBandConstViewRGB<Order> Band)
+{
+	Super::R = TSHVector<Order>(Other.R, Band.R);
+	Super::G = TSHVector<Order>(Other.G, Band.G);
+	Super::B = TSHVector<Order>(Other.B, Band.B);
+}
+
+template<int Order>
+template<int BandOrder>
+void UCommon::TSHVectorRGB<Order>::SetBand(const TSHBandViewRGB<BandOrder, false>& SHBandView) noexcept
+{
+	static_assert(BandOrder <= Order, "BandOrder must be <= Order");
+	auto RBand = Super::R.template GetBand<BandOrder>();
+	auto GBand = Super::G.template GetBand<BandOrder>();
+	auto BBand = Super::B.template GetBand<BandOrder>();
+	for (uint64_t i = 0; i < TSHBandView<BandOrder, false>::MaxSHBasis; ++i)
+	{
+		RBand[i] = SHBandView.R[i];
+		GBand[i] = SHBandView.G[i];
+		BBand[i] = SHBandView.B[i];
+	}
+}
+
+// ============================================================================
+// TSHVectorACRGB constructors and SetBand
+// ============================================================================
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVectorACRGB<Order>::TSHVectorACRGB(const TSHVectorACRGB<OtherOrder>& Other)
+{
+	Super::R = (TSHVectorAC<Order>)Other.R;
+	Super::G = (TSHVectorAC<Order>)Other.G;
+	Super::B = (TSHVectorAC<Order>)Other.B;
+}
+
+template<int Order>
+template<int OtherOrder>
+UCommon::TSHVectorACRGB<Order>::TSHVectorACRGB(const TSHVectorAC<OtherOrder>& Other)
+{
+	Super::R = (TSHVectorAC<Order>)Other;
+	Super::G = (TSHVectorAC<Order>)Other;
+	Super::B = (TSHVectorAC<Order>)Other;
+}
+
+template<int Order>
+template<bool bConst>
+UCommon::TSHVectorACRGB<Order>::TSHVectorACRGB(const TSHVectorACRGB<Order - 1>& Other, const TSHBandViewRGB<Order, bConst>& Band)
+{
+	Super::R = TSHVectorAC<Order>(Other.R, Band.R);
+	Super::G = TSHVectorAC<Order>(Other.G, Band.G);
+	Super::B = TSHVectorAC<Order>(Other.B, Band.B);
+}
+
+template<int Order>
+template<int BandOrder>
+void UCommon::TSHVectorACRGB<Order>::SetBand(const TSHBandViewRGB<BandOrder, false>& SHBandView) noexcept
+{
+	static_assert(BandOrder <= Order, "BandOrder must be <= Order");
+	auto RBand = Super::R.template GetBand<BandOrder>();
+	auto GBand = Super::G.template GetBand<BandOrder>();
+	auto BBand = Super::B.template GetBand<BandOrder>();
+	for (uint64_t i = 0; i < TSHBandView<BandOrder, false>::MaxSHBasis; ++i)
+	{
+		RBand[i] = SHBandView.R[i];
+		GBand[i] = SHBandView.G[i];
+		BBand[i] = SHBandView.B[i];
+	}
+}

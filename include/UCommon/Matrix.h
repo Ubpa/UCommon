@@ -1,4 +1,4 @@
-﻿/*
+/*
 MIT License
 
 Copyright (c) 2024 Ubpa
@@ -131,15 +131,7 @@ namespace UCommon
 		}
 
 		// Matrix-Matrix multiplication
-		TMatrix3x3 operator*(const TMatrix3x3& Other) const noexcept
-		{
-			TMatrix3x3 OtherT = Other.Transpose();
-			return TMatrix3x3(
-				TVector<T>(Rows[0] | OtherT.Rows[0], Rows[0] | OtherT.Rows[1], Rows[0] | OtherT.Rows[2]),
-				TVector<T>(Rows[1] | OtherT.Rows[0], Rows[1] | OtherT.Rows[1], Rows[1] | OtherT.Rows[2]),
-				TVector<T>(Rows[2] | OtherT.Rows[0], Rows[2] | OtherT.Rows[1], Rows[2] | OtherT.Rows[2])
-			);
-		}
+		TMatrix3x3 operator*(const TMatrix3x3& Other) const noexcept;
 
 		// Static factory methods
 
@@ -160,69 +152,16 @@ namespace UCommon
 		}
 
 		// Rotation matrix from axis and angle (radians)
-		static TMatrix3x3 Rotation(const TVector<T>& Axis, T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			T oneMinusC = static_cast<T>(1) - c;
-
-			TVector<T> AxisSq = Axis * Axis;
-			TVector<T> AxisScaled = Axis * oneMinusC;
-
-			return TMatrix3x3(
-				TVector<T>(
-					c + AxisSq.X * oneMinusC,
-					Axis.X * Axis.Y * oneMinusC - Axis.Z * s,
-					Axis.X * Axis.Z * oneMinusC + Axis.Y * s
-				),
-				TVector<T>(
-					Axis.Y * Axis.X * oneMinusC + Axis.Z * s,
-					c + AxisSq.Y * oneMinusC,
-					Axis.Y * Axis.Z * oneMinusC - Axis.X * s
-				),
-				TVector<T>(
-					Axis.Z * Axis.X * oneMinusC - Axis.Y * s,
-					Axis.Z * Axis.Y * oneMinusC + Axis.X * s,
-					c + AxisSq.Z * oneMinusC
-				)
-			);
-		}
+		static TMatrix3x3 Rotation(const TVector<T>& Axis, T Angle) noexcept;
 
 		// Rotation around X axis
-		static TMatrix3x3 RotationX(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix3x3(
-				TVector<T>(1, 0,  0),
-				TVector<T>(0, c, -s),
-				TVector<T>(0, s,  c)
-			);
-		}
+		static TMatrix3x3 RotationX(T Angle) noexcept;
 
 		// Rotation around Y axis
-		static TMatrix3x3 RotationY(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix3x3(
-				TVector<T>( c, 0, s),
-				TVector<T>( 0, 1, 0),
-				TVector<T>(-s, 0, c)
-			);
-		}
+		static TMatrix3x3 RotationY(T Angle) noexcept;
 
 		// Rotation around Z axis
-		static TMatrix3x3 RotationZ(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix3x3(
-				TVector<T>(c, -s, 0),
-				TVector<T>(s,  c, 0),
-				TVector<T>(0,  0, 1)
-			);
-		}
+		static TMatrix3x3 RotationZ(T Angle) noexcept;
 
 		// Scaling matrix
 		static TMatrix3x3 Scaling(const TVector<T>& Scale) noexcept
@@ -265,34 +204,7 @@ namespace UCommon
 		}
 
 		// Inverse
-		TMatrix3x3 Inverse() const noexcept
-		{
-			T det = Determinant();
-			if (std::abs(det) < UBPA_UCOMMON_DELTA)
-			{
-				return Zero();
-			}
-
-			T invDet = static_cast<T>(1) / det;
-
-			return TMatrix3x3(
-				TVector<T>(
-					(Rows[1].Y * Rows[2].Z - Rows[1].Z * Rows[2].Y) * invDet,
-					(Rows[0].Z * Rows[2].Y - Rows[0].Y * Rows[2].Z) * invDet,
-					(Rows[0].Y * Rows[1].Z - Rows[0].Z * Rows[1].Y) * invDet
-				),
-				TVector<T>(
-					(Rows[1].Z * Rows[2].X - Rows[1].X * Rows[2].Z) * invDet,
-					(Rows[0].X * Rows[2].Z - Rows[0].Z * Rows[2].X) * invDet,
-					(Rows[0].Z * Rows[1].X - Rows[0].X * Rows[1].Z) * invDet
-				),
-				TVector<T>(
-					(Rows[1].X * Rows[2].Y - Rows[1].Y * Rows[2].X) * invDet,
-					(Rows[0].Y * Rows[2].X - Rows[0].X * Rows[2].Y) * invDet,
-					(Rows[0].X * Rows[1].Y - Rows[0].Y * Rows[1].X) * invDet
-				)
-			);
-		}
+		TMatrix3x3 Inverse() const noexcept;
 	};
 
 	// 4x4 Matrix (Row-Major Order)
@@ -387,16 +299,7 @@ namespace UCommon
 		}
 
 		// Matrix-Matrix multiplication
-		TMatrix4x4 operator*(const TMatrix4x4& Other) const noexcept
-		{
-			TMatrix4x4 OtherT = Other.Transpose();
-			return TMatrix4x4(
-				TVector4<T>(Rows[0] | OtherT.Rows[0], Rows[0] | OtherT.Rows[1], Rows[0] | OtherT.Rows[2], Rows[0] | OtherT.Rows[3]),
-				TVector4<T>(Rows[1] | OtherT.Rows[0], Rows[1] | OtherT.Rows[1], Rows[1] | OtherT.Rows[2], Rows[1] | OtherT.Rows[3]),
-				TVector4<T>(Rows[2] | OtherT.Rows[0], Rows[2] | OtherT.Rows[1], Rows[2] | OtherT.Rows[2], Rows[2] | OtherT.Rows[3]),
-				TVector4<T>(Rows[3] | OtherT.Rows[0], Rows[3] | OtherT.Rows[1], Rows[3] | OtherT.Rows[2], Rows[3] | OtherT.Rows[3])
-			);
-		}
+		TMatrix4x4 operator*(const TMatrix4x4& Other) const noexcept;
 
 		// Static factory methods
 
@@ -426,78 +329,16 @@ namespace UCommon
 		}
 
 		// Rotation around X axis
-		static TMatrix4x4 RotationX(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix4x4(
-				TVector4<T>(1, 0,  0, 0),
-				TVector4<T>(0, c, -s, 0),
-				TVector4<T>(0, s,  c, 0),
-				TVector4<T>(0, 0,  0, 1)
-			);
-		}
+		static TMatrix4x4 RotationX(T Angle) noexcept;
 
 		// Rotation around Y axis
-		static TMatrix4x4 RotationY(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix4x4(
-				TVector4<T>( c, 0, s, 0),
-				TVector4<T>( 0, 1, 0, 0),
-				TVector4<T>(-s, 0, c, 0),
-				TVector4<T>( 0, 0, 0, 1)
-			);
-		}
+		static TMatrix4x4 RotationY(T Angle) noexcept;
 
 		// Rotation around Z axis
-		static TMatrix4x4 RotationZ(T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			return TMatrix4x4(
-				TVector4<T>(c, -s, 0, 0),
-				TVector4<T>(s,  c, 0, 0),
-				TVector4<T>(0,  0, 1, 0),
-				TVector4<T>(0,  0, 0, 1)
-			);
-		}
+		static TMatrix4x4 RotationZ(T Angle) noexcept;
 
 		// Set rotation from axis and angle (radians)
-		void SetRotation(const TVector<T>& Axis, T Angle) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			T oneMinusC = static_cast<T>(1) - c;
-
-			T x = Axis.X;
-			T y = Axis.Y;
-			T z = Axis.Z;
-
-			Rows[0] = TVector4<T>(
-				c + x * x * oneMinusC,
-				x * y * oneMinusC - z * s,
-				x * z * oneMinusC + y * s,
-				static_cast<T>(0)
-			);
-
-			Rows[1] = TVector4<T>(
-				y * x * oneMinusC + z * s,
-				c + y * y * oneMinusC,
-				y * z * oneMinusC - x * s,
-				static_cast<T>(0)
-			);
-
-			Rows[2] = TVector4<T>(
-				z * x * oneMinusC - y * s,
-				z * y * oneMinusC + x * s,
-				c + z * z * oneMinusC,
-				static_cast<T>(0)
-			);
-
-			Rows[3] = TVector4<T>(0, 0, 0, 1);
-		}
+		void SetRotation(const TVector<T>& Axis, T Angle) noexcept;
 
 		// Translation matrix
 		static TMatrix4x4 Translation(const TVector<T>& Val) noexcept
@@ -539,40 +380,7 @@ namespace UCommon
 
 		void SetTRS(const TVector<T>& Trans,
 		            const TVector<T>& Axis, T Angle,
-		            const TVector<T>& Scale) noexcept
-		{
-			T c = std::cos(Angle);
-			T s = std::sin(Angle);
-			T oneMinusC = static_cast<T>(1) - c;
-
-			T x = Axis.X;
-			T y = Axis.Y;
-			T z = Axis.Z;
-
-			// Apply scale to rotation matrix
-			Rows[0] = TVector4<T>(
-				(c + x * x * oneMinusC) * Scale.X,
-				(x * y * oneMinusC - z * s) * Scale.Y,
-				(x * z * oneMinusC + y * s) * Scale.Z,
-				Trans.X
-			);
-
-			Rows[1] = TVector4<T>(
-				(y * x * oneMinusC + z * s) * Scale.X,
-				(c + y * y * oneMinusC) * Scale.Y,
-				(y * z * oneMinusC - x * s) * Scale.Z,
-				Trans.Y
-			);
-
-			Rows[2] = TVector4<T>(
-				(z * x * oneMinusC - y * s) * Scale.X,
-				(z * y * oneMinusC + x * s) * Scale.Y,
-				(c + z * z * oneMinusC) * Scale.Z,
-				Trans.Z
-			);
-
-			Rows[3] = TVector4<T>(0, 0, 0, 1);
-		}
+		            const TVector<T>& Scale) noexcept;
 
 		// Transpose
 		TMatrix4x4 Transpose() const noexcept
@@ -585,18 +393,8 @@ namespace UCommon
 			);
 		}
 
-		// Determinant
-		T Determinant() const noexcept
-		{
-			// Compute using cofactor expansion along last row
-			T det3x3 = TMatrix3x3<T>(
-				TVector<T>(Rows[0].X, Rows[0].Y, Rows[0].Z),
-				TVector<T>(Rows[1].X, Rows[1].Y, Rows[1].Z),
-				TVector<T>(Rows[2].X, Rows[2].Y, Rows[2].Z)
-			).Determinant();
-
-			return Rows[3].W * det3x3;
-		}
+		// Determinant (optimized for affine transforms)
+		T Determinant() const noexcept;
 
 		// Trace (sum of diagonal elements)
 		T Trace() const noexcept
@@ -605,39 +403,7 @@ namespace UCommon
 		}
 
 		// Inverse (optimized for affine transforms)
-		TMatrix4x4 Inverse() const noexcept
-		{
-			TMatrix3x3<T> Linear(
-				TVector<T>(Rows[0].X, Rows[0].Y, Rows[0].Z),
-				TVector<T>(Rows[1].X, Rows[1].Y, Rows[1].Z),
-				TVector<T>(Rows[2].X, Rows[2].Y, Rows[2].Z)
-			);
-
-			TMatrix3x3<T> LinearInv = Linear.Inverse();
-
-			if (LinearInv == TMatrix3x3<T>::Zero())
-			{
-				return Zero();
-			}
-
-			// Translate inverse: need to compute -LinearInv * t where t = [Rows[0].W, Rows[1].W, Rows[2].W]
-			// result translation components:
-			// -trans_inv.x = LinearInv.Rows[0] ⋅ t
-			// -trans_inv.y = LinearInv.Rows[1] ⋅ t
-			// -trans_inv.z = LinearInv.Rows[2] ⋅ t
-
-			TVector<T> t(Rows[0].W, Rows[1].W, Rows[2].W);
-			T tX = -(LinearInv.Rows[0] | t);
-			T tY = -(LinearInv.Rows[1] | t);
-			T tZ = -(LinearInv.Rows[2] | t);
-
-			return TMatrix4x4(
-				TVector4<T>(LinearInv.Rows[0].X, LinearInv.Rows[0].Y, LinearInv.Rows[0].Z, tX),
-				TVector4<T>(LinearInv.Rows[1].X, LinearInv.Rows[1].Y, LinearInv.Rows[1].Z, tY),
-				TVector4<T>(LinearInv.Rows[2].X, LinearInv.Rows[2].Y, LinearInv.Rows[2].Z, tZ),
-				TVector4<T>(0, 0, 0, Rows[3].W)
-			);
-		}
+		TMatrix4x4 Inverse() const noexcept;
 
 		// Extract rotation as 3x3 matrix
 		TMatrix3x3<T> GetRotation3x3() const noexcept
@@ -699,3 +465,5 @@ namespace UCommon
 }
 
 UBPA_UCOMMON_MATRIX_TO_NAMESPACE(UCommonTest)
+
+#include "Matrix.inl"

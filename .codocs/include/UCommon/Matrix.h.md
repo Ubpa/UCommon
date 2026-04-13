@@ -10,11 +10,11 @@
 
 行主序存储，底层是 `TVector<T> Rows[3]`，连续内存，`GetData()` 返回 `Rows[0]` 的首地址，可直接传给需要 float* 的 API。
 
-**构造**：默认构造**不初始化**（noexcept，性能导向）；单值构造 `TMatrix3x3(T Value)` 将所有行填充为 `TVector<T>(Value)`（即对角和非对角元素相同，非单位矩阵）。
+**构造**：默认构造**不初始化**；单值构造 `TMatrix3x3(T Value)` 将所有行填充为 `TVector<T>(Value)`（非单位矩阵）。
 
 **访问**：`operator[]` 返回整行引用；`operator()(Row, Col)` 直接访问元素，均有 ASSERT 越界检查。
 
-**矩阵乘矩阵实现**：先转置右矩阵，再逐元素点积（`operator|`）——利用行向量点积规避列访问的内存跳跃。
+**矩阵乘矩阵实现**：先转置右矩阵，再逐行点积——利用行向量点积规避列访问的内存跳跃。
 
 **向量变换区分**：
 - `operator*(TVector2)` — 补 w=1，变换 2D **点**（受平移影响）
@@ -38,17 +38,11 @@
 
 **GetRotation3x3()**：提取左上 3x3，**包含缩放**，不是纯旋转矩阵，若需纯旋转须先用 `GetScale()` 归一化各行。
 
-**GetScale()**：取各行前三分量的向量长度，仅在无剪切（shear）时正确；有剪切变换时结果无数学意义。
+**GetScale()**：取各行前三分量的向量长度，仅在无剪切时正确。
 
-**Determinant()**：简化实现，仅计算左上 3x3 的行列式 × `Rows[3].W`，不是完整 4x4 展开。对非仿射矩阵（如透视）结果错误。
+**Determinant()**：简化实现，仅计算左上 3x3 行列式 × `Rows[3].W`，非完整 4x4 展开，对非仿射矩阵结果错误。
 
-**Inverse()**：仿射变换专用：
-1. 提取左上 3x3 求逆
-2. 奇异性检测：将 3x3 逆与 `TMatrix3x3::Zero()` 逐元素比较（而非 det 阈值，与 3x3 的检测路径不同）
-3. 逆平移：`-LinearInv * t`，其中 t = `{Rows[0].W, Rows[1].W, Rows[2].W}`
-4. 保留 `Rows[3].W` 到结果的右下角
-
-**非仿射矩阵（如透视矩阵）调用 Inverse() 会得到错误结果。**
+**Inverse()**：仿射变换专用：提取左上 3x3 求逆，奇异性检测用 `LinearInv == Zero()`（与 3x3 的 det 阈值路径不同），然后计算逆平移 `-LinearInv * t`，保留 `Rows[3].W`。
 
 ### 类型别名
 
@@ -68,8 +62,10 @@
 - `TMatrix3x3()` 默认不初始化，拿到随机值后做计算是典型 UB 来源
 - `TMatrix4x4::Inverse()` 和 `Determinant()` 均**只适用于仿射变换**
 - `GetRotation3x3()` 含缩放，若误当纯旋转使用会引入缩放误差
-- 奇异性检测：3x3 用 `det < UBPA_UCOMMON_DELTA`，4x4 用 `LinearInv == Zero()`——两者路径不同
+- **奇异性检测**：3x3 用 `det < UBPA_UCOMMON_DELTA`；4x4 Inverse() 用 `LinearInv == Zero()`——两者路径不同
+- **非仿射矩阵**调用 `Inverse()` 或 `Determinant()` 会得到错误结果
 
 ## 相关文件
 
 - `Vector.h` — `TVector` / `TVector4` 类型，`operator|` 点积
+- `Matrix.inl` — 较长的方法体实现（由本文件末尾 `#include` 引入）
