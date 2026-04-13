@@ -1,8 +1,9 @@
 #include <UCommon/Archive.h>
-#include <iostream>
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <UCommon_ext/doctest/doctest.h>
 
 using namespace UCommon;
-using namespace std;
 
 struct A0
 {
@@ -53,28 +54,43 @@ struct A2
     }
 };
 
-int main(int argc, char** argv)
+TEST_CASE("Archive - A0 save and A1 load (version upgrade)")
 {
+    constexpr float Pi = 3.14159265358979323846f;
+
+    // Save A0
     {
         A0 a0;
-        a0.data = 3.14159265358979323846f;
+        a0.data = Pi;
         FFileArchive ar(IArchive::EState::Saving, "test_01_archive_a0.uasset");
         a0.Serialize(ar);
     }
+
+    // Load as A1 (version upgrade: float -> double)
+    A1 a1;
     {
-        A1 a1;
-        FFileArchive ar_r(IArchive::EState::Loading, "test_01_archive_a0.uasset");
-        a1.Serialize(ar_r);
-        cout << a1.data << endl;
-        a1.data *= 9.8;
-        FFileArchive ar_w(IArchive::EState::Saving, "test_01_archive_a1.uasset");
-        a1.Serialize(ar_w);
+        FFileArchive ar(IArchive::EState::Loading, "test_01_archive_a0.uasset");
+        a1.Serialize(ar);
     }
+    CHECK(a1.data == doctest::Approx((double)Pi).epsilon(1e-6));
+
+    // Modify and save A1
+    a1.data *= 9.8;
     {
-        A2 a2;
+        FFileArchive ar(IArchive::EState::Saving, "test_01_archive_a1.uasset");
+        a1.Serialize(ar);
+    }
+}
+
+TEST_CASE("Archive - A2 load from A1 (version upgrade)")
+{
+    constexpr float Pi = 3.14159265358979323846f;
+    double expectedA1 = (double)Pi * 9.8;
+
+    A2 a2;
+    {
         FFileArchive ar(IArchive::EState::Loading, "test_01_archive_a1.uasset");
         a2.Serialize(ar);
-        cout << a2.data << endl;
     }
-    return 0;
+    CHECK(a2.data == (int)expectedA1);
 }

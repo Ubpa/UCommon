@@ -187,6 +187,29 @@ namespace UCommon
 	UBPA_UCOMMON_API float RGBV_SolveS(float MaxValue, float IntegralValue, float Tolerance = 1e-4f, uint64_t MaxIterations = 128);
 
 	/**
+	 * Compute the second moment integral I2 = integral_0^1 L^2 dv where L = v^2/(s(1-v^2)+1/M).
+	 * Derived from the first moment via: I2 = (M - 3*I1) / (2*s) when s != 0.
+	 * When s = 0: I2 = M^2/5
+	 * Gives more weight to high luminance values than the first moment.
+	 * @param MaxValue Max luminance value (M), > 0
+	 * @param S Parameter s, > -1/M
+	 * @return Integral value I2 > 0
+	 */
+	UBPA_UCOMMON_API float RGBV_ComputeIntegral2(float MaxValue, float S);
+
+	/**
+	 * Solve for s given the second moment integral I2 and max luminance M.
+	 * Find s such that integral_0^1 L^2 dv = I2, where L = v^2/(s(1-v^2)+1/M).
+	 * Uses bisection method. Prioritizes high luminance accuracy over low luminance.
+	 * @param MaxValue Max luminance value (M), > 0
+	 * @param Integral2Value Target second moment integral value (I2), > 0
+	 * @param Tolerance Convergence tolerance, default 1e-4
+	 * @param MaxIterations Maximum number of iterations, default 128
+	 * @return Solved s value, > -1/M
+	 */
+	UBPA_UCOMMON_API float RGBV_SolveS2(float MaxValue, float Integral2Value, float Tolerance = 1e-4f, uint64_t MaxIterations = 128);
+
+	/**
 	 * Get the k factor for the RGBV encoding (runtime).
 	 * k = -s
 	 * Used in formula: L = V^2 / (k*V^2 + b)

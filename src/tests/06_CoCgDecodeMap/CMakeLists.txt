@@ -5,5 +5,6 @@ Ubpa_AddTarget(
   LIB
     Ubpa::UCommon_Runtime
     Ubpa::UCommon_ext_Tex2DIO
+    Ubpa::UCommon_ext_doctest
 )
 

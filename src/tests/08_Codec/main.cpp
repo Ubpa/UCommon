@@ -5,16 +5,17 @@ Copyright (c) 2024 Ubpa
 */
 
 #include <UCommon/Codec.h>
-#include <iostream>
 #include <cmath>
 #include <vector>
 #include <random>
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include <UCommon_ext/doctest/doctest.h>
 
 using namespace UCommon;
 
 //===========================================
 // Visual Space Conversion
-// v = sqrt(c / (1 + c))
 //===========================================
 
 inline float ToVisualSpace(float c) noexcept
@@ -38,422 +39,426 @@ inline float VisualSpaceError(const FLinearColorRGB& original, const FLinearColo
     return (vDecoded - vOriginal).Abs().MaxComponent();
 }
 
-//===========================================
-// RGBM Test
-//===========================================
-
-void TestRGBM(FLinearColorRGB Color, float Multiplier, const char* Label)
-{
-    FLinearColor RGBM = EncodeRGBM(Color, Multiplier);
-    FLinearColorRGB Decoded = DecodeRGBM(RGBM, Multiplier);
-
-    float L = Color.MaxComponent();
-    float DecodedL = Decoded.MaxComponent();
-    float Error = (Decoded - Color).Abs().MaxComponent();
-    float RelError = (L > 0.f) ? Error / L : 0.f;
-
-    printf("[%s]\n", Label);
-    printf("  Input:   RGB(%.4f, %.4f, %.4f) L=%.4f\n", Color.X, Color.Y, Color.Z, L);
-    printf("  Encoded: RGBM(%.4f, %.4f, %.4f, %.4f)\n", RGBM.X, RGBM.Y, RGBM.Z, RGBM.W);
-    printf("  Decoded: RGB(%.4f, %.4f, %.4f) L=%.4f\n", Decoded.X, Decoded.Y, Decoded.Z, DecodedL);
-    printf("  Error:   %.6f (Rel: %.4f%%)\n\n", Error, RelError * 100.f);
-}
-
-//===========================================
-// RGBD Test
-//===========================================
-
-void TestRGBD(FLinearColorRGB Color, float MaxValue, const char* Label)
-{
-    FLinearColor RGBD = EncodeRGBD(Color, MaxValue);
-    FLinearColorRGB Decoded = DecodeRGBD(RGBD, MaxValue);
-
-    float L = Color.MaxComponent();
-    float DecodedL = Decoded.MaxComponent();
-    float Error = (Decoded - Color).Abs().MaxComponent();
-    float RelError = (L > 0.f) ? Error / L : 0.f;
-
-    printf("[%s]\n", Label);
-    printf("  Input:   RGB(%.4f, %.4f, %.4f) L=%.4f\n", Color.X, Color.Y, Color.Z, L);
-    printf("  Encoded: RGBD(%.4f, %.4f, %.4f, %.4f)\n", RGBD.X, RGBD.Y, RGBD.Z, RGBD.W);
-    printf("  Decoded: RGB(%.4f, %.4f, %.4f) L=%.4f\n", Decoded.X, Decoded.Y, Decoded.Z, DecodedL);
-    printf("  Error:   %.6f (Rel: %.4f%%)\n\n", Error, RelError * 100.f);
-}
-
-//===========================================
-// RGBV Test
-//===========================================
-
-void TestRGBV(FLinearColorRGB Color, float MaxValue, const char* Label, float S = 1.f)
-{
-    FLinearColor RGBV = EncodeRGBV(Color, MaxValue, S);
-    FLinearColorRGB Decoded = DecodeRGBV(RGBV, MaxValue, S);
-
-    float L = Color.MaxComponent();
-    float DecodedL = Decoded.MaxComponent();
-    float Error = (Decoded - Color).Abs().MaxComponent();
-    float RelError = (L > 0.f) ? Error / L : 0.f;
-
-    printf("[%s]\n", Label);
-    printf("  Input:   RGB(%.4f, %.4f, %.4f) L=%.4f\n", Color.X, Color.Y, Color.Z, L);
-    printf("  Encoded: RGBV(%.4f, %.4f, %.4f, %.4f)\n", RGBV.X, RGBV.Y, RGBV.Z, RGBV.W);
-    printf("  Decoded: RGB(%.4f, %.4f, %.4f) L=%.4f\n", Decoded.X, Decoded.Y, Decoded.Z, DecodedL);
-    printf("  Error:   %.6f (Rel: %.4f%%)\n\n", Error, RelError * 100.f);
-}
-
-//===========================================
-// Quantize helper
-//===========================================
 inline float Quantize8(float v) noexcept
 {
     return std::floor(v * 255.f + 0.5f) / 255.f;
 }
 
 //===========================================
-// Comparison Test Function
+// RGBM Tests
 //===========================================
-void RunComparisonTest(float MaxValue)
+
+TEST_CASE("RGBM - Encode/Decode round-trip")
 {
-    printf("================================================================================\n");
-    printf("=== Comparison Test (MaxValue = %.0f) ===\n", MaxValue);
-    printf("================================================================================\n\n");
+    constexpr float Multiplier = RGBM_DefaultMaxMultiplier;
 
-    // Power of 2 ranges up to MaxValue
-    std::vector<std::pair<float, float>> ranges;
-    std::vector<std::string> rangeNames;
+    struct TestCase { FLinearColorRGB color; float maxRelError; };
+    TestCase cases[] = {
+        { FLinearColorRGB(0.1f, 0.05f, 0.02f),  0.02f },
+        { FLinearColorRGB(0.5f, 0.3f, 0.2f),    0.02f },
+        { FLinearColorRGB(1.0f, 0.5f, 0.25f),   0.02f },
+        { FLinearColorRGB(5.0f, 3.0f, 1.0f),    0.02f },
+        { FLinearColorRGB(50.0f, 30.0f, 10.0f), 0.02f },
+    };
 
-    float start = 0.f;
-    for (float end = 0.25f; end <= MaxValue; end *= 2.f)
+    for (const auto& tc : cases)
     {
-        ranges.push_back({start, end});
-        char buf[32];
-        if (start < 1.f)
-            snprintf(buf, sizeof(buf), "%.2f-%.2f", start, end);
-        else
-            snprintf(buf, sizeof(buf), "%.0f-%.0f", start, end);
-        rangeNames.push_back(buf);
-        start = end;
+        FLinearColor encoded = EncodeRGBM(tc.color, Multiplier);
+        FLinearColorRGB decoded = DecodeRGBM(encoded, Multiplier);
+
+        float L = tc.color.MaxComponent();
+        float error = (decoded - tc.color).Abs().MaxComponent();
+        float relError = error / L;
+
+        CHECK(relError < tc.maxRelError);
     }
-    if (start < MaxValue)
-    {
-        ranges.push_back({start, MaxValue});
-        char buf[32];
-        snprintf(buf, sizeof(buf), "%.0f-%.0f", start, MaxValue);
-        rangeNames.push_back(buf);
-    }
-
-    // Generate test data - 1024 samples per range, uniformly distributed within each range
-    constexpr int SamplesPerRange = 1024;
-    std::mt19937 rng(42);
-    std::uniform_real_distribution<float> ratioDist(0.f, 1.f);
-
-    std::vector<FLinearColorRGB> testColors;
-    std::vector<float> testLuminances;
-
-    for (const auto& range : ranges)
-    {
-        std::uniform_real_distribution<float> lumDist(std::max(range.first, 0.001f), range.second);
-        for (int i = 0; i < SamplesPerRange; i++)
-        {
-            float L = lumDist(rng);
-            testColors.push_back(FLinearColorRGB(L * ratioDist(rng), L * ratioDist(rng), L * ratioDist(rng)));
-            testLuminances.push_back(lumDist(rng));
-        }
-    }
-
-    //===========================================
-    // RGB Color Encoding Test
-    //===========================================
-    printf("=== RGB Color Encoding (Visual Space Error) ===\n\n");
-
-    double rgbmSum = 0., rgbdSum = 0., rgbvSum = 0.;
-    double rgbmMax = 0., rgbdMax = 0., rgbvMax = 0.;
-    int count = 0;
-
-    for (const auto& color : testColors)
-    {
-        if (color.MaxComponent() == 0.f) continue;
-
-        float errM = VisualSpaceError(color, DecodeRGBM(EncodeRGBM(color, MaxValue), MaxValue));
-        float errD = VisualSpaceError(color, DecodeRGBD(EncodeRGBD(color, MaxValue), MaxValue));
-        float errV = VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue, 1.f), MaxValue, 1.f));
-
-        rgbmSum += errM; rgbdSum += errD; rgbvSum += errV;
-        rgbmMax = std::max(rgbmMax, (double)errM);
-        rgbdMax = std::max(rgbdMax, (double)errD);
-        rgbvMax = std::max(rgbvMax, (double)errV);
-        count++;
-    }
-
-    printf("Test Count: %d\n\n", count);
-    printf("| Codec | Avg Error | Max Error |\n");
-    printf("|-------|-----------|----------|\n");
-    printf("| RGBM  | %.6f  | %.6f |\n", rgbmSum / count, rgbmMax);
-    printf("| RGBD  | %.6f  | %.6f |\n", rgbdSum / count, rgbdMax);
-    printf("| RGBV  | %.6f  | %.6f |\n", rgbvSum / count, rgbvMax);
-
-    printf("\n| Range       | RGBM Avg | RGBD Avg | RGBV Avg | Best   |\n");
-    printf("|-------------|----------|----------|----------|--------|\n");
-
-    for (size_t r = 0; r < ranges.size(); r++)
-    {
-        double rM = 0., rD = 0., rV = 0.;
-        int rCount = 0;
-        for (const auto& color : testColors)
-        {
-            float L = color.MaxComponent();
-            if (L < ranges[r].first || L >= ranges[r].second) continue;
-            rM += VisualSpaceError(color, DecodeRGBM(EncodeRGBM(color, MaxValue), MaxValue));
-            rD += VisualSpaceError(color, DecodeRGBD(EncodeRGBD(color, MaxValue), MaxValue));
-            rV += VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue, 1.f), MaxValue, 1.f));
-            rCount++;
-        }
-        if (rCount > 0)
-        {
-            double avgM = rM / rCount, avgD = rD / rCount, avgV = rV / rCount;
-            const char* best = (avgM <= avgD && avgM <= avgV) ? "RGBM" : (avgD <= avgV) ? "RGBD" : "RGBV";
-            printf("| %-11s | %.6f | %.6f | %.6f | %-6s |\n", rangeNames[r].c_str(), avgM, avgD, avgV, best);
-        }
-    }
-
-    //===========================================
-    // Float-only Encoding Test
-    //===========================================
-    printf("\n=== Float-only Encoding (8-bit quantized, Visual Space Error) ===\n\n");
-
-    double fM = 0., fD = 0., fV = 0.;
-    double fMMax = 0., fDMax = 0., fVMax = 0.;
-    int fCount = 0;
-
-    for (float L : testLuminances)
-    {
-        if (L <= 0.f) continue;
-
-        float mEnc = Quantize8(EncodeRGBM(L, MaxValue));
-        float mDec = Pow2(mEnc) * MaxValue;
-        float dEnc = Quantize8(EncodeRGBD(L, MaxValue));
-        float dDec = DecodeRGBD(dEnc, MaxValue);
-        float vEnc = Quantize8(EncodeRGBV(L, MaxValue, 1.f));
-        float vDec = DecodeRGBV(vEnc, MaxValue, 1.f);
-
-        float errM = std::abs(ToVisualSpace(L) - ToVisualSpace(mDec));
-        float errD = std::abs(ToVisualSpace(L) - ToVisualSpace(dDec));
-        float errV = std::abs(ToVisualSpace(L) - ToVisualSpace(vDec));
-
-        fM += errM; fD += errD; fV += errV;
-        fMMax = std::max(fMMax, (double)errM);
-        fDMax = std::max(fDMax, (double)errD);
-        fVMax = std::max(fVMax, (double)errV);
-        fCount++;
-    }
-
-    printf("Test Count: %d\n\n", fCount);
-    printf("| Codec | Avg Error | Max Error |\n");
-    printf("|-------|-----------|----------|\n");
-    printf("| RGBM  | %.6f  | %.6f |\n", fM / fCount, fMMax);
-    printf("| RGBD  | %.6f  | %.6f |\n", fD / fCount, fDMax);
-    printf("| RGBV  | %.6f  | %.6f |\n", fV / fCount, fVMax);
-
-    printf("\n| Range       | RGBM Avg | RGBD Avg | RGBV Avg | Best   |\n");
-    printf("|-------------|----------|----------|----------|--------|\n");
-
-    for (size_t r = 0; r < ranges.size(); r++)
-    {
-        double rM = 0., rD = 0., rV = 0.;
-        int rCount = 0;
-        for (float L : testLuminances)
-        {
-            if (L < ranges[r].first || L >= ranges[r].second) continue;
-
-            float mEnc = Quantize8(EncodeRGBM(L, MaxValue));
-            float mDec = Pow2(mEnc) * MaxValue;
-            float dEnc = Quantize8(EncodeRGBD(L, MaxValue));
-            float dDec = DecodeRGBD(dEnc, MaxValue);
-            float vEnc = Quantize8(EncodeRGBV(L, MaxValue, 1.f));
-            float vDec = DecodeRGBV(vEnc, MaxValue, 1.f);
-
-            rM += std::abs(ToVisualSpace(L) - ToVisualSpace(mDec));
-            rD += std::abs(ToVisualSpace(L) - ToVisualSpace(dDec));
-            rV += std::abs(ToVisualSpace(L) - ToVisualSpace(vDec));
-            rCount++;
-        }
-        if (rCount > 0)
-        {
-            double avgM = rM / rCount, avgD = rD / rCount, avgV = rV / rCount;
-            const char* best = (avgM <= avgD && avgM <= avgV) ? "RGBM" : (avgD <= avgV) ? "RGBD" : "RGBV";
-            printf("| %-11s | %.6f | %.6f | %.6f | %-6s |\n", rangeNames[r].c_str(), avgM, avgD, avgV, best);
-        }
-    }
-
-    printf("\n");
 }
 
-int main()
+TEST_CASE("RGBM - Zero input")
 {
-    //===========================================
-    // RGBM Tests
-    //===========================================
-    constexpr float RGBMMultiplier = RGBM_DefaultMaxMultiplier;
-    printf("=== RGBM Encoding Test (Multiplier=%.1f) ===\n\n", RGBMMultiplier);
+    FLinearColor encoded = EncodeRGBM(FLinearColorRGB(0.f, 0.f, 0.f), RGBM_DefaultMaxMultiplier);
+    FLinearColorRGB decoded = DecodeRGBM(encoded, RGBM_DefaultMaxMultiplier);
+    CHECK(decoded.X == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Y == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Z == doctest::Approx(0.f).epsilon(1e-6f));
+}
 
-    TestRGBM(FLinearColorRGB(0.1f, 0.05f, 0.02f), RGBMMultiplier, "Low luminance");
-    TestRGBM(FLinearColorRGB(0.5f, 0.3f, 0.2f), RGBMMultiplier, "Mid luminance");
-    TestRGBM(FLinearColorRGB(1.0f, 0.5f, 0.25f), RGBMMultiplier, "Unit luminance");
-    TestRGBM(FLinearColorRGB(5.0f, 3.0f, 1.0f), RGBMMultiplier, "HDR luminance");
-    TestRGBM(FLinearColorRGB(50.0f, 30.0f, 10.0f), RGBMMultiplier, "High HDR luminance");
-    TestRGBM(FLinearColorRGB(0.0f, 0.0f, 0.0f), RGBMMultiplier, "Zero");
+//===========================================
+// RGBD Tests
+//===========================================
 
-    //===========================================
-    // RGBD Tests
-    //===========================================
-    constexpr float RGBDMaxValue = RGBD_DefaultMaxValue;
-    printf("\n=== RGBD Encoding Test (MaxValue=%.1f) ===\n\n", RGBDMaxValue);
+TEST_CASE("RGBD - Encode/Decode round-trip")
+{
+    constexpr float MaxValue = RGBD_DefaultMaxValue;
 
-    TestRGBD(FLinearColorRGB(0.1f, 0.05f, 0.02f), RGBDMaxValue, "Low luminance");
-    TestRGBD(FLinearColorRGB(0.5f, 0.3f, 0.2f), RGBDMaxValue, "Mid luminance");
-    TestRGBD(FLinearColorRGB(1.0f, 0.5f, 0.25f), RGBDMaxValue, "Unit luminance");
-    TestRGBD(FLinearColorRGB(5.0f, 3.0f, 1.0f), RGBDMaxValue, "HDR luminance");
-    TestRGBD(FLinearColorRGB(50.0f, 30.0f, 10.0f), RGBDMaxValue, "High HDR luminance");
-    TestRGBD(FLinearColorRGB(500.0f, 300.0f, 100.0f), RGBDMaxValue, "Very high HDR");
-    TestRGBD(FLinearColorRGB(0.0f, 0.0f, 0.0f), RGBDMaxValue, "Zero");
+    struct TestCase { FLinearColorRGB color; float maxRelError; };
+    TestCase cases[] = {
+        { FLinearColorRGB(0.1f, 0.05f, 0.02f),      0.02f },
+        { FLinearColorRGB(0.5f, 0.3f, 0.2f),        0.02f },
+        { FLinearColorRGB(1.0f, 0.5f, 0.25f),       0.02f },
+        { FLinearColorRGB(5.0f, 3.0f, 1.0f),        0.02f },
+        { FLinearColorRGB(50.0f, 30.0f, 10.0f),     0.02f },
+        { FLinearColorRGB(500.0f, 300.0f, 100.0f),  0.02f },
+    };
 
-    //===========================================
-    // RGBV Tests
-    //===========================================
-    constexpr float RGBVMaxValue = RGBV_DefaultMaxValue;
-    printf("\n=== RGBV Encoding Test (MaxValue=%.1f) ===\n\n", RGBVMaxValue);
-
-    TestRGBV(FLinearColorRGB(0.1f, 0.05f, 0.02f), RGBVMaxValue, "Low luminance");
-    TestRGBV(FLinearColorRGB(0.5f, 0.3f, 0.2f), RGBVMaxValue, "Mid luminance");
-    TestRGBV(FLinearColorRGB(1.0f, 0.5f, 0.25f), RGBVMaxValue, "Unit luminance");
-    TestRGBV(FLinearColorRGB(5.0f, 3.0f, 1.0f), RGBVMaxValue, "HDR luminance");
-    TestRGBV(FLinearColorRGB(50.0f, 30.0f, 10.0f), RGBVMaxValue, "High HDR luminance");
-    TestRGBV(FLinearColorRGB(0.0f, 0.0f, 0.0f), RGBVMaxValue, "Zero");
-
-    printf("=== All Codec Tests Complete ===\n\n");
-
-    // Run comparison tests for MaxValue = 128 and 2048
-    RunComparisonTest(128.f);
-    RunComparisonTest(2048.f);
-
-    //===========================================
-    // RGBV_ComputeIntegral and RGBV_SolveS Tests
-    //===========================================
-    printf("================================================================================\n");
-    printf("=== RGBV_ComputeIntegral and RGBV_SolveS Tests ===\n");
-    printf("================================================================================\n\n");
-
-    // Test 0
+    for (const auto& tc : cases)
     {
-        printf("Test 0\n");
-        float M = 5.f;
-        float I = 1.f;
-		float s = RGBV_SolveS(M, I);
-        float Expected = M / 3.f;
-        float Error = std::abs(I - Expected);
-        printf("  M=%.1f, I(s=0)=%.6f, s=%.6f\n", M, I, s);
+        FLinearColor encoded = EncodeRGBD(tc.color, MaxValue);
+        FLinearColorRGB decoded = DecodeRGBD(encoded, MaxValue);
+
+        float L = tc.color.MaxComponent();
+        float error = (decoded - tc.color).Abs().MaxComponent();
+        float relError = error / L;
+
+        CHECK(relError < tc.maxRelError);
     }
+}
 
-    // Test 1: Verify integral at s=0 equals M/3
+TEST_CASE("RGBD - Zero input")
+{
+    FLinearColor encoded = EncodeRGBD(FLinearColorRGB(0.f, 0.f, 0.f), RGBD_DefaultMaxValue);
+    FLinearColorRGB decoded = DecodeRGBD(encoded, RGBD_DefaultMaxValue);
+    CHECK(decoded.X == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Y == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Z == doctest::Approx(0.f).epsilon(1e-6f));
+}
+
+TEST_CASE("RGBD - Float encode/decode round-trip")
+{
+    constexpr float MaxValue = RGBD_DefaultMaxValue;
+    float K = RGBD_GetK(MaxValue);
+
+    // Verify K and MaxValue are consistent
+    CHECK(RGBD_GetMaxValue(K) == doctest::Approx(MaxValue).epsilon(1e-4f));
+
+    // Encode then decode single float values
+    float testValues[] = { 0.1f, 1.f, 10.f, 100.f, 1000.f };
+    for (float L : testValues)
     {
-        printf("Test 1: Integral at s=0 should equal M/3\n");
-        float M = 128.f;
+        float D = EncodeRGBD(L, MaxValue);
+        float decoded = DecodeRGBD(D, MaxValue);
+        CHECK(decoded == doctest::Approx(L).epsilon(L * 0.01f));
+    }
+}
+
+//===========================================
+// RGBV Tests
+//===========================================
+
+TEST_CASE("RGBV - Encode/Decode round-trip")
+{
+    constexpr float MaxValue = RGBV_DefaultMaxValue;
+    constexpr float S = 1.f;
+
+    struct TestCase { FLinearColorRGB color; float maxRelError; };
+    TestCase cases[] = {
+        { FLinearColorRGB(0.1f, 0.05f, 0.02f),  0.02f },
+        { FLinearColorRGB(0.5f, 0.3f, 0.2f),    0.02f },
+        { FLinearColorRGB(1.0f, 0.5f, 0.25f),   0.02f },
+        { FLinearColorRGB(5.0f, 3.0f, 1.0f),    0.02f },
+        { FLinearColorRGB(50.0f, 30.0f, 10.0f), 0.02f },
+    };
+
+    for (const auto& tc : cases)
+    {
+        FLinearColor encoded = EncodeRGBV(tc.color, MaxValue, S);
+        FLinearColorRGB decoded = DecodeRGBV(encoded, MaxValue, S);
+
+        float L = tc.color.MaxComponent();
+        float error = (decoded - tc.color).Abs().MaxComponent();
+        float relError = error / L;
+
+        CHECK(relError < tc.maxRelError);
+    }
+}
+
+TEST_CASE("RGBV - Zero input")
+{
+    FLinearColor encoded = EncodeRGBV(FLinearColorRGB(0.f, 0.f, 0.f), RGBV_DefaultMaxValue, 1.f);
+    FLinearColorRGB decoded = DecodeRGBV(encoded, RGBV_DefaultMaxValue, 1.f);
+    CHECK(decoded.X == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Y == doctest::Approx(0.f).epsilon(1e-6f));
+    CHECK(decoded.Z == doctest::Approx(0.f).epsilon(1e-6f));
+}
+
+//===========================================
+// Codec Comparison Tests
+//===========================================
+
+TEST_CASE("Codec comparison - Visual space error within bounds")
+{
+    float MaxValues[] = { 128.f, 2048.f };
+
+    for (float MaxValue : MaxValues)
+    {
+        CAPTURE(MaxValue);
+
+        // Generate test data
+        std::mt19937 rng(42);
+        std::uniform_real_distribution<float> ratioDist(0.f, 1.f);
+        std::uniform_real_distribution<float> lumDist(0.001f, MaxValue);
+
+        constexpr int Samples = 1024;
+        double rgbmSum = 0., rgbdSum = 0., rgbvSum = 0.;
+        int count = 0;
+
+        for (int i = 0; i < Samples; i++)
+        {
+            float L = lumDist(rng);
+            FLinearColorRGB color(L * ratioDist(rng), L * ratioDist(rng), L * ratioDist(rng));
+            if (color.MaxComponent() == 0.f) continue;
+
+            float errM = VisualSpaceError(color, DecodeRGBM(EncodeRGBM(color, MaxValue), MaxValue));
+            float errD = VisualSpaceError(color, DecodeRGBD(EncodeRGBD(color, MaxValue), MaxValue));
+            float errV = VisualSpaceError(color, DecodeRGBV(EncodeRGBV(color, MaxValue, 1.f), MaxValue, 1.f));
+
+            rgbmSum += errM; rgbdSum += errD; rgbvSum += errV;
+            count++;
+        }
+
+        // All codecs should have reasonable average error
+        double avgM = rgbmSum / count;
+        double avgD = rgbdSum / count;
+        double avgV = rgbvSum / count;
+
+        CHECK(avgM < 0.05);
+        CHECK(avgD < 0.05);
+        CHECK(avgV < 0.05);
+    }
+}
+
+//===========================================
+// RGBV_ComputeIntegral and RGBV_SolveS Tests
+//===========================================
+
+TEST_CASE("RGBV_ComputeIntegral - s=0 equals M/3")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 1000.f };
+    for (float M : MValues)
+    {
+        CAPTURE(M);
         float I = RGBV_ComputeIntegral(M, 0.f);
-        float Expected = M / 3.f;
-        float Error = std::abs(I - Expected);
-        printf("  M=%.1f, I(s=0)=%.6f, Expected=%.6f, Error=%.2e\n", M, I, Expected, Error);
-        printf("  %s\n\n", Error < 1e-5f ? "PASSED" : "FAILED");
+        CHECK(I == doctest::Approx(M / 3.f).epsilon(1e-5f));
     }
+}
 
-    // Test 2: Verify integral is monotonically decreasing
+TEST_CASE("RGBV_ComputeIntegral - monotonically decreasing")
+{
+    float M = 128.f;
+    float sValues[] = { -1.f / M + 0.001f, -0.5f / M, 0.f, 0.5f, 1.f, 2.f, 10.f };
+    float prevI = std::numeric_limits<float>::infinity();
+    for (float s : sValues)
     {
-        printf("Test 2: Integral should be monotonically decreasing with s\n");
-        float M = 128.f;
-        float sValues[] = { -1.f / M + 0.001f, -0.5f / M, 0.f, 0.5f, 1.f, 2.f, 10.f };
-        bool Monotonic = true;
-        float PrevI = std::numeric_limits<float>::infinity();
+        float I = RGBV_ComputeIntegral(M, s);
+        CHECK(I < prevI);
+        prevI = I;
+    }
+}
+
+TEST_CASE("RGBV_SolveS - round-trip")
+{
+    float M = 128.f;
+    float sTestValues[] = { -1.f / M + 0.01f, -0.5f / M, 0.f, 0.5f, 1.f, 5.f, 10.f };
+    for (float sOriginal : sTestValues)
+    {
+        CAPTURE(sOriginal);
+        float I = RGBV_ComputeIntegral(M, sOriginal);
+        float sSolved = RGBV_SolveS(M, I);
+        float error = std::abs(sSolved - sOriginal);
+        float relError = std::abs(sOriginal) > 1e-6f ? error / std::abs(sOriginal) : error;
+        CHECK((relError < 1e-3f || error < 1e-6f));
+    }
+}
+
+TEST_CASE("RGBV_SolveS - different M values")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 1000.f };
+    float sValues[] = { 0.f, 1.f, 5.f };
+    for (float M : MValues)
+    {
         for (float s : sValues)
         {
+            CAPTURE(M); CAPTURE(s);
             float I = RGBV_ComputeIntegral(M, s);
-            printf("  s=%.4f, I=%.6f\n", s, I);
-            if (I >= PrevI) Monotonic = false;
-            PrevI = I;
-        }
-        printf("  %s\n\n", Monotonic ? "PASSED" : "FAILED");
-    }
-
-    // Test 3: Round-trip test - compute I from s, then solve back for s
-    {
-        printf("Test 3: Round-trip test (compute I from s, solve back for s)\n");
-        float M = 128.f;
-        float sTestValues[] = { -1.f / M + 0.01f, -0.5f / M, 0.f, 0.5f, 1.f, 5.f, 10.f };
-        bool AllPassed = true;
-        for (float sOriginal : sTestValues)
-        {
-            float I = RGBV_ComputeIntegral(M, sOriginal);
             float sSolved = RGBV_SolveS(M, I);
-            float Error = std::abs(sSolved - sOriginal);
-            float RelError = std::abs(sOriginal) > 1e-6f ? Error / std::abs(sOriginal) : Error;
-            bool Passed = RelError < 1e-3f || Error < 1e-6f;
-            printf("  s=%.6f -> I=%.6f -> s_solved=%.6f, Error=%.2e %s\n",
-                sOriginal, I, sSolved, Error, Passed ? "OK" : "FAIL");
-            if (!Passed) AllPassed = false;
+            float error = std::abs(sSolved - s);
+            float relError = (std::abs(s) > 1e-6f) ? error / std::abs(s) : error;
+            CHECK((error < 1e-3f || relError < 1e-3f));
         }
-        printf("  %s\n\n", AllPassed ? "PASSED" : "FAILED");
     }
+}
 
-    // Test 4: Test with different M values
+TEST_CASE("RGBV_SolveS - edge cases")
+{
+    float M = 128.f;
+
+    SUBCASE("Large I (s close to -1/M)")
     {
-        printf("Test 4: Round-trip with different M values\n");
-        float MValues[] = { 1.f, 10.f, 128.f, 1000.f };
-        float sValues[] = { 0.f, 1.f, 5.f };
-        bool AllPassed = true;
-        for (float M : MValues)
-        {
-            for (float s : sValues)
-            {
-                float I = RGBV_ComputeIntegral(M, s);
-                float sSolved = RGBV_SolveS(M, I);
-                float Error = std::abs(sSolved - s);
-                float RelError = (std::abs(s) > 1e-6f) ? Error / std::abs(s) : Error;
-                // Allow either absolute error < 1e-3 or relative error < 1e-3
-                bool Passed = Error < 1e-3f || RelError < 1e-3f;
-                printf("  M=%.0f, s=%.1f -> I=%.6f -> s_solved=%.6f, Error=%.2e %s\n",
-                    M, s, I, sSolved, Error, Passed ? "OK" : "FAIL");
-                if (!Passed) AllPassed = false;
-            }
-        }
-        printf("  %s\n\n", AllPassed ? "PASSED" : "FAILED");
-    }
-
-    // Test 5: Edge cases - very small and very large I
-    {
-        printf("Test 5: Edge cases\n");
-        float M = 128.f;
-
-        // Large I (should give s close to -1/M)
         float I_large = 100.f;
-        float s_large = RGBV_SolveS(M, I_large);
-        float I_verify_large = RGBV_ComputeIntegral(M, s_large);
-        printf("  Large I=%.1f: s=%.6f, verify I=%.6f, Error=%.2e\n",
-            I_large, s_large, I_verify_large, std::abs(I_verify_large - I_large));
-
-        // Small I (should give large positive s)
-        float I_small = 0.1f;
-        float s_small = RGBV_SolveS(M, I_small);
-        float I_verify_small = RGBV_ComputeIntegral(M, s_small);
-        printf("  Small I=%.1f: s=%.6f, verify I=%.6f, Error=%.2e\n",
-            I_small, s_small, I_verify_small, std::abs(I_verify_small - I_small));
-
-        // I = M/3 (should give s = 0)
-        float I_mid = M / 3.f;
-        float s_mid = RGBV_SolveS(M, I_mid);
-        printf("  I=M/3=%.4f: s=%.6f (expected ~0)\n", I_mid, s_mid);
-
-        printf("\n");
+        float s = RGBV_SolveS(M, I_large);
+        float I_verify = RGBV_ComputeIntegral(M, s);
+        CHECK(I_verify == doctest::Approx(I_large).epsilon(1e-3f));
     }
 
-    printf("=== RGBV Integral Tests Complete ===\n\n");
+    SUBCASE("Small I (large positive s)")
+    {
+        float I_small = 0.1f;
+        float s = RGBV_SolveS(M, I_small);
+        float I_verify = RGBV_ComputeIntegral(M, s);
+        CHECK(I_verify == doctest::Approx(I_small).epsilon(1e-3f));
+    }
 
-    return 0;
+    SUBCASE("I = M/3 (s = 0)")
+    {
+        float I_mid = M / 3.f;
+        float s = RGBV_SolveS(M, I_mid);
+        CHECK(std::abs(s) < 1e-3f);
+    }
+}
+
+//===========================================
+// RGBV_ComputeIntegral2 and RGBV_SolveS2 Tests
+//===========================================
+
+// Independent numerical integration using Simpson's rule
+static double NumericalIntegral2(float M, float s, int N = 100000)
+{
+    if (N % 2 != 0) N++;
+    double h = 1.0 / N;
+
+    auto L = [M, s](double v) -> double {
+        double v2 = v * v;
+        double denom = s * (1.0 - v2) + 1.0 / M;
+        return v2 / denom;
+    };
+
+    auto f = [&L](double v) -> double {
+        double Lv = L(v);
+        return Lv * Lv;
+    };
+
+    double sum = f(0.0) + f(1.0);
+    for (int i = 1; i < N; i++)
+    {
+        double v = i * h;
+        sum += (i % 2 == 0 ? 2.0 : 4.0) * f(v);
+    }
+    sum *= h / 3.0;
+    return sum;
+}
+
+TEST_CASE("RGBV_ComputeIntegral2 - s=0 equals M^2/5")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 2048.f };
+    for (float M : MValues)
+    {
+        CAPTURE(M);
+        float I2 = RGBV_ComputeIntegral2(M, 0.f);
+        float expected = M * M / 5.f;
+        CHECK(I2 == doctest::Approx(expected).epsilon(expected * 1e-5f));
+    }
+}
+
+TEST_CASE("RGBV_ComputeIntegral2 - s>0 vs numerical integration")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 2048.f };
+    float sValues[] = { 0.1f, 0.5f, 1.f, 5.f, 10.f };
+    for (float M : MValues)
+    {
+        for (float s : sValues)
+        {
+            CAPTURE(M); CAPTURE(s);
+            float I2_func = RGBV_ComputeIntegral2(M, s);
+            double I2_num = NumericalIntegral2(M, s);
+            double relError = std::abs((double)I2_func - I2_num) / I2_num;
+            // M=2048, s=10 has ~0.25% error due to float precision in atanh
+            CHECK(relError < 3e-3);
+        }
+    }
+}
+
+TEST_CASE("RGBV_ComputeIntegral2 - s<0 vs numerical integration")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 2048.f };
+    for (float M : MValues)
+    {
+        float sMin = -1.f / M;
+        float fractions[] = { 0.1f, 0.3f, 0.5f, 0.8f, 0.95f };
+        for (float frac : fractions)
+        {
+            float s = sMin * frac;
+            CAPTURE(M); CAPTURE(s);
+            float I2_func = RGBV_ComputeIntegral2(M, s);
+            double I2_num = NumericalIntegral2(M, s);
+            double relError = std::abs((double)I2_func - I2_num) / I2_num;
+            CHECK(relError < 1e-3);
+        }
+    }
+}
+
+TEST_CASE("RGBV_ComputeIntegral2 - boundary s close to -1/M")
+{
+    float MValues[] = { 1.f, 128.f, 2048.f };
+    for (float M : MValues)
+    {
+        CAPTURE(M);
+        float s = -1.f / M * 0.99f;
+        float I2 = RGBV_ComputeIntegral2(M, s);
+        float I2_at_zero = M * M / 5.f;
+        CHECK(I2 > I2_at_zero); // Should be larger than s=0 case
+    }
+}
+
+TEST_CASE("RGBV_ComputeIntegral2 - monotonically decreasing")
+{
+    float M = 128.f;
+    float sMin = -1.f / M;
+    float sValues[] = { sMin * 0.95f, sMin * 0.5f, sMin * 0.1f, 0.f, 0.5f, 1.f, 5.f, 10.f };
+    float prevI2 = std::numeric_limits<float>::infinity();
+    for (float s : sValues)
+    {
+        float I2 = RGBV_ComputeIntegral2(M, s);
+        CHECK(I2 < prevI2);
+        prevI2 = I2;
+    }
+}
+
+TEST_CASE("RGBV_SolveS2 - round-trip")
+{
+    float MValues[] = { 1.f, 10.f, 128.f, 2048.f };
+    for (float M : MValues)
+    {
+        float sMin = -1.f / M;
+        float sValues[] = { sMin * 0.9f, sMin * 0.5f, sMin * 0.1f, 0.f, 0.5f, 1.f, 5.f, 10.f };
+        for (float sOriginal : sValues)
+        {
+            CAPTURE(M); CAPTURE(sOriginal);
+            float I2 = RGBV_ComputeIntegral2(M, sOriginal);
+            float sSolved = RGBV_SolveS2(M, I2);
+            float error = std::abs(sSolved - sOriginal);
+            float relError = std::abs(sOriginal) > 1e-6f ? error / std::abs(sOriginal) : error;
+            CHECK((relError < 1e-2f || error < 1e-3f));
+        }
+    }
+}
+
+TEST_CASE("RGBV_SolveS2 - verify target I2")
+{
+    float M = 128.f;
+    float I2_at_zero = M * M / 5.f;
+    float targets[] = {
+        I2_at_zero * 2.f,
+        I2_at_zero * 1.5f,
+        I2_at_zero,
+        I2_at_zero * 0.5f,
+        I2_at_zero * 0.1f,
+    };
+    for (float targetI2 : targets)
+    {
+        CAPTURE(targetI2);
+        float sSolved = RGBV_SolveS2(M, targetI2);
+        float I2_verify = RGBV_ComputeIntegral2(M, sSolved);
+        float relError = std::abs(I2_verify - targetI2) / targetI2;
+        CHECK(relError < 1e-3f);
+    }
 }

@@ -249,6 +249,95 @@ float UCommon::RGBV_ComputeIntegral(float MaxValue, float S)
 	return (sqrtRatio * arctanVal - 1.f) / S; // Note: S < 0, so division by S gives correct sign
 }
 
+float UCommon::RGBV_ComputeIntegral2(float MaxValue, float S)
+{
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(S > -1.f / MaxValue);
+
+	// Case s = 0: I2 = M^2 / 5
+	if (std::abs(S) < UBPA_UCOMMON_DELTA)
+	{
+		return Pow2(MaxValue) / 5.f;
+	}
+
+	// General case: I2 = (M - 3*I1) / (2*s)
+	// where I1 = RGBV_ComputeIntegral(M, s)
+	float I1 = RGBV_ComputeIntegral(MaxValue, S);
+	return (MaxValue - 3.f * I1) / (2.f * S);
+}
+
+float UCommon::RGBV_SolveS2(float MaxValue, float Integral2Value, float Tolerance, uint64_t MaxIterations)
+{
+	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
+	UBPA_UCOMMON_ASSERT(Integral2Value > 0.f);
+
+	float InvM = 1.f / MaxValue;
+	float I2AtZero = Pow2(MaxValue) / 5.f; // I2(s=0) = M^2/5
+
+	// If target I2 equals M^2/5, return s = 0
+	if (std::abs(Integral2Value - I2AtZero) < Tolerance)
+	{
+		return 0.f;
+	}
+
+	// I2(s) is monotonically decreasing:
+	// - As s -> -1/M+, I2 -> +infinity
+	// - As s -> +infinity, I2 -> 0
+	// So if I2 > M^2/5, we need s < 0; if I2 < M^2/5, we need s > 0
+
+	float sLow, sHigh;
+
+	if (Integral2Value > I2AtZero)
+	{
+		// Need s < 0 (closer to -1/M gives larger I2)
+		sLow = -InvM + Tolerance; // Just above -1/M
+		sHigh = 0.f;
+	}
+	else
+	{
+		// Need s > 0 (larger s gives smaller I2)
+		// Find upper bound by exponential search
+		sLow = 0.f;
+		sHigh = 1.f;
+		// Double sHigh until I2(sHigh) < target
+		while (RGBV_ComputeIntegral2(MaxValue, sHigh) > Integral2Value && sHigh < 1e10f)
+		{
+			sLow = sHigh;
+			sHigh *= 2.f;
+		}
+	}
+
+	// Use bisection method for robustness
+	float sMid = 0.f;
+	for (uint64_t i = 0; i < MaxIterations; ++i)
+	{
+		sMid = (sLow + sHigh) * 0.5f;
+
+		float currentI2 = RGBV_ComputeIntegral2(MaxValue, sMid);
+
+		float error = currentI2 - Integral2Value;
+
+		if (std::abs(error) < Tolerance)
+		{
+			return sMid;
+		}
+
+		// I2(s) is decreasing, so:
+		// If currentI2 > target, we need larger s (to get smaller I2)
+		// If currentI2 < target, we need smaller s (to get larger I2)
+		if (error > 0.f)
+		{
+			sLow = sMid;
+		}
+		else
+		{
+			sHigh = sMid;
+		}
+	}
+
+	return sMid;
+}
+
 float UCommon::RGBV_SolveS(float MaxValue, float IntegralValue, float Tolerance, uint64_t MaxIterations)
 {
 	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
