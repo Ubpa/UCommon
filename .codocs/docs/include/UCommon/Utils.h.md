@@ -66,7 +66,7 @@
 
 **Hammersley(N, n)**：返回 `FVector2f`，X 为 `n/N` 均匀分量，Y 为 n 的 Van der Corput 基-2 序列（位反转）。是低差异 Halton 序列在基2的特化，常用于重要性采样积分。
 
-**PCGHashRand(Input)**：输出范围 `[0, 0x7FFE/0x7FFF]`（约 [0, 1)），通过 `% 0x7FFF` 取模，分辨率约 1/32767，不是完整 float 精度。
+**PCGHashRand(Input)**：输出范围 `[0, (RAND_MAX-1)/RAND_MAX]`（约 [0, 1)），通过 `% RAND_MAX` 取模，分辨率约 1/32767，不是完整 float 精度。
 
 ## 元素类型约定与陷阱
 
