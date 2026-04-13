@@ -27,5 +27,7 @@ HDR 颜色编码器，实现 RGBM、RGBD、RGBV 三种 HDR→LDR 编码方案，
 
 - A 通道存 V，解码：`L = V^2 / (k*V^2 + b)`，其中 `k = -S, b = S + 1/MaxValue`
 - V 公式：`V = sqrt((S*M+1)/(S*L+1) * L/M)`；S<0 时高亮度区精度更密，S>0 时低亮度区精度更密，S=0 退化为 RGBM 类线性分布
-- `RGBV_ComputeIntegral(MaxValue, S)` — 三段公式：S=0 时 `M/3`，S>0 用 artanh，S<0 用 arctan；用于度量给定 S 的编码效率
-- `RGBV_SolveS(MaxValue, IntegralValue, Tolerance, MaxIter)` — 二分法求使积分等于目标值的 S；I(s) 单调递减（s→-1/M 时 I→∞，s→+∞ 时 I→0），S>0 侧先指数搜索上界再二分
+- `RGBV_ComputeIntegral(MaxValue, S)` — 一阶矩 ∫₀¹L dv：三段公式，S=0 时 `M/3`，S>0 用 artanh，S<0 用 arctan；用于度量给定 S 的编码效率
+- `RGBV_ComputeIntegral2(MaxValue, S)` — 二阶矩 ∫₀¹L² dv：S=0 时 `M²/5`，S≠0 时 `(M - 3*I1) / (2*S)`；高亮度权重更大
+- `RGBV_SolveS(MaxValue, IntegralValue, Tolerance, MaxIter)` — 基于一阶矩的二分法求 S
+- `RGBV_SolveS2(MaxValue, Integral2Value, Tolerance, MaxIter)` — 基于二阶矩的二分法求 S，优先保证高亮度编码精度
