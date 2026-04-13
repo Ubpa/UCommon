@@ -1,5 +1,5 @@
 {
   "roots": ["include/UCommon", "src/Runtime"],
-  "exclude": ["*.backup", "*.inl"],
+  "exclude": ["*.backup"],
   "exclude_paths": ["include/UCommon/_deps", "src/Runtime/CMakeLists.txt"]
 }

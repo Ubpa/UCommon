@@ -43,7 +43,7 @@ Archive.h (独立，仅依赖 Config.h + Cpp17.h)
 | Vector.h | 文件 | 2/3/4 维泛型向量模板及颜色/AABB 类型别名 |
 | Half.h | 文件 | 16 位半精度浮点类型别名（封装 half_float） |
 | FP8.h / FP8.inl | 文件 | 8 位浮点类型（有符号 FFP8、无符号 FUFP8） |
-| Matrix.h | 文件 | 行主序 3x3/4x4 矩阵模板（旋转、TRS、求逆） |
+| Matrix.h / Matrix.inl | 文件 | 行主序 3x3/4x4 矩阵模板（旋转、TRS、求逆） |
 | Utils.h | 文件 | 数学辅助、元素类型系统、采样、哈希、纹理寻址 |
 | Archive.h | 文件 | 二进制序列化框架（内存/文件归档） |
 | BQ.h | 文件 | 块量化：16 float → 16 字节 |
