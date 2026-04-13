@@ -330,13 +330,30 @@ def lint(project_root: Path) -> int:
             elif is_excluded_path(source_path, project_root, exclude_paths):
                 issues.append(("ORPHAN", f".codocs/{rel_str}", f"{rel_source_str} is excluded by exclude_paths"))
 
-    # Phase 3: check for BLOAT / THIN (MD size should be 16%–24% of source)
+    # Phase 3: check for BLOAT / THIN (MD size should be 10%–24% of source)
+    # Uses a smooth threshold that accounts for fixed overhead in small files:
+    #   BLOAT upper limit = BASE + (size - BASE) * 24%   (for size > BASE)
+    #   THIN  lower limit = (size - BASE) * 10%          (for size > BASE, else 0)
+    # This means files near the BASE threshold get generous allowance, converging
+    # to the standard ratio as files grow larger.
     if get_lint_enabled(config, "bloat"):
         BLOAT_RATIO_LO = 0.10  # below this → [THIN]
         BLOAT_RATIO_HI = 0.24  # above this → [BLOAT]
-        BLOAT_MIN_SRC = 256   # skip file MD check if source is below this threshold
-        BLOAT_MIN_DIR = 2048  # skip dir MD check if child-MD total is below this threshold
-        #   (dir MDs need mandatory index tables; small dirs always exceed ratio)
+        BLOAT_MIN_SRC = 1024   # base threshold for file MD
+        BLOAT_MIN_DIR = 4096   # base threshold for dir MD
+
+        def bloat_upper(size: int, base: int) -> float:
+            """Max allowed MD size before BLOAT triggers."""
+            if size <= base:
+                return float('inf')  # skip check
+            return base + (size - base) * BLOAT_RATIO_HI
+
+        def thin_lower(size: int, base: int) -> float:
+            """Min required MD size before THIN triggers."""
+            if size <= base:
+                return 0  # skip check
+            return (size - base) * BLOAT_RATIO_LO
+
         for _, is_dir, source_path, md_path, _ in entries:
             if not md_path.exists():
                 continue  # MISSING already reported
@@ -350,26 +367,28 @@ def lint(project_root: Path) -> int:
                 if not source_path.exists():
                     continue
                 src_size = source_path.stat().st_size
-                if src_size < BLOAT_MIN_SRC:
+                if src_size <= BLOAT_MIN_SRC:
                     continue  # too small to enforce ratio
-                ratio = md_size / src_size
+                upper = bloat_upper(src_size, BLOAT_MIN_SRC)
+                lower = thin_lower(src_size, BLOAT_MIN_SRC)
                 try:
                     rel = md_path.relative_to(project_root)
                     rel_str_md = str(rel).replace("\\", "/")
                 except ValueError:
                     continue
-                if ratio > BLOAT_RATIO_HI:
+                ratio = md_size / src_size
+                if md_size > upper:
                     issues.append((
                         "BLOAT",
                         rel_str_md,
-                        f"MD {md_size}B > {BLOAT_RATIO_HI*100:.0f}% of source {src_size}B "
+                        f"MD {md_size}B > smooth limit {upper:.0f}B of source {src_size}B "
                         f"({ratio*100:.0f}%)",
                     ))
-                elif ratio < BLOAT_RATIO_LO:
+                elif md_size < lower:
                     issues.append((
                         "THIN",
                         rel_str_md,
-                        f"MD {md_size}B < {BLOAT_RATIO_LO*100:.0f}% of source {src_size}B "
+                        f"MD {md_size}B < smooth limit {lower:.0f}B of source {src_size}B "
                         f"({ratio*100:.0f}%)",
                     ))
             else:
@@ -387,26 +406,28 @@ def lint(project_root: Path) -> int:
                 )
                 if child_md_total == 0:
                     continue
-                if child_md_total < BLOAT_MIN_DIR:
+                if child_md_total <= BLOAT_MIN_DIR:
                     continue  # too small; index table alone will exceed ratio
-                ratio = md_size / child_md_total
+                upper = bloat_upper(child_md_total, BLOAT_MIN_DIR)
+                lower = thin_lower(child_md_total, BLOAT_MIN_DIR)
                 try:
                     rel = md_path.relative_to(project_root)
                     rel_str_md = str(rel).replace("\\", "/")
                 except ValueError:
                     continue
-                if ratio > BLOAT_RATIO_HI:
+                ratio = md_size / child_md_total
+                if md_size > upper:
                     issues.append((
                         "BLOAT",
                         rel_str_md,
-                        f"dir MD {md_size}B > {BLOAT_RATIO_HI*100:.0f}% of child MDs total "
+                        f"dir MD {md_size}B > smooth limit {upper:.0f}B of child MDs total "
                         f"{child_md_total}B ({ratio*100:.0f}%)",
                     ))
-                elif ratio < BLOAT_RATIO_LO:
+                elif md_size < lower:
                     issues.append((
                         "THIN",
                         rel_str_md,
-                        f"dir MD {md_size}B < {BLOAT_RATIO_LO*100:.0f}% of child MDs total "
+                        f"dir MD {md_size}B < smooth limit {lower:.0f}B of child MDs total "
                         f"{child_md_total}B ({ratio*100:.0f}%)",
                     ))
 

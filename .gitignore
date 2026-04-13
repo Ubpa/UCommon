@@ -18,6 +18,8 @@ _deps/
 *~
 
 # Compiled files
+*.pyc
+__pycache__/
 *.exe
 *.lib
 *.pdb
