@@ -51,7 +51,7 @@
 
 ## GetFloat/SetFloat 路径
 
-仅支持 `Uint8`、`Float`、`Double` 三种 `EElemType`；`Half` 缺失分支，走到 `default:NO_ENTRY`（运行时断言）。`Clamp`/`Min`/`Max` 内联操作通过模板特化各自处理 Half，不经此接口。
+仅支持 `Uint8`、`Float`、`Double` 三种 `EElementType`；`Half` 缺失分支，走到 `default:NO_ENTRY`（运行时断言）。`Clamp`/`Min`/`Max` 内联操作通过模板特化各自处理 Half，不经此接口。
 
 ## ApplyAddressMode
 
