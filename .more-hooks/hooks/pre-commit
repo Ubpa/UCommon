@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# UCommon pre-commit hook: build + test
+# Located in .more-hooks/hooks/pre-commit, registered via more-hooks framework
+
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+BUILD_DIR="$REPO_ROOT/build"
+
+if [ ! -d "$BUILD_DIR" ]; then
+    echo "[pre-commit] build/ not found, skipping build+test check"
+    exit 0
+fi
+
+echo "[pre-commit] Building UCommon..."
+
+# For each staged file, try to find and rebuild the corresponding cmake target.
+# Fallback: build ALL if any staged file doesn't map to a known target.
+TARGETS=()
+FALLBACK=false
+while IFS= read -r f; do
+    # Infer cmake target from path: src/tests/08_Codec/main.cpp -> UCommon_tests_08_Codec
+    # Matches: src/<type>/<name>/ -> UCommon_<type>_<name>
+    target=$(echo "$f" | sed -n 's|^src/\([^/]*\)/\([^/]*\)/.*|UCommon_\1_\2|p')
+    if [ -n "$target" ]; then
+        TARGETS+=("$target")
+    else
+        FALLBACK=true
+    fi
+done < <(git diff --cached --name-only | grep -E '\.(cpp|h|inl)$' || true)
+
+if $FALLBACK || [ ${#TARGETS[@]} -eq 0 ]; then
+    # Build all (headers, root files, or unknown paths)
+    if ! cmake --build "$BUILD_DIR" --config Release 2>&1; then
+        echo "[pre-commit] Build failed. Commit aborted."
+        exit 1
+    fi
+else
+    # Deduplicate and build only affected targets
+    mapfile -t UNIQUE_TARGETS < <(printf '%s\n' "${TARGETS[@]}" | sort -u)
+    for target in "${UNIQUE_TARGETS[@]}"; do
+        if ! cmake --build "$BUILD_DIR" --config Release --target "$target" 2>&1; then
+            echo "[pre-commit] Build failed (target: $target). Commit aborted."
+            exit 1
+        fi
+    done
+fi
+
+echo "[pre-commit] Running tests..."
+if ! ctest --test-dir "$BUILD_DIR" -C Release --output-on-failure 2>&1; then
+    echo "[pre-commit] Tests failed. Commit aborted."
+    exit 1
+fi
+
+echo "[pre-commit] Build and tests passed."
