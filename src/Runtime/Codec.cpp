@@ -401,9 +401,9 @@ float UCommon::EncodeVisual(float L, float MaxValue, float S)
 UCommon::FLinearColorRGB UCommon::EncodeVisual(FLinearColorRGB Color, float MaxValue, float S)
 {
 	return FLinearColorRGB(
-		EncodeVisual(Color.R, MaxValue, S),
-		EncodeVisual(Color.G, MaxValue, S),
-		EncodeVisual(Color.B, MaxValue, S)
+		EncodeVisual(Color.X, MaxValue, S),
+		EncodeVisual(Color.Y, MaxValue, S),
+		EncodeVisual(Color.Z, MaxValue, S)
 	);
 }
 
