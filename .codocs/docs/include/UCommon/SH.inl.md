@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/SH.inl
+  source_hash: sha256:312f0fd0cba71ca38e6b6cbcfe408034ca48299d759f7b79570f946ec6c38a89
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # SH.inl
 
 ## 职责

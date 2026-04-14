@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/Archive.h
+  source_hash: sha256:a04b2de9c072774ee01bee112e05f353d93a9e661e971b744f1368ba7224dcab
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Archive.h
 
 ## 职责

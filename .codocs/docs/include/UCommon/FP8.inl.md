@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/FP8.inl
+  source_hash: sha256:801e8062e4d5a6e62853e46ce45c65b97d5146aee7a2c2fd8778a413ebb6cd78
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # FP8.inl
 
 ## 职责

@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/Config.h
+  source_hash: sha256:43e26e54c28e92e27a027602725104781a94633db4a2c28688f3c87273389889
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Config.h
 
 全局配置头，定义可定制宏、平台导出符号、内存分配器接口和功能开关。

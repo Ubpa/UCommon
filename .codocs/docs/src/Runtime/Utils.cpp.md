@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: src/Runtime/Utils.cpp
+  source_hash: sha256:fbdf17420dfa8b41d5fc6edaf66af600c0af38906bef9eb62b0829b5884460fa
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Utils.cpp
 
 **ApplyAddressMode**：float（归一化 UV）与 int64（纹素坐标+尺寸）两套重载：

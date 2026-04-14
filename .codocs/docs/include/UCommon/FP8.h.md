@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/FP8.h
+  source_hash: sha256:ee70ac0139588e60f1d687de9b76cae7ccab06755119e597dd32c0281d7b969b
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # FP8.h
 
 8 位浮点类型模板：有符号 `FFP8<E,M>`（E+M=7，1 位符号位）和无符号 `FUFP8<E,M>`（E+M=8，无符号位）。

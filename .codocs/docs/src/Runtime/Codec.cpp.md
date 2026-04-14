@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: src/Runtime/Codec.cpp
+  source_hash: sha256:5df1c00dbfaa5ee12c28773699747e15fdb50481830dec90a4ec458085475f86
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Codec.cpp
 
 ## 职责

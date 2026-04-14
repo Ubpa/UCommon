@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: dir
+  source_path: src/Runtime
+  entries_hash: sha256:34d9e6fae804a254b30f831b192dd19332b3b2063989f757a79da2bc4a329999
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Runtime
 
 UCommon 核心运行时库，提供纹理、序列化、数学、线程池等基础设施。所有其他模块依赖此库。

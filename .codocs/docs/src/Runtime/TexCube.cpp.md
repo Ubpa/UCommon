@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: src/Runtime/TexCube.cpp
+  source_hash: sha256:ae195b6b26fd57a479eccd0b10356eacf05a96c6bbfb3ca3094e76f4693d7cb8
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # TexCube.cpp
 
 ## Equirectangular 坐标系约定

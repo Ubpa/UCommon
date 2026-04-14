@@ -1,3 +1,14 @@
+---
+codocs:
+  schema: 1
+  source_type: file
+  source_path: include/UCommon/Tex2D.inl
+  source_hash: sha256:6775e01831588884a1482e481764ae4b26b0463a7d9d716c3cfcddc886b2b7ce
+  explicit_deps: []
+  dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  hash_mode: text-lf-sha256
+  verified_at: '2026-04-14T17:16:35.376791+08:00'
+---
 # Tex2D.inl
 
 ## 职责
