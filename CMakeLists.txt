@@ -18,6 +18,13 @@ option(Ubpa_UCommon_UsingSharedLibrary "using shared library" OFF)
 
 Ubpa_AddSubDirsRec(src)
 
+add_custom_target(check
+    COMMAND ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR} --config $<CONFIG> --target UCommon_BuildTests
+    COMMAND ${CMAKE_CTEST_COMMAND} -C $<CONFIG> --output-on-failure
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Building all test targets and running tests..."
+)
+
 Ubpa_Export(
   TARGET
   DIRECTORIES
