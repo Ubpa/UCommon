@@ -23,6 +23,12 @@ Lint behavior:
 import os
 import sys
 import json
+
+# Fix Windows console encoding for Chinese output
+if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8", "utf_8"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if sys.stderr.encoding and sys.stderr.encoding.lower() not in ("utf-8", "utf_8"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 import stat
 import shutil
 import fnmatch
@@ -596,7 +602,9 @@ def install_hooks(project_root: Path):
     for hook_file in sorted(hooks_src.iterdir()):
         if hook_file.is_file():
             dest = git_hooks_dir / hook_file.name
-            shutil.copy2(hook_file, dest)
+            # Write with LF line endings to avoid CRLF issues on Windows
+            content = hook_file.read_text(encoding="utf-8", errors="replace")
+            dest.write_text(content, encoding="utf-8", newline="\n")
             dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
             installed.append(hook_file.name)
 
