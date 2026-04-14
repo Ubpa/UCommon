@@ -11,7 +11,7 @@ if [ ! -d "$BUILD_DIR" ]; then
 fi
 
 echo "[pre-commit] Building and running tests..."
-if ! cmake --build "$BUILD_DIR" --config Release --target UCommon_check 2>&1; then
+if ! cmake --build "$BUILD_DIR" --config Release --target UCommon_Check 2>&1; then
     echo "[pre-commit] Build or tests failed. Commit aborted."
     exit 1
 fi
