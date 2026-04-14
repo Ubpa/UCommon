@@ -21,9 +21,7 @@ HDR 颜色编解码与色彩空间转换工具集，包含 RGBM/RGBD/RGBV 编码
 
 - 自定义编码方案，公式 `L = v^2 / (k*v^2 + b)`，其中 `k = -s, b = s + 1/M`
 - `RGBV_ComputeIntegral` — 计算一阶矩积分用于参数求解
-- `RGBV_ComputeIntegral2` — 计算二阶矩积分，高亮度权重更大
 - `RGBV_SolveS` — 基于一阶矩的二分法求解参数 s
-- `RGBV_SolveS2` — 基于二阶矩的二分法求解参数 s，优先保证高亮度精度
 - 保证 `L=0 → v=0`，`L=M → v=1`
 
 ### YCoCg 色彩空间
