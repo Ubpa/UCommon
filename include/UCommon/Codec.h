@@ -215,7 +215,8 @@ namespace UCommon
 	UBPA_UCOMMON_API FLinearColor EncodeRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp = LowClamp);
 	UBPA_UCOMMON_API FLinearColor EncodeRGBVWithV(FLinearColorRGB Color, float MaxValue, float S, float V);
 	// [0, 1]
-	UBPA_UCOMMON_API float EncodeRGBV(float L, float MaxValue, float S);
+	UBPA_UCOMMON_API float EncodeVisual(float L, float MaxValue, float S);
+	UBPA_UCOMMON_API FLinearColorRGB EncodeVisual(FLinearColorRGB Color, float MaxValue, float S);
 
 	/**
 	 * Map color to valid RGBV-encodable color.

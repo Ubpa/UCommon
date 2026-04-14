@@ -29,3 +29,5 @@ HDR 颜色编码器，实现 RGBM、RGBD、RGBV 三种 HDR→LDR 编码方案，
 - V 公式：`V = sqrt((S*M+1)/(S*L+1) * L/M)`；S<0 时高亮度区精度更密，S>0 时低亮度区精度更密，S=0 退化为 RGBM 类线性分布
 - `RGBV_ComputeIntegral(MaxValue, S)` — 一阶矩 ∫₀¹L dv：三段公式，S=0 时 `M/3`，S>0 用 artanh，S<0 用 arctan；用于度量给定 S 的编码效率
 - `RGBV_SolveS(MaxValue, IntegralValue, Tolerance, MaxIter)` — 基于一阶矩的二分法求 S
+- `EncodeVisual(float L, MaxValue, S)` — 标量版，公式 `V = sqrt((S*M+1)/(S*L+1) * L/M)`，原 `EncodeRGBV(float)` 改名
+- `EncodeVisual(FLinearColorRGB, MaxValue, S)` — RGB 版，对 R/G/B 各通道独立调用标量版

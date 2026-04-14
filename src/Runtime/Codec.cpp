@@ -381,7 +381,7 @@ UCommon::FLinearColor UCommon::EncodeRGBVWithV(FLinearColorRGB Color, float MaxV
 	return FLinearColor(RGBScale, V);
 }
 
-float UCommon::EncodeRGBV(float L, float MaxValue, float S)
+float UCommon::EncodeVisual(float L, float MaxValue, float S)
 {
 	UBPA_UCOMMON_ASSERT(MaxValue > 0.f);
 	UBPA_UCOMMON_ASSERT(S >= -1.f / MaxValue);
@@ -396,6 +396,15 @@ float UCommon::EncodeRGBV(float L, float MaxValue, float S)
 	float V = std::sqrt((sM + 1.f) / (sL + 1.f) * L / MaxValue);
 
 	return V;
+}
+
+UCommon::FLinearColorRGB UCommon::EncodeVisual(FLinearColorRGB Color, float MaxValue, float S)
+{
+	return FLinearColorRGB(
+		EncodeVisual(Color.R, MaxValue, S),
+		EncodeVisual(Color.G, MaxValue, S),
+		EncodeVisual(Color.B, MaxValue, S)
+	);
 }
 
 UCommon::FLinearColorRGB UCommon::MapToValidColorRGBV(FLinearColorRGB Color, float MaxValue, float S, float InLowClamp)
