@@ -280,7 +280,7 @@ namespace UCommon
 
 	static inline float PCGHashRand(uint32_t Input)
 	{
-		return (PCGHash(Input) % RAND_MAX) / (float)RAND_MAX;
+		return (float)(PCGHash(Input) % (uint32_t)RAND_MAX) / (float)RAND_MAX;
 	}
 
 	enum class EElementType : std::uint64_t
