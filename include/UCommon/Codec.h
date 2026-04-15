@@ -523,34 +523,6 @@ namespace UCommon
 		return std::copysign(1.f - std::sqrt(1.f - std::abs(X)), X);
 	}
 
-	//===========================================
-	// Display Transform
-	//===========================================
-
-	/** Reinhard tonemap: maps [0, +inf) to [0, 1). */
-	[[nodiscard]] inline float TonemapReinhard(float x) noexcept { return x / (1.f + x); }
-	[[nodiscard]] inline double TonemapReinhard(double x) noexcept { return x / (1. + x); }
-	/** Reinhard tonemap for uint8: input/output in [0, 255]. */
-	[[nodiscard]] inline uint8_t TonemapReinhard(uint8_t x) noexcept
-	{
-		return static_cast<uint8_t>(static_cast<int>(TonemapReinhard(x / 255.f) * 255.f + 0.5f));
-	}
-
-	/** Linear to sRGB gamma (IEC 61966-2-1). Input in [0, 1]. */
-	[[nodiscard]] inline float LinearToSRGB(float t) noexcept
-	{
-		return t <= 0.0031308f ? 12.92f * t : 1.055f * std::pow(t, 1.f / 2.4f) - 0.055f;
-	}
-	[[nodiscard]] inline double LinearToSRGB(double t) noexcept
-	{
-		return t <= 0.0031308 ? 12.92 * t : 1.055 * std::pow(t, 1. / 2.4) - 0.055;
-	}
-	/** Linear to sRGB gamma for uint8: input/output in [0, 255]. */
-	[[nodiscard]] inline uint8_t LinearToSRGB(uint8_t t) noexcept
-	{
-		return static_cast<uint8_t>(static_cast<int>(LinearToSRGB(t / 255.f) * 255.f + 0.5f));
-	}
-
 } // namespace UCommon
 
 UBPA_UCOMMON_CODEC_TO_NAMESPACE(UCommonTest)

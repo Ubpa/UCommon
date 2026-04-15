@@ -563,6 +563,34 @@ namespace UCommon
 	using FUint32Vector2 = TVector2<uint32_t>;
 	using FUint64Vector2 = TVector2<uint64_t>;
 
+	//===========================================
+	// Display Transform (scalar)
+	//===========================================
+
+	/** Reinhard tonemap: maps [0, +inf) to [0, 1). */
+	[[nodiscard]] inline float TonemapReinhard(float x) noexcept { return x / (1.f + x); }
+	[[nodiscard]] inline double TonemapReinhard(double x) noexcept { return x / (1. + x); }
+	/** Reinhard tonemap for uint8: input/output in [0, 255]. */
+	[[nodiscard]] inline uint8_t TonemapReinhard(uint8_t x) noexcept
+	{
+		return static_cast<uint8_t>(static_cast<int>(TonemapReinhard(x / 255.f) * 255.f + 0.5f));
+	}
+
+	/** Linear to sRGB gamma (IEC 61966-2-1). Input in [0, 1]. */
+	[[nodiscard]] inline float LinearToSRGB(float t) noexcept
+	{
+		return t <= 0.0031308f ? 12.92f * t : 1.055f * std::pow(t, 1.f / 2.4f) - 0.055f;
+	}
+	[[nodiscard]] inline double LinearToSRGB(double t) noexcept
+	{
+		return t <= 0.0031308 ? 12.92 * t : 1.055 * std::pow(t, 1. / 2.4) - 0.055;
+	}
+	/** Linear to sRGB gamma for uint8: input/output in [0, 255]. */
+	[[nodiscard]] inline uint8_t LinearToSRGB(uint8_t t) noexcept
+	{
+		return static_cast<uint8_t>(static_cast<int>(LinearToSRGB(t / 255.f) * 255.f + 0.5f));
+	}
+
 	template<typename T>
 	struct TVector
 	{
@@ -941,30 +969,19 @@ namespace UCommon
 			}
 		}
 
+		/** Applies Reinhard tonemap per component: x/(1+x), maps [0,inf) to [0,1).
+		 *  For integer types: treats each component as [0, 255], returns [0, 255]. */
+		TVector TonemapReinhard() const
+		{
+			return { UCommon::TonemapReinhard(X), UCommon::TonemapReinhard(Y), UCommon::TonemapReinhard(Z) };
+		}
+
 		/** Applies sRGB gamma (IEC 61966-2-1) per component.
 		 *  For floating-point types: input expected in [0, 1], output in [0, 1].
 		 *  For integer types: treats each component as [0, 255] linear, returns [0, 255] sRGB. */
 		TVector LinearToSRGB() const
 		{
-			if constexpr (std::is_floating_point_v<T>)
-			{
-				constexpr T Low = static_cast<T>(0.0031308);
-				constexpr T A   = static_cast<T>(12.92);
-				constexpr T B   = static_cast<T>(1.055);
-				constexpr T C   = static_cast<T>(0.055);
-				constexpr T Exp = static_cast<T>(1. / 2.4);
-				auto Ch = [&](T t) -> T { return t <= Low ? A * t : B * static_cast<T>(std::pow(t, Exp)) - C; };
-				return { Ch(X), Ch(Y), Ch(Z) };
-			}
-			else
-			{
-				auto Ch = [](T t) -> T {
-					const float ft = static_cast<float>(t) / 255.f;
-					const float r  = ft <= 0.0031308f ? 12.92f * ft : 1.055f * std::pow(ft, 1.f / 2.4f) - 0.055f;
-					return static_cast<T>(static_cast<int>(r * 255.f + 0.5f));
-				};
-				return { Ch(X), Ch(Y), Ch(Z) };
-			}
+			return { UCommon::LinearToSRGB(X), UCommon::LinearToSRGB(Y), UCommon::LinearToSRGB(Z) };
 		}
 	};
 

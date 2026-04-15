@@ -3,7 +3,7 @@ codocs:
   schema: 1
   source_type: file
   source_path: include/UCommon/Codec.h
-  source_hash: sha256:a958802f886a4af24fc42607cf95fe384fe58263098d1f69e7d2434b10ee4186
+  source_hash: sha256:6bc7152515690adca258dea593e9c7adb539e37b48a63e9bf75c7c5e64fe9d4f
   explicit_deps: []
   dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   hash_mode: text-lf-sha256
@@ -60,11 +60,6 @@ HDR 颜色编解码与色彩空间转换工具集，包含 RGBM/RGBD/RGBV 编码
 - `QuantizeDitherNoise(Noise)` — 将均匀噪声 [0,1] 映射为三角分布 dither 偏移 [-1,1]：
   `X = 2*Noise - 1`，`out = sign(X) * (1 - sqrt(1 - |X|))`
   在 Encode 前加到亮度值上，可软化量化误差带来的色带感
-
-### Display Transform
-
-- `TonemapReinhard(float/double/uint8_t)` — Reinhard tonemap `x/(1+x)`，将 [0,∞) 映射到 [0,1)；uint8 版输入输出均为 [0,255]
-- `LinearToSRGB(float/double/uint8_t)` — IEC 61966-2-1 sRGB gamma；uint8 版输入输出均为 [0,255]
 
 ## 注意事项
 
