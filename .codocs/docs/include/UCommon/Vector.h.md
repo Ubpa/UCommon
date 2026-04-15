@@ -3,7 +3,7 @@ codocs:
   schema: 1
   source_type: file
   source_path: include/UCommon/Vector.h
-  source_hash: sha256:6433086eb00df5a1e3669229119e6fb8afdc70dac6ce96c7537c2b45fc4a405a
+  source_hash: sha256:1dee808810c05efc96ab7d381a9f27e12f21f0d7d8c0c50cef039c825df0f8ae
   explicit_deps: []
   dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   hash_mode: text-lf-sha256
@@ -114,6 +114,7 @@ Abs、Sqrt、Square（即 x²）、Reciprocal（1/x）、Round、Ceil、Floor、
 ### 亮度（仅 TVector/3D）
 - `GetLuminance()` — BT.601 权重 (0.3, 0.59, 0.11)，整数类型用整数乘法避免浮点
 - `GetSrgbLuminance()` — BT.709 权重 (0.2126, 0.7152, 0.0722)，更符合现代显示标准
+- `LinearToSRGB()` — 逐分量应用 IEC 61966-2-1 sRGB gamma；浮点类型输入 [0,1] 输出 [0,1]；整数类型每分量视为 [0,255] 线性输入，返回 [0,255] sRGB
 
 ### 随机数
 `Rand01()` — 静态方法，用 `rand()` 生成 [0,1] 随机向量，**非线程安全**，不宜用于高质量渲染。

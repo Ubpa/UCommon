@@ -940,6 +940,32 @@ namespace UCommon
 				                       static_cast<CalcType>(Z) * 722) / 10000);
 			}
 		}
+
+		/** Applies sRGB gamma (IEC 61966-2-1) per component.
+		 *  For floating-point types: input expected in [0, 1], output in [0, 1].
+		 *  For integer types: treats each component as [0, 255] linear, returns [0, 255] sRGB. */
+		TVector LinearToSRGB() const
+		{
+			if constexpr (std::is_floating_point_v<T>)
+			{
+				constexpr T Low = static_cast<T>(0.0031308);
+				constexpr T A   = static_cast<T>(12.92);
+				constexpr T B   = static_cast<T>(1.055);
+				constexpr T C   = static_cast<T>(0.055);
+				constexpr T Exp = static_cast<T>(1. / 2.4);
+				auto Ch = [&](T t) -> T { return t <= Low ? A * t : B * static_cast<T>(std::pow(t, Exp)) - C; };
+				return { Ch(X), Ch(Y), Ch(Z) };
+			}
+			else
+			{
+				auto Ch = [](T t) -> T {
+					const float ft = static_cast<float>(t) / 255.f;
+					const float r  = ft <= 0.0031308f ? 12.92f * ft : 1.055f * std::pow(ft, 1.f / 2.4f) - 0.055f;
+					return static_cast<T>(static_cast<int>(r * 255.f + 0.5f));
+				};
+				return { Ch(X), Ch(Y), Ch(Z) };
+			}
+		}
 	};
 
 	using FVector3f = TVector<float>;
