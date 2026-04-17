@@ -86,7 +86,7 @@ namespace UCommon
 		const char* Swizzel = nullptr;
 		const float* Cw = nullptr;
 		// vY-CoCg Prediction: external vY-CoCg texture for prediction parameter compression
-		// Texture format: (vY, Co, Cg) where vY = EncodeRGBV(Y)
+		// Texture format: (vY, Co, Cg) where vY = EncodeVisual(Y, MaxValue, S)
 		// RGBV vY decoding uses MaxValue and RGBV_S: Y = vY^2 / (k*vY^2 + b), where k = -RGBV_S, b = RGBV_S + 1/MaxValue
 		// If MaxValue is 0, input is Y (no decoding needed)
 		const float* YCoCgTexture = nullptr;

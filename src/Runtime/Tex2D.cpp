@@ -846,7 +846,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 	UBPA_UCOMMON_ASSERT(NumChannels == CoverageData.NumChannels);
 	// CoverageData stores coverage values as floats (including -1 as a "filled" marker in
 	// ImageInpainting Step 2). It must not be Uint8, which cannot represent negative values.
-	UBPA_UCOMMON_ASSERT(CoverageData.ElementType == EElementType::Float);
+	UBPA_UCOMMON_ASSERT(CoverageData.ElementType != EElementType::Uint8);
 
 	const uint64_t MaxSize = std::max(Grid2D.Width, Grid2D.Height);
 

@@ -268,6 +268,7 @@ inline T UCommon::TMatrix4x4<T>::Determinant() const noexcept
 {
 	// Optimized for affine transforms (bottom row = [0,0,0,1]):
 	// det(M4x4) = Rows[3].W * det(upper-left 3x3)
+	UBPA_UCOMMON_ASSERT(Rows[3].X == T(0) && Rows[3].Y == T(0) && Rows[3].Z == T(0) && Rows[3].W == T(1));
 	T det3x3 = TMatrix3x3<T>(
 		TVector<T>(Rows[0].X, Rows[0].Y, Rows[0].Z),
 		TVector<T>(Rows[1].X, Rows[1].Y, Rows[1].Z),
