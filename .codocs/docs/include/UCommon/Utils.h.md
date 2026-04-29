@@ -3,11 +3,11 @@ codocs:
   schema: 1
   source_type: file
   source_path: include/UCommon/Utils.h
-  source_hash: sha256:58fb6871fe074d44ce51d6048a00407f14628ca997d7b3b82f488d43415157fc
+  source_hash: sha256:c82ae87770dddc6cea71af0cb43a8fd3646cb014bfaa6334064d5d767c50684c
   explicit_deps: []
   dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   hash_mode: text-lf-sha256
-  verified_at: '2026-04-14T17:16:35.376791+08:00'
+  verified_at: '2026-04-29T16:39:45.528765+08:00'
 ---
 # Utils.h
 

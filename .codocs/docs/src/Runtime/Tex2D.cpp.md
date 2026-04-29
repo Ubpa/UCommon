@@ -3,11 +3,11 @@ codocs:
   schema: 1
   source_type: file
   source_path: src/Runtime/Tex2D.cpp
-  source_hash: sha256:2c9b09ba40f0ea2c49b4775e51a6e1a79ae138c968084c92554010a1db490480
+  source_hash: sha256:a867b12d7847a074b9766cd48a4275d19ab6bbcc55326299cb39f77b2f8c38a9
   explicit_deps: []
   dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   hash_mode: text-lf-sha256
-  verified_at: '2026-04-14T17:16:35.376791+08:00'
+  verified_at: '2026-04-29T16:39:45.663237+08:00'
 ---
 # Tex2D.cpp
 
