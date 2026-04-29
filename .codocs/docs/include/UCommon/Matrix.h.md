@@ -32,7 +32,7 @@ codocs:
 - `TransformVector(TVector2)` — 补 w=0，变换 2D **方向**（不受平移影响）
 - `operator*(TVector<T>)` — 直接 3D 向量乘
 
-**Inverse()**：伴随矩阵法（余子式 / det），检测阈值 `UBPA_UCOMMON_DELTA`，奇异时**返回 Zero() 而非抛异常**，调用方须自行判零。
+**Inverse()**：伴随矩阵法，奇异时返回 Zero() 而非抛异常，调用方须自行判零。
 
 ### `TMatrix4x4<T>`
 
@@ -45,15 +45,13 @@ codocs:
 
 **SetRotation / SetTRS**：就地修改版工厂，避免额外拷贝。`Rotation(Axis, Angle)` 内部委托 `SetRotation`。
 
-**TRS 实现**：`SetTRS` 不是三矩阵连乘，而是把 Scale **直接烘焙进旋转矩阵各列**（每列 *= 对应 Scale 分量），平移写入 W 列，一次完成——等价于 T * R * S 但零矩阵乘开销。
+**TRS 实现**：`SetTRS` 把 Scale 直接烘焙进旋转矩阵各列（等价于 T*R*S 但无矩阵连乘开销）。
 
-**GetRotation3x3()**：提取左上 3x3，**包含缩放**，不是纯旋转矩阵，若需纯旋转须先用 `GetScale()` 归一化各行。
+**GetRotation3x3()**：提取左上 3x3，**含缩放**，若需纯旋转须先 `GetScale()` 归一化。
 
-**GetScale()**：取各行前三分量的向量长度，仅在无剪切时正确。
+**Determinant()**：仅计算左上 3x3 × `Rows[3].W`，**非完整 4x4 展开**，对非仿射矩阵结果错误。Assert 检查 `Rows[3] == (0,0,0,1)`。
 
-**Determinant()**：简化实现，仅计算左上 3x3 行列式 × `Rows[3].W`，非完整 4x4 展开，对非仿射矩阵结果错误。
-
-**Inverse()**：仿射变换专用：提取左上 3x3 求逆，奇异性检测用 `LinearInv == Zero()`（与 3x3 的 det 阈值路径不同），然后计算逆平移 `-LinearInv * t`，保留 `Rows[3].W`。
+**Inverse()**：仿射专用：3x3 求逆 + 逆平移 `-LinearInv * t`。Assert 检查底行为 `(0,0,0,1)`。
 
 ### 类型别名
 
@@ -70,11 +68,10 @@ codocs:
 ## 注意事项
 
 - **行主序**：`M * v` 是行向量左乘，与 GLSL（列主序）相反
-- `TMatrix3x3()` 默认不初始化，拿到随机值后做计算是典型 UB 来源
-- `TMatrix4x4::Inverse()` 和 `Determinant()` 均**只适用于仿射变换**
-- `GetRotation3x3()` 含缩放，若误当纯旋转使用会引入缩放误差
-- **奇异性检测**：3x3 用 `det < UBPA_UCOMMON_DELTA`；4x4 Inverse() 用 `LinearInv == Zero()`——两者路径不同
-- **非仿射矩阵**调用 `Inverse()` 或 `Determinant()` 会得到错误结果
+- `TMatrix3x3()` 默认不初始化，未赋值即使用是典型 UB 来源
+- `TMatrix4x4::Inverse()` / `Determinant()` 仅适用于仿射变换（assert 检查底行）
+- `GetRotation3x3()` 含缩放，误当纯旋转会引入缩放误差
+- 奇异性检测：3x3 用 det 阈值；4x4 Inverse() 用 `LinearInv == Zero()`
 
 ## 相关文件
 

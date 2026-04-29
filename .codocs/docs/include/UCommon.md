@@ -3,11 +3,11 @@ codocs:
   schema: 1
   source_type: dir
   source_path: include/UCommon
-  entries_hash: sha256:7c19307e12fba300093aee871b240ce9582231a84c5cb86fe208d4a004ca4975
+  entries_hash: sha256:e20b236bbc702e2fbab76342dcfbc0f677d2f9a3406a2fdd73625eb28d65b1a8
   explicit_deps: []
   dep_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
   hash_mode: text-lf-sha256
-  verified_at: '2026-04-29T16:40:02.538417+08:00'
+  verified_at: '2026-04-29T17:02:23.319822+08:00'
   source_hash: null
 ---
 # UCommon
@@ -45,6 +45,13 @@ Archive.h (独立，仅依赖 Config.h + Cpp17.h)
 - **SNorm 量化**：Utils.h 的 SNorm 查表不含 0，步进 2（-127、-125、...、125、127），避免对称性问题；Uint8 路径用整数乘法避免 float 误差
 - **ASTC 特殊处理**：`AdaptiveASTC` 格式在 `ElementIsASTC()` 返回 false，因为它是运行时适配格式，不固定块大小；需单独判断
 - **ThreadPool 全局注册**：`ThreadPool.h` 提供 `SetGlobalThreadPool` / `GetGlobalThreadPool`，库内部默认使用全局实例，调用方可替换
+
+## 常见陷阱
+
+- `TMatrix3x3()` / `TMatrix4x4()` 默认**不初始化**，未赋值就使用是 UB
+- `FTex2D` 拷贝语义取决于 `EOwnership`：`DoNotTakeOwnership` 是浅拷贝（共享指针）
+- `BQ` 压缩/解压要求输入恰好 16 个 float，越界行为未定义
+- `RGBV_DefaultS = 1.f`（非零），忘记传 S 时不是线性编码
 
 ## 内容
 
