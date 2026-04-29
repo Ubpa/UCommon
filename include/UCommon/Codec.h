@@ -159,7 +159,7 @@ namespace UCommon
 	/** Default optimal V value for GlobalEncode. */
 	constexpr float RGBV_DefaultOptimalV = 0.8f;
 	/** Default s value for RGBV encoding. */
-	constexpr float RGBV_DefaultS = 0.f;
+	constexpr float RGBV_DefaultS = 1.f;
 	constexpr float RGBV_MinMaxValue = 1.f / RGBV_DefaultMaxValue;
 	constexpr float RGBV_MinMeanValue = RGBV_MinMaxValue / 16.f;
 

@@ -51,6 +51,9 @@ codocs:
 
 ## ImageInpainting 算法
 
+- **CoverageData 通道约束**：`CoverageData.NumChannels` 必须为 `1` 或等于 `NumChannels`
+  - `== 1`：单通道 coverage 广播到所有颜色通道（Step 2/3 中按 CovC 循环，一次填充所有颜色通道）
+  - `== NumChannels`：每通道独立 coverage（原始行为）
 1. 构建 mip chain，每级按 coverage 加权下采样（coverage < 0 的像素已是扩展填充，权重不同）
 2. 逐级从粗到细：未覆盖像素从低分辨率上采样填充
 3. 正交邻居权重 255，对角邻居权重 1（近似 Laplace 扩散）

@@ -843,7 +843,7 @@ void UCommon::FTex2D::Threshold(float ThresholdValue) noexcept
 void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 {
 	UBPA_UCOMMON_ASSERT(Grid2D == CoverageData.Grid2D);
-	UBPA_UCOMMON_ASSERT(NumChannels == CoverageData.NumChannels);
+	UBPA_UCOMMON_ASSERT(CoverageData.NumChannels == 1 || CoverageData.NumChannels == NumChannels);
 	// CoverageData stores coverage values as floats (including -1 as a "filled" marker in
 	// ImageInpainting Step 2). It must not be Uint8, which cannot represent negative values.
 	UBPA_UCOMMON_ASSERT(CoverageData.ElementType != EElementType::Uint8);
@@ -877,7 +877,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 		const uint64_t DestMipSizeY = (SourceMipSizeY + 1) >> 1;
 
 		MipDataBuffer.emplace_back(FGrid2D(DestMipSizeX, DestMipSizeY), NumChannels, ElementType);
-		CoverageDataBuffer.emplace_back(FGrid2D(DestMipSizeX, DestMipSizeY), NumChannels, CoverageData.ElementType);
+		CoverageDataBuffer.emplace_back(FGrid2D(DestMipSizeX, DestMipSizeY), CoverageData.NumChannels, CoverageData.ElementType);
 
 		MipDatas.push_back(&MipDataBuffer.back());
 		MipCoverageDatas.push_back(&CoverageDataBuffer.back());
@@ -893,6 +893,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 		{
 			for (uint64_t C = 0; C < NumChannels; C++)
 			{
+				const uint64_t CovC = std::min(C, CoverageData.NumChannels - 1);
 				float AccumulatedColor = 0.f;
 				float Coverage = 0.f;
 
@@ -907,7 +908,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 					{
 						const uint64_t ClampedSourceX = std::min(SourceX, LastMipData->Grid2D.Width - 1);
 						const float SourceColor = LastMipData->GetFloat(FUint64Vector2(ClampedSourceX, ClampedSourceY), C);
-						const float SourceCoverage = LastMipCoverageData->GetFloat(FUint64Vector2(ClampedSourceX, ClampedSourceY), C);
+						const float SourceCoverage = LastMipCoverageData->GetFloat(FUint64Vector2(ClampedSourceX, ClampedSourceY), CovC);
 						if (SourceCoverage > 0.f)
 						{
 							AccumulatedColor += SourceColor * SourceCoverage;
@@ -930,7 +931,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 				}
 
 				NextMipData->SetFloat(Point, C, DestColor);
-				NextMipCoverageData->SetFloat(Point, C, DestCoverage);
+				NextMipCoverageData->SetFloat(Point, CovC, DestCoverage);
 			}
 		}
 	}
@@ -941,14 +942,24 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 		FTex2D* MipLevelData = MipDatas[MipIndex];
 		FTex2D* MipLevelCoverageData = MipCoverageDatas[MipIndex];
 
+		// With CovNumCh==1 or CovNumCh==NumChannels constraint, iterate over coverage channels.
+		// For each coverage channel, fill all color channels that share it.
+		const uint64_t CovNumCh = MipLevelCoverageData->GetNumChannels();
+
 		for (const FUint64Vector2& Point : MipLevelData->Grid2D)
 		{
-			for (uint64_t C = 0; C < NumChannels; C++)
+			for (uint64_t CovC = 0; CovC < CovNumCh; CovC++)
 			{
-				const float DestCoverage = MipLevelCoverageData->GetFloat(Point, C);
+				const float DestCoverage = MipLevelCoverageData->GetFloat(Point, CovC);
 				if (DestCoverage == 0.f)
 				{
-					float AccumulatedColor = 0.f;
+					// Determine which color channels share this CovC
+					// CovNumCh==1: all color channels; CovNumCh==NumChannels: only C==CovC
+					const uint64_t CStart = (CovNumCh == 1) ? 0 : CovC;
+					const uint64_t CEnd   = (CovNumCh == 1) ? NumChannels : CovC + 1;
+
+					// Accumulate per-channel color sums from covered neighbors
+					std::vector<float> AccumulatedColors(CEnd - CStart, 0.f);
 					float Coverage = 0.f;
 
 					const uint64_t MinSourceY = static_cast<uint64_t>(std::max(static_cast<int64_t>(Point.Y) - 1, static_cast<int64_t>(0)));
@@ -959,8 +970,7 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 						const uint64_t MaxSourceX = static_cast<uint64_t>(std::min(static_cast<int64_t>(Point.X) + 1, static_cast<int64_t>(MipLevelData->Grid2D.Width - 1)));
 						for (uint64_t SourceX = MinSourceX; SourceX <= MaxSourceX; SourceX++)
 						{
-							const float SourceColor = MipLevelData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
-							const float SourceCoverage = MipLevelCoverageData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
+							const float SourceCoverage = MipLevelCoverageData->GetFloat(FUint64Vector2(SourceX, SourceY), CovC);
 							if (SourceCoverage > 0.f)
 							{
 								// Weight matrix: cardinal neighbors (up/down/left/right) are strongly preferred
@@ -973,16 +983,23 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 									{ 1.f, 255.f, 1.f },
 								};
 								const float Weight = Weights[SourceY - Point.Y + 1][SourceX - Point.X + 1];
-								AccumulatedColor += SourceColor * SourceCoverage * Weight;
 								Coverage += SourceCoverage * Weight;
+								for (uint64_t C = CStart; C < CEnd; C++)
+								{
+									const float SourceColor = MipLevelData->GetFloat(FUint64Vector2(SourceX, SourceY), C);
+									AccumulatedColors[C - CStart] += SourceColor * SourceCoverage * Weight;
+								}
 							}
 						}
 					}
 
 					if (Coverage > 0.f)
 					{
-						MipLevelData->SetFloat(Point, C, AccumulatedColor / Coverage);
-						MipLevelCoverageData->SetFloat(Point, C, -1.f); // Mark as filled
+						for (uint64_t C = CStart; C < CEnd; C++)
+						{
+							MipLevelData->SetFloat(Point, C, AccumulatedColors[C - CStart] / Coverage);
+						}
+						MipLevelCoverageData->SetFloat(Point, CovC, -1.f); // Mark as filled
 					}
 				}
 			}
@@ -1002,28 +1019,35 @@ void UCommon::FTex2D::ImageInpainting(FTex2D CoverageData)
 		FTex2D* SrcMipCoverageData = MipCoverageDatas[MipIndex + 1];
 
 		const std::unique_ptr<float[]> SampleBuffer = std::make_unique<float[]>(NumChannels);
+		const std::unique_ptr<float[]> CoverageSampleBuffer = std::make_unique<float[]>(SrcMipCoverageData->GetNumChannels());
+		const uint64_t CovNumCh = DstMipCoverageData->GetNumChannels();
 
 		for (const FUint64Vector2& Point : DstMipData->Grid2D)
 		{
 			const FVector2f Texcoord = DstMipData->Grid2D.GetTexcoord(Point);
 
-			for (uint64_t C = 0; C < NumChannels; C++)
+			// Iterate over coverage channels; each CovC governs a range of color channels.
+			// CovNumCh==1: CovC=0 covers all; CovNumCh==NumChannels: CovC covers only C==CovC.
+			for (uint64_t CovC = 0; CovC < CovNumCh; CovC++)
 			{
-				const float DstCoverage = DstMipCoverageData->GetFloat(Point, C);
+				const float DstCoverage = DstMipCoverageData->GetFloat(Point, CovC);
 
 				// Point upsample mip data for zero coverage texels
 				if (DstCoverage == 0.f)
 				{
+					const uint64_t CStart = (CovNumCh == 1) ? 0 : CovC;
+					const uint64_t CEnd   = (CovNumCh == 1) ? NumChannels : CovC + 1;
+
 					// Use bilinear sampling for smoother results
 					SrcMipData->BilinearSample(SampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
-					const float SrcColor = SampleBuffer[C];
-
-					DstMipData->SetFloat(Point, C, SrcColor);
+					for (uint64_t C = CStart; C < CEnd; C++)
+					{
+						DstMipData->SetFloat(Point, C, SampleBuffer[C]);
+					}
 
 					// Also sample coverage
-					SrcMipCoverageData->BilinearSample(SampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
-					const float SrcCoverage = SampleBuffer[C];
-					DstMipCoverageData->SetFloat(Point, C, SrcCoverage);
+					SrcMipCoverageData->BilinearSample(CoverageSampleBuffer.get(), Texcoord, ETextureAddress::Clamp, ETextureAddress::Clamp);
+					DstMipCoverageData->SetFloat(Point, CovC, CoverageSampleBuffer[CovC]);
 				}
 			}
 		}

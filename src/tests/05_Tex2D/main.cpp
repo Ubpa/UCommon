@@ -434,3 +434,77 @@ TEST_CASE("Tex2D - ImageInpainting Partial Coverage")
 	bool NeighborFilled = Neighbor > 0.f;
 	CHECK_MESSAGE(NeighborFilled, "Neighbor should be filled from center");
 }
+
+TEST_CASE("Tex2D - ImageInpainting SingleChannel Coverage")
+{
+	// Test: CoverageData.NumChannels == 1 should work for multi-channel textures.
+	// The single coverage channel is broadcast to all color channels.
+	const uint64_t Size = 8;
+	const uint64_t NumColorChannels = 3;
+
+	FTex2D Tex(FGrid2D(Size, Size), NumColorChannels, EElementType::Float);
+	// Single-channel coverage
+	FTex2D Coverage(FGrid2D(Size, Size), 1, EElementType::Float);
+
+	// Initialize all to zero
+	for (uint64_t Y = 0; Y < Size; Y++)
+	{
+		for (uint64_t X = 0; X < Size; X++)
+		{
+			for (uint64_t C = 0; C < NumColorChannels; C++)
+			{
+				Tex.SetFloat(FUint64Vector2(X, Y), C, 0.f);
+			}
+			Coverage.SetFloat(FUint64Vector2(X, Y), 0, 0.f);
+		}
+	}
+
+	// Fill center 4x4 region with known values; coverage = 1 (shared for all channels)
+	for (uint64_t Y = 2; Y < 6; Y++)
+	{
+		for (uint64_t X = 2; X < 6; X++)
+		{
+			Tex.SetFloat(FUint64Vector2(X, Y), 0, 1.f);   // R = 1
+			Tex.SetFloat(FUint64Vector2(X, Y), 1, 0.5f);  // G = 0.5
+			Tex.SetFloat(FUint64Vector2(X, Y), 2, 0.25f); // B = 0.25
+			Coverage.SetFloat(FUint64Vector2(X, Y), 0, 1.f);
+		}
+	}
+
+	// Should not assert or crash
+	Tex.ImageInpainting(Coverage);
+
+	// Border pixels should be filled (non-zero) from the covered region
+	bool bBorderFilled = false;
+	for (uint64_t Y = 0; Y < Size; Y++)
+	{
+		for (uint64_t X = 0; X < Size; X++)
+		{
+			if (X < 2 || X >= 6 || Y < 2 || Y >= 6)
+			{
+				for (uint64_t C = 0; C < NumColorChannels; C++)
+				{
+					if (Tex.GetFloat(FUint64Vector2(X, Y), C) > 0.f)
+					{
+						bBorderFilled = true;
+					}
+				}
+			}
+		}
+	}
+	CHECK_MESSAGE(bBorderFilled, "Border pixels should be filled after inpainting with single-channel coverage");
+
+	// Center pixels should retain their values
+	CHECK(FloatEqual(Tex.GetFloat(FUint64Vector2(3, 3), 0), 1.f));
+	CHECK(FloatEqual(Tex.GetFloat(FUint64Vector2(3, 3), 1), 0.5f));
+	CHECK(FloatEqual(Tex.GetFloat(FUint64Vector2(3, 3), 2), 0.25f));
+
+	// All 3 color channels of a border pixel should be filled (not just channel 0)
+	const FUint64Vector2 BorderPt(1, 3); // adjacent to covered region
+	const float BorderR = Tex.GetFloat(BorderPt, 0);
+	const float BorderG = Tex.GetFloat(BorderPt, 1);
+	const float BorderB = Tex.GetFloat(BorderPt, 2);
+	CHECK_MESSAGE(BorderR > 0.f, "R channel of border pixel should be filled");
+	CHECK_MESSAGE(BorderG > 0.f, "G channel of border pixel should be filled");
+	CHECK_MESSAGE(BorderB > 0.f, "B channel of border pixel should be filled");
+}

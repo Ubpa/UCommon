@@ -31,6 +31,7 @@ HDR 颜色编解码与色彩空间转换工具集，包含 RGBM/RGBD/RGBV 编码
 ### RGBV 编码
 
 - 自定义编码方案，公式 `L = v^2 / (k*v^2 + b)`，其中 `k = -s, b = s + 1/M`
+- `RGBV_DefaultS = 1.f` — 默认 s 参数（线性权重曲线；0.f 为线性，正值使低亮度区域更宽松）
 - `RGBV_ComputeIntegral` — 计算一阶矩积分用于参数求解
 - `RGBV_SolveS` — 基于一阶矩的二分法求解参数 s
 - `EncodeVisual(float L, float MaxValue, float S)` — 标量版，将亮度 L 编码为 V 值 [0,1]
